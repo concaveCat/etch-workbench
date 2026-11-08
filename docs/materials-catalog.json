@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "engineVersion": "4.6.2",
+  "materials": [
+    {
+      "name": "Mask",
+      "id": 0,
+      "color": "#333333",
+      "category": "Hardmask",
+      "densityGcm3": 500.0,
+      "conductive": false
+    },
+    {
+      "name": "Si",
+      "id": 10,
+      "color": "#c79a08",
+      "category": "Silicon",
+      "densityGcm3": 2.33,
+      "conductive": false
+    },
+    {
+      "name": "SiO2",
+      "id": 30,
+      "color": "#66ccff",
+      "category": "OxideNitride",
+      "densityGcm3": 2.2,
+      "conductive": false
+    },
+    {
+      "name": "Si3N4",
+      "id": 16,
+      "color": "#00a8a8",
+      "category": "OxideNitride",
+      "densityGcm3": 3.1,
+      "conductive": false
+    },
+    {
+      "name": "SiN",
+      "id": 15,
+      "color": "#00bfa5",
+      "category": "OxideNitride",
+      "densityGcm3": 3.1,
+      "conductive": false
+    },
+    {
+      "name": "PolySi",
+      "id": 11,
+      "color": "#ed8713",
+      "category": "Silicon",
+      "densityGcm3": 2.33,
+      "conductive": false
+    },
+    {
+      "name": "SiGe",
+      "id": 13,
+      "color": "#d66604",
+      "category": "Silicon",
+      "densityGcm3": 4.0,
+      "conductive": false
+    },
+    {
+      "name": "Al2O3",
+      "id": 31,
+      "color": "#90caf9",
+      "category": "OxideNitride",
+      "densityGcm3": 3.95,
+      "conductive": false
+    },
+    {
+      "name": "HfO2",
+      "id": 32,
+      "color": "#3f51b5",
+      "category": "OxideNitride",
+      "densityGcm3": 9.7,
+      "conductive": false
+    },
+    {
+      "name": "TiN",
+      "id": 79,
+      "color": "#adb5bd",
+      "category": "Metal",
+      "densityGcm3": 5.4,
+      "conductive": true
+    },
+    {
+      "name": "W",
+      "id": 70,
+      "color": "#6e6e6e",
+      "category": "Metal",
+      "densityGcm3": 19.3,
+      "conductive": true
+    },
+    {
+      "name": "Cu",
+      "id": 71,
+      "color": "#b87333",
+      "category": "Metal",
+      "densityGcm3": 8.96,
+      "conductive": true
+    },
+    {
+      "name": "PMMA",
+      "id": 58,
+      "color": "#ec407a",
+      "category": "Hardmask",
+      "densityGcm3": 1.18,
+      "conductive": false
+    },
+    {
+      "name": "Metal",
+      "id": 5,
+      "color": "#9e9e9e",
+      "category": "Metal",
+      "conductive": true
+    },
+    {
+      "name": "Dielectric",
+      "id": 4,
+      "color": "#80cbc4",
+      "category": "OxideNitride",
+      "conductive": false
+    }
+  ]
+}

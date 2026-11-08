@@ -1,0 +1,52 @@
+# Python 虚拟环境与缓存
+.venv/
+__pycache__/
+*.py[cod]
+
+# 前端依赖与构建产物
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/tsconfig.tsbuildinfo
+
+# 运行时状态与用户数据（本机生成，不入库）
+var/*
+!var/projects/
+!var/runs/
+var/projects/*
+var/runs/*
+!var/projects/.keep
+!var/runs/.keep
+var/workbench.lock
+var/server.json
+var/server.log
+var/listen-port.json
+
+# 打补丁后的 ViennaPS/ViennaLS 运行时候选（按哈希缓存，可由脚本重建）
+runtime-patched/
+
+# 验收证据与重构快照（体积大、可重新生成；文件仍保留在工作目录中）
+# 例外：以下能力矩阵是运行时的准入数据，必须随仓库分发。
+docs/*-evidence/
+!docs/stage7-evidence/
+docs/stage7-evidence/*
+!docs/stage7-evidence/capability-matrix.json
+!docs/stage8-evidence/
+docs/stage8-evidence/*
+!docs/stage8-evidence/capability-matrix.json
+!docs/stage9-evidence/
+docs/stage9-evidence/*
+!docs/stage9-evidence/gpu-capability-matrix.json
+docs/refactor-baseline/
+docs/refactor-after/
+
+# 杂项
+*.log
+.DS_Store
+
+# 同一路径在 worktree 里是软链（指向主工作区）。git 的 'name/' 只匹配目录，
+# 不匹配软链，因此再写一份不带斜杠的规则，避免 `git add -A` 把软链提交进来。
+.venv
+frontend/node_modules
+frontend/dist
+runtime-patched

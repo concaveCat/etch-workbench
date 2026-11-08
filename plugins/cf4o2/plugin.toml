@@ -1,0 +1,5 @@
+api = 1
+id = "cf4o2"
+version = "1.0.0"
+entrypoint = "plugins.cf4o2:register"
+description = "Native CF4/O2 plasma etch"

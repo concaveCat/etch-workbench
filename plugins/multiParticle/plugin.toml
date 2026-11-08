@@ -1,0 +1,5 @@
+api = 1
+id = "multiParticle"
+version = "1.0.0"
+entrypoint = "plugins.multiParticle:register"
+description = "Native multi-particle plasma etch/deposit"

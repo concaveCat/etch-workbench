@@ -1,0 +1,5 @@
+api = 1
+id = "sf6c4f8"
+version = "1.0.0"
+entrypoint = "plugins.sf6c4f8:register"
+description = "Native SF6/C4F8 plasma etch"

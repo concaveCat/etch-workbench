@@ -1,0 +1,5 @@
+api = 1
+id = "csvProcess"
+version = "1.0.0"
+entrypoint = "plugins.csvProcess:register"
+description = "Native CSV rate-grid process"

@@ -1,0 +1,5 @@
+api = 1
+id = "selectiveEpitaxy"
+version = "1.0.0"
+entrypoint = "plugins.selectiveEpitaxy:register"
+description = "Native selective SiGe epitaxy"

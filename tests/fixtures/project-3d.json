@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 2,
+  "name": "\u4e09\u7ef4\u5706\u5b54\u9a8c\u6536",
+  "dimension": 3,
+  "units": {
+    "length": "um",
+    "time": "s",
+    "rate": "um/s",
+    "angle": "deg"
+  },
+  "domain": {
+    "gridDelta": 0.2,
+    "xExtent": 6.0,
+    "yExtent": 4.0,
+    "boundaryXY": "reflective"
+  },
+  "geometry": {
+    "kind": "hole",
+    "radius": 1.0,
+    "depth": 2.0,
+    "taperAngle": 0.0,
+    "maskHeight": 0.0,
+    "maskTaperAngle": 0.0,
+    "substrateMaterial": "Si"
+  },
+  "steps": [
+    {
+      "id": "step_deposit",
+      "name": "\u6c89\u79ef",
+      "enabled": true,
+      "operation": "deposit",
+      "model": "singleParticle",
+      "rateMagnitude": 0.2,
+      "duration": 0.2,
+      "depositMaterial": "SiO2",
+      "stickingProbability": 0.5,
+      "sourceExponent": 1.0
+    },
+    {
+      "id": "step_etching",
+      "name": "\u523b\u8680",
+      "enabled": true,
+      "operation": "etch",
+      "model": "singleParticle",
+      "rateMagnitude": 0.2,
+      "duration": 0.2,
+      "stickingProbability": 0.5,
+      "sourceExponent": 1.0
+    }
+  ],
+  "solver": {
+    "timeStepRatio": 0.25,
+    "raysPerPoint": 64,
+    "cpuThreads": 1,
+    "random": {
+      "mode": "fixed",
+      "seed": 314159
+    },
+    "enginePreference": "auto",
+    "timeoutSeconds": 120
+  },
+  "view3D": {
+    "projection": "parallel",
+    "camera": null,
+    "displayMode": "surface",
+    "visibleMaterialIds": [
+      0,
+      10,
+      30
+    ],
+    "opacityByMaterial": {
+      "0": 1.0,
+      "10": 1.0,
+      "30": 1.0
+    },
+    "clip": {
+      "enabled": false,
+      "axis": "x",
+      "position": 0.0,
+      "keep": "positive"
+    },
+    "section": {
+      "enabled": false,
+      "axis": "y",
+      "position": 0.0
+    }
+  }
+}

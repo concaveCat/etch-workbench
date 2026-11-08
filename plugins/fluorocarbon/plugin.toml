@@ -1,0 +1,5 @@
+api = 1
+id = "fluorocarbon"
+version = "1.0.0"
+entrypoint = "plugins.fluorocarbon:register"
+description = "Native fluorocarbon plasma etch"

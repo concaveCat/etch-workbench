@@ -1,0 +1,5 @@
+api = 1
+id = "example"
+version = "0.1.0"
+entrypoint = "plugins.example:register"
+description = "Template process plugin (not installed)"

@@ -1,0 +1,305 @@
+{
+  "schemaVersion": 1,
+  "apiVersion": 1,
+  "plugins": [
+    {
+      "id": "ald",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.ald:register",
+      "manifestSha256": "477f50c6396293a685776c35f979d7b880ba3e4cada842e3b3b80f5c7d186ff7",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "22aada2aa8447e04780aa23bc1f46a05cc5d5e9391dfc31da562b264fa468efa"
+        }
+      }
+    },
+    {
+      "id": "analysis",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.analysis:register",
+      "manifestSha256": "a8ed18f14b40e8eafda912f9418e8fdb574eb740566e26a3e411c744fc1e7301",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "65d4d3aac908aa8518c304e8fb35529f2c94a3ce80168bd7e735dc63a72ab5fc"
+        }
+      }
+    },
+    {
+      "id": "anneal",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.anneal:register",
+      "manifestSha256": "5fe622466ec72d230884a4a72b67f1a4ed600f2987bfdf533ba4fe416e04b7e1",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "28c301dc155451a29e88085d94627f9d407b6383468deb8967f9bb0b08d69c60"
+        }
+      }
+    },
+    {
+      "id": "cf4o2",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.cf4o2:register",
+      "manifestSha256": "9acdb8c7dc7e0ae81d982b5c424fb65ceee59e4e7fad3e172c95d2784d75662a",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "227da0b6a93e96d63c4e321e291a081e137442cc12e197825e92b23ecb3d01a8"
+        }
+      }
+    },
+    {
+      "id": "csvProcess",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.csvProcess:register",
+      "manifestSha256": "952938c1cbf2e6c36c6c39bcd21ac6a6639c314a368d27d86ac43c667ab4cd2d",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "0f22defbda3216e4e79dfb1028b287b2a12d3ccd4315a758f539873cd98bfe81"
+        }
+      }
+    },
+    {
+      "id": "directional",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.directional:register",
+      "manifestSha256": "ea7e5a3a68b79386b40346acf57c5db876c9caff4ca87d72f75b30d6a78abccb",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "96e8a09d53052c3ef8548390a9377afd88d18cd7983a51e8d1fdb9a8b86eb793"
+        }
+      }
+    },
+    {
+      "id": "faradayCage",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.faradayCage:register",
+      "manifestSha256": "c383f4eef4476e820f65b1f3ca8dd68bdc4776962d9f8535b89ac07e4cd68862",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "9c37ff43f03da32897db5d8edc2f33f470a4b5515653c603485d67f7cd89b110"
+        }
+      }
+    },
+    {
+      "id": "fluorocarbon",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.fluorocarbon:register",
+      "manifestSha256": "b3ba0c445bf257759a7b70a2bc6ea6370e34787fb2b4013338f5f3d7dc937bb7",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "ea8e953d91e6627e221543746ea244a86d3438f347fc86031c85291bbd3e5f2d"
+        }
+      }
+    },
+    {
+      "id": "geometricTrenchDeposition",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.geometricTrenchDeposition:register",
+      "manifestSha256": "a2474e3e9bffce840b271403e93f21198fe6f7508c25fd24d24c3f1a85be48f9",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "3f802c07dfca5da0ade5c12d8d1c7d2b38dd9d966a4aa6fb16323844559c1318"
+        }
+      }
+    },
+    {
+      "id": "hbro2",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.hbro2:register",
+      "manifestSha256": "272b66a242c6fa72b4fa26e7052510b0be96b9c35bd1d74abebb1aecc82ba015",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "de0a124ff6fd36ac020ab58945c66f4d9acd2e553f7ee239b2f43967dfa8bbe5"
+        }
+      }
+    },
+    {
+      "id": "implant",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.implant:register",
+      "manifestSha256": "c44662d2fbd6c8cc47a9351405dc0530325c41b4319a0df6b09cd15d76d57e84",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "cf31c31005aa7cbeaeda8a8de5800591209f23c87dcc5716f4c66425b6addfcb"
+        }
+      }
+    },
+    {
+      "id": "ionBeam",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.ionBeam:register",
+      "manifestSha256": "9a95f7f3027d276f4d86c776ff0462b044bb64c276d21c9257979c0a20d4d1e2",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "6698e3c52c33aa2ec5f1cf3a025f5039f0be2ccb4a131e04bfaf7691ed58ee7d"
+        }
+      }
+    },
+    {
+      "id": "isotropic",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.isotropic:register",
+      "manifestSha256": "cdac531fc7edf63df687735c79485883e8d6f944a2efc2417c8d7b7317fc3686",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "2e1d8e159471f468ecbd1fa2e01d2f21971461dce2eb8a6fe285255c5057248e"
+        }
+      }
+    },
+    {
+      "id": "multiParticle",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.multiParticle:register",
+      "manifestSha256": "898139239f78ac1de31deb095ea69155f8e9b56e7d5009befd75bedc125df33f",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "a3c5265bf6e9a58a80af6d7685860e63c5105cc822f5d3dd394ddd0b00dc9200"
+        }
+      }
+    },
+    {
+      "id": "oxidation",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.oxidation:register",
+      "manifestSha256": "88ef12bb53ae517f5fcef54d8bef48c89293685c2e4443d1dd5fd1cbe801ec81",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "3b6d9e46a62e938348f84b967b2e04ca74c1b0a9a1f085a17dad3fd7e367359a"
+        }
+      }
+    },
+    {
+      "id": "oxideRegrowth",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.oxideRegrowth:register",
+      "manifestSha256": "73f7bba937404cb74509db2cc86946f378e45480fa982edf2adb0e90794a31d2",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "bbcb931575940cfed4459ba28501c94a4cc1b8850ec1f81fca787ca73b895881"
+        }
+      }
+    },
+    {
+      "id": "selectiveEpitaxy",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.selectiveEpitaxy:register",
+      "manifestSha256": "34b4cb6e4d121999424f310084d60dd32aef60cc2d114e202488bdc50b8d570d",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "227b6e22783f3b30a6d16a2a89961220a7941d47e11e131e0723fcba4192967a"
+        }
+      }
+    },
+    {
+      "id": "sf6c4f8",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.sf6c4f8:register",
+      "manifestSha256": "d3614fb31afa4b8db630e23bd7fad44675cd9fcb6d36e7edb1c74dedc6ec3369",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "3492f4e18ef7beb2bfc3deddc326fa4993c0b4e123c8df4d2c2da2a11bc0cc89"
+        }
+      }
+    },
+    {
+      "id": "sf6o2",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.sf6o2:register",
+      "manifestSha256": "47538fe37709adc338c21a37b549b7635932825811813985d6f15d8a0e51e841",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "8876492dbb2afeef4ad0a91e7f2eb7aedd74b4ce42a0b409feb33ac597000556"
+        }
+      }
+    },
+    {
+      "id": "singleParticle",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.singleParticle:register",
+      "manifestSha256": "5be61fbb4400637b33c8294a34889642bbeb8503791b57499f8f9493f6556ae9",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "a60f12bdbb5bc35a1ba5228f313a88ddf51dae378a1c070f15b7835fc05f7a7d"
+        }
+      }
+    },
+    {
+      "id": "teosDeposition",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.teosDeposition:register",
+      "manifestSha256": "577eeab02348af1af6d3117f68f5f1d307f956c0b16db89d622769b02e1fa142",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "dd32b1a759faf6285c0aaf1234e19bb5b30b38e0c64b228aec4354bde3176750"
+        }
+      }
+    },
+    {
+      "id": "teospecvd",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.teospecvd:register",
+      "manifestSha256": "b2339bae60789429e52a875520cfbe0158594fe790567fb41b498b094bb4e42d",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "3ccaa085343845acee728818be9bc40cb681e8b004565b9b6fbcf9bba752052b"
+        }
+      }
+    },
+    {
+      "id": "wetEtch",
+      "version": "1.0.0",
+      "api": 1,
+      "entrypoint": "plugins.wetEtch:register",
+      "manifestSha256": "c32fa97ba18a212427033f8e6685528d984ef00ecedb5d2f3c4645870396eefd",
+      "variants": {
+        "native": {
+          "version": "1.0.0",
+          "implementationHash": "0493492ef966635bdff35f8d0f9415ade26dadbeeeb7768dc2bafec54ae34dcc"
+        }
+      }
+    }
+  ]
+}

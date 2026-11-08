@@ -1,0 +1,5 @@
+api = 1
+id = "analysis"
+version = "1.0.0"
+entrypoint = "plugins.analysis:register"
+description = "Native junction-depth and sheet-resistance analysis on a DenseCellSet"

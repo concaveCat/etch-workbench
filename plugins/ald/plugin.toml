@@ -1,0 +1,5 @@
+api = 1
+id = "ald"
+version = "1.0.0"
+entrypoint = "plugins.ald:register"
+description = "Native SingleParticleALD atomic-layer deposition"

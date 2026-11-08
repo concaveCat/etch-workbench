@@ -1,0 +1,27 @@
+{
+  "assetId": "7b7852d2e6a9ee0cd977d5e82dd95ee3d4c3a6fd0f9cf0d6ff0894eee1676c2d",
+  "fileName": "two-structure-two-layer.gds",
+  "structures": [
+    {
+      "name": "CELL_A",
+      "layers": [
+        1
+      ],
+      "references": []
+    },
+    {
+      "name": "CELL_B",
+      "layers": [
+        2
+      ],
+      "references": []
+    }
+  ],
+  "units": {
+    "userUnitsPerDatabaseUnit": 0.001,
+    "metersPerDatabaseUnit": 1e-09,
+    "micrometersPerNativeUserUnit": 1.0,
+    "nativeOutputAssumption": "ViennaPS GDSGeometry coordinates are reported in the Workbench micrometer unit"
+  },
+  "fileSizeBytes": 280
+}

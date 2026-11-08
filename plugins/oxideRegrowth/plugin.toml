@@ -1,0 +1,5 @@
+api = 1
+id = "oxideRegrowth"
+version = "1.0.0"
+entrypoint = "plugins.oxideRegrowth:register"
+description = "Native oxide regrowth and redeposition"

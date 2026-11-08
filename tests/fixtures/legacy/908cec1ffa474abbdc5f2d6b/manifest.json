@@ -1,0 +1,306 @@
+{
+  "schemaVersion": 1,
+  "runId": "908cec1ffa474abbdc5f2d6b",
+  "kind": "simulate",
+  "status": "succeeded",
+  "createdAt": "2026-10-26T10:40:18Z",
+  "startedAt": "2026-10-26T10:40:18Z",
+  "finishedAt": "2026-10-26T10:40:20Z",
+  "elapsedSeconds": 2.168,
+  "failureReason": null,
+  "requestedInputHash": "bf1892b380633849c09c949e66d94e610e51f86a56e382bb66ecabb73886745d",
+  "executionHash": "6777498c6c657661c57f0b548e468155b5d99c7364f715cab68c0200363891ce",
+  "normalizedProject": {
+    "schemaVersion": 1,
+    "name": "API 集成验收",
+    "dimension": 2,
+    "units": {
+      "length": "um",
+      "time": "s",
+      "rate": "um/s",
+      "angle": "deg"
+    },
+    "domain": {
+      "gridDelta": 0.025,
+      "xExtent": 5.0,
+      "xBoundary": "reflective"
+    },
+    "geometry": {
+      "kind": "trench",
+      "width": 1.2,
+      "depth": 3.2,
+      "taperAngle": 0.0,
+      "maskHeight": 0.0,
+      "maskTaperAngle": 0.0,
+      "substrateMaterial": "Si"
+    },
+    "steps": [
+      {
+        "id": "step_c9eac7b7e332437ea5594207",
+        "name": "步骤 1",
+        "enabled": true,
+        "operation": "etch",
+        "model": "singleParticle",
+        "rateMagnitude": 0.36,
+        "duration": 2.0,
+        "stickingProbability": 0.5,
+        "sourceExponent": 1.0
+      }
+    ],
+    "solver": {
+      "timeStepRatio": 0.25,
+      "raysPerPoint": 64,
+      "cpuThreads": 1,
+      "random": {
+        "mode": "fixed",
+        "seed": 314159
+      },
+      "enginePreference": "gpu",
+      "timeoutSeconds": 30
+    },
+    "view": {
+      "panX": -0.1130865497178351,
+      "panH": 0.11951173485519262,
+      "zoom": 1.4049280000000028,
+      "showGrid": true
+    }
+  },
+  "requestedSolver": {
+    "timeStepRatio": 0.25,
+    "raysPerPoint": 64,
+    "cpuThreads": 1,
+    "random": {
+      "mode": "fixed",
+      "seed": 314159
+    },
+    "enginePreference": "gpu",
+    "timeoutSeconds": 30
+  },
+  "actualSeed": 314159,
+  "cpuThreads": 1,
+  "versions": {
+    "application": "0.1.0",
+    "python": "3.12.14",
+    "viennaps": "4.6.2",
+    "viennals": "5.8.5"
+  },
+  "plannedExecution": [
+    {
+      "stepId": "step_c9eac7b7e332437ea5594207",
+      "engine": "GPU_DISK",
+      "seed": 314159
+    }
+  ],
+  "actualExecution": [
+    {
+      "at": "2026-10-26T10:40:18Z",
+      "type": "step-configured",
+      "stepId": "step_c9eac7b7e332437ea5594207",
+      "operation": "etch",
+      "model": "singleParticle",
+      "noOp": false,
+      "actualEngine": "GPU_DISK",
+      "engineSelectionReason": "explicit GPU preference selected the verified GPU_DISK engine",
+      "requestedEnginePreference": "gpu",
+      "actualSeed": 314159,
+      "actualRate": -0.36,
+      "duration": 2.0,
+      "actualParameters": {
+        "timeStepRatio": 0.25,
+        "duration": 2.0,
+        "rate": -0.36,
+        "raysPerPoint": 64,
+        "rngSeed": 314159,
+        "useRandomSeeds": false,
+        "stickingProbability": 0.5,
+        "sourceExponent": 1.0
+      }
+    }
+  ],
+  "plannedExecutionHash": "6777498c6c657661c57f0b548e468155b5d99c7364f715cab68c0200363891ce",
+  "supervisorProcess": {
+    "pid": 142062,
+    "processGroupId": 142062,
+    "startTicks": 1540482
+  },
+  "currentStepId": null,
+  "completedStepIds": [
+    "step_c9eac7b7e332437ea5594207"
+  ],
+  "snapshots": [
+    {
+      "stepId": "initial",
+      "name": "初始结构",
+      "stepIndex": 0,
+      "snapshot": "initial.json",
+      "vtk": "initial.vtk",
+      "pointCount": 455,
+      "lineCount": 454,
+      "materialIds": [
+        10
+      ],
+      "materialIdsByLevelSetIndex": [
+        10
+      ],
+      "noOp": false,
+      "measuredGeometry": {
+        "openingWidth": 1.2000000000000002,
+        "depth": 3.200000000000025
+      }
+    },
+    {
+      "stepId": "step_c9eac7b7e332437ea5594207",
+      "name": "步骤 1",
+      "stepIndex": 1,
+      "snapshot": "step_c9eac7b7e332437ea5594207.json",
+      "vtk": "step_c9eac7b7e332437ea5594207.vtk",
+      "pointCount": 427,
+      "lineCount": 426,
+      "materialIds": [
+        10
+      ],
+      "materialIdsByLevelSetIndex": [
+        10
+      ],
+      "noOp": false,
+      "measuredGeometry": null
+    }
+  ],
+  "noOpSteps": [],
+  "replay": false,
+  "currentStepName": null,
+  "workerResult": {
+    "schemaVersion": 1,
+    "runId": "908cec1ffa474abbdc5f2d6b",
+    "kind": "simulate",
+    "versions": {
+      "viennaps": "4.6.2",
+      "viennals": "5.8.5"
+    },
+    "actualSeed": 314159,
+    "cpuThreads": 1,
+    "actualSteps": [
+      {
+        "stepId": "step_c9eac7b7e332437ea5594207",
+        "engine": "GPU_DISK",
+        "seed": 314159
+      }
+    ],
+    "stepRecords": [
+      {
+        "at": "2026-10-26T10:40:18Z",
+        "type": "step-configured",
+        "stepId": "step_c9eac7b7e332437ea5594207",
+        "operation": "etch",
+        "model": "singleParticle",
+        "noOp": false,
+        "actualEngine": "GPU_DISK",
+        "engineSelectionReason": "explicit GPU preference selected the verified GPU_DISK engine",
+        "requestedEnginePreference": "gpu",
+        "actualSeed": 314159,
+        "actualRate": -0.36,
+        "duration": 2.0,
+        "actualParameters": {
+          "timeStepRatio": 0.25,
+          "duration": 2.0,
+          "rate": -0.36,
+          "raysPerPoint": 64,
+          "rngSeed": 314159,
+          "useRandomSeeds": false,
+          "stickingProbability": 0.5,
+          "sourceExponent": 1.0
+        }
+      }
+    ],
+    "snapshots": [
+      {
+        "stepId": "initial",
+        "name": "初始结构",
+        "stepIndex": 0,
+        "snapshot": "initial.json",
+        "vtk": "initial.vtk",
+        "pointCount": 455,
+        "lineCount": 454,
+        "materialIds": [
+          10
+        ],
+        "materialIdsByLevelSetIndex": [
+          10
+        ],
+        "noOp": false,
+        "measuredGeometry": {
+          "openingWidth": 1.2000000000000002,
+          "depth": 3.200000000000025
+        }
+      },
+      {
+        "stepId": "step_c9eac7b7e332437ea5594207",
+        "name": "步骤 1",
+        "stepIndex": 1,
+        "snapshot": "step_c9eac7b7e332437ea5594207.json",
+        "vtk": "step_c9eac7b7e332437ea5594207.vtk",
+        "pointCount": 427,
+        "lineCount": 426,
+        "materialIds": [
+          10
+        ],
+        "materialIdsByLevelSetIndex": [
+          10
+        ],
+        "noOp": false,
+        "measuredGeometry": null
+      }
+    ],
+    "gridDeltaReadback": 0.025,
+    "xExtentRequested": 5.0,
+    "boundaryValuesReadback": [
+      "0",
+      "1"
+    ],
+    "boundingBoxReadback": [
+      [
+        -2.5,
+        -3.475,
+        0.0
+      ],
+      [
+        2.5,
+        -0.7250000000000001,
+        0.0
+      ]
+    ]
+  },
+  "childRecord": {
+    "schemaVersion": 1,
+    "command": [
+      "/root/viennaps-workbench/.venv/bin/python",
+      "/root/viennaps-workbench/worker/simulate.py",
+      "/root/viennaps-workbench/var/runs/908cec1ffa474abbdc5f2d6b/input.json",
+      "/root/viennaps-workbench/var/runs/908cec1ffa474abbdc5f2d6b"
+    ],
+    "cwd": "/root/viennaps-workbench",
+    "supervisorPid": 142062,
+    "pid": 142063,
+    "pidStartTicks": 1540487,
+    "processGroupId": 142063,
+    "startedAtUnix": 1793011218.6549647,
+    "elapsedSeconds": 1.419995,
+    "timeoutSeconds": 30.0,
+    "rssLimitMiB": 2048,
+    "peakObservedRssBytes": 307982336,
+    "rssLimitIsPollingTerminationNotHardLimit": true,
+    "maxLogBytes": 4194304,
+    "logBytesRetained": 5910,
+    "logBytesDiscarded": 0,
+    "logBytesByStream": {
+      "stdout": 5910,
+      "stderr": 0
+    },
+    "terminationReason": "exited",
+    "timedOut": false,
+    "rssLimited": false,
+    "logLimited": false,
+    "returnCode": 0,
+    "remainingOwnedGroupMembers": []
+  }
+}

@@ -1,0 +1,520 @@
+{
+  "schemaVersion": 1,
+  "kind": "viennaps-example-presets",
+  "source": {
+    "repository": "https://github.com/ViennaTools/ViennaPS",
+    "localPath": "/root/ViennaPS",
+    "commit": "7a8b17f",
+    "commitDate": "2026-09-18",
+    "examplesReadme": "examples/README.md"
+  },
+  "units": {
+    "projectV7": { "length": "um", "time": "s", "rate": "um/s", "angle": "deg" },
+    "note": "参数保留源码单位；projectV7 字段已尽量换算为 um/s。换算处标注 sourceUnits。"
+  },
+  "presets": [
+    {
+      "id": "trench-deposition",
+      "label": "Trench Deposition",
+      "source": [
+        "examples/trenchDeposition/config.txt",
+        "examples/trenchDeposition/trenchDeposition.py",
+        "examples/trenchDeposition/trenchDeposition.cpp"
+      ],
+      "dimension": "2D (example also supports 3D)",
+      "domain": { "gridDelta": 0.24, "xExtent": 10.0, "yExtent": 10.0, "boundary": "reflective" },
+      "geometry": {
+        "kind": "trench",
+        "width": 4.0,
+        "depth": 8.0,
+        "taperAngle": 0.0,
+        "maskHeight": 0.0,
+        "maskTaperAngle": 0.0,
+        "substrateMaterial": "Si",
+        "maskMaterial": "Mask"
+      },
+      "steps": [
+        {
+          "name": "Trench deposition",
+          "operation": "deposit",
+          "model": "singleParticle",
+          "rateMagnitude": 1.0,
+          "stickingProbability": 0.1,
+          "sourceExponent": 1.0,
+          "durationSeconds": 5.0,
+          "depositMaterial": "SiO2",
+          "rateMode": "uniform"
+        }
+      ],
+      "solver": { "raysPerPoint": 64, "cpuThreads": 2, "enginePreference": "cpu", "random": { "mode": "fixed", "seed": 7 } },
+      "notes": [
+        "config.txt 的 rate=1.0、stickingProbability=0.1、sourcePower=1、processTime=5。",
+        "Python 默认 dimension=2；C++/Python 均可用 3D，3D 需要 yExtent=10。"
+      ]
+    },
+    {
+      "id": "sf6o2-hole-etching",
+      "label": "SF6/O2 Hole Etching",
+      "source": [
+        "examples/holeEtching/config.txt",
+        "examples/holeEtching/holeEtching.py"
+      ],
+      "dimension": "3D (example also supports 2D quarter-hole)",
+      "domain": { "gridDelta": 0.03, "xExtent": 1.0, "yExtent": 1.0, "boundary": "reflective" },
+      "geometry": {
+        "kind": "hole",
+        "radius": 0.175,
+        "depth": 1.0,
+        "taperAngle": 1.193,
+        "maskHeight": 1.2,
+        "maskTaperAngle": 0.0,
+        "substrateMaterial": "Si",
+        "maskMaterial": "Mask",
+        "sourceNote": "源码 MakeHole(holeDepth=0.0, holeShape=QUARTER)；depth=1.0 是预设占位，实际由 etchStopDepth=-10 控制。"
+      },
+      "steps": [
+        {
+          "name": "SF6/O2 plasma etch",
+          "operation": "etch",
+          "model": "specialized",
+          "nativeModel": "sf6o2",
+          "durationSeconds": 60.0,
+          "nativeParameters": {
+            "ionFlux": 10.0,
+            "etchantFlux": 4500.0,
+            "oxygenFlux": 800.0,
+            "meanIonEnergy": 100.0,
+            "sigmaIonEnergy": 10.0,
+            "ionExponent": 1000.0,
+            "oxySputterYield": 2.0,
+            "etchStopDepth": -10.0
+          },
+          "sourceParameters": {
+            "ionFlux": 10.0,
+            "etchantFlux": 4500.0,
+            "oxygenFlux": 800.0,
+            "ionExponent": 1000,
+            "meanEnergy": 100,
+            "sigmaEnergy": 10,
+            "A_O": 2,
+            "A_Si": 7,
+            "etchStopDepth": -10,
+            "raysPerPoint": 1000,
+            "processTime": "1 min = 60 s"
+          }
+        }
+      ],
+      "solver": { "raysPerPoint": 1000, "cpuThreads": 16, "enginePreference": "cpu", "random": { "mode": "fixed", "seed": 7 } },
+      "notes": [
+        "源码把 A_O 映射到 Passivation.A_ie，A_Si 映射到 Substrate.A_ie；当前 sf6o2 nativeParameters 只有 oxySputterYield，A_Si=7 暂不可表达。",
+        "源码使用 holeShape=QUARTER；工作台 HoleV3 是完整圆孔，需在 3D 几何层确认是否支持 quarter。",
+        "processTime 1 min，已换算 60 s。"
+      ]
+    },
+    {
+      "id": "bosch-process",
+      "label": "Bosch Process",
+      "source": [
+        "examples/boschProcess/config.txt",
+        "examples/boschProcess/configBoschRayTracing.txt",
+        "examples/boschProcess/boschProcessEmulate.py",
+        "examples/boschProcess/boschProcessSimulate.py"
+      ],
+      "dimension": "3D",
+      "domain": { "gridDelta": 0.025, "xExtent": 3.5, "yExtent": 3.5, "boundary": "reflective" },
+      "geometry": {
+        "kind": "hole",
+        "radius": 1.0,
+        "depth": 3.0,
+        "taperAngle": 0.0,
+        "maskHeight": 0.6,
+        "maskTaperAngle": 0.0,
+        "substrateMaterial": "Si",
+        "maskMaterial": "Mask"
+      },
+      "cycles": {
+        "numCycles": 10,
+        "deposition": {
+          "model": "singleParticle",
+          "rateMagnitude": 0.075,
+          "stickingProbability": 0.01,
+          "durationSeconds": 1.0,
+          "depositMaterial": "SiO2",
+          "sourceNote": "config.txt depositionThickness=0.075、depositionStickingProbability=0.01；emulate 脚本默认 runProcess 时间 1 s。"
+        },
+        "etch": {
+          "model": "multiParticle",
+          "durationSeconds": 1.5,
+          "neutralStickingProbability": 0.1,
+          "ionSourceExponent": 200,
+          "neutralRate": -0.2,
+          "ionRate": -0.1,
+          "sourceNote": "config.txt 的 etchTime=1.5、neutralRate=-0.2、ionRate=-0.1、ionSourceExponent=200。"
+        },
+        "rayTracingVariant": {
+          "deposition": {
+            "sticking": 0.1,
+            "ionFlux": 3.125e15,
+            "neutralFlux": 2.0e18,
+            "alpha": 10.0,
+            "beta": 0.5,
+            "durationSeconds": 5.0
+          },
+          "etch": {
+            "stickingPoly": 0.1,
+            "stickingMask": 0.2,
+            "stickingSubstrate": 0.2,
+            "ionFlux": 4.375e15,
+            "neutralFlux": 1.0e19,
+            "alphaPoly": -125.0,
+            "alphaSubstrate": -270.0,
+            "alphaMask": -13.5,
+            "betaPoly": -0.03,
+            "betaSubstrate": -0.9,
+            "betaMask": -0.045,
+            "durationSeconds": 11.0,
+            "ionSourceExponent": 1000
+          }
+        }
+      },
+      "notes": [
+        "Bosch 需要 10 个“沉积→刻蚀”循环；当前 StepV7 没有循环节点，建议用 flow definition/模块循环或在预设里展开 20 个步骤。",
+        "config.txt 的简单模型用 SingleParticle + MultiParticle；ray tracing 变体用 MultiParticleProcess 自定义 rate function，当前 multiParticle schema 不能表达任意 rate function。",
+        "若要单步近似，可用 specialized sf6c4f8，但它不是逐循环 Bosch。"
+      ]
+    },
+    {
+      "id": "wet-etching-cantilever",
+      "label": "Wet Etching (Cantilever)",
+      "source": [
+        "examples/cantileverWetEtching/cantileverWetEtching.py",
+        "examples/cantileverWetEtching/cantilever_mask.gds"
+      ],
+      "dimension": "3D only",
+      "domain": { "gridDelta": 5.0, "xExtent": null, "yExtent": null, "boundaryPadding": 50.0, "sourceNote": "xExtent/yExtent 由 GDS bounds + 50 µm padding 决定。" },
+      "geometry": {
+        "kind": "gds",
+        "asset": "cantilever_mask.gds",
+        "maskLayer": { "layer": 1, "baseHeight": 0.0, "height": "4 * gridDelta = 20.0" },
+        "substrate": "Si plane at 0.0",
+        "maskMaterial": "Mask"
+      },
+      "steps": [
+        {
+          "name": "KOH wet etch",
+          "operation": "etch",
+          "model": "specialized",
+          "nativeModel": "wetEtch",
+          "durationSeconds": 7200.0,
+          "nativeParameters": {
+            "materialRates": { "Si": -1.0 },
+            "useCrystallineRates": true,
+            "direction100": [0.707106781187, 0.707106781187, 0.0],
+            "direction010": [-0.707106781187, 0.707106781187, 0.0],
+            "rate100": 0.0132833333333,
+            "rate110": 0.02425,
+            "rate111": 0.0000833333333,
+            "rate311": 0.0239333333333
+          },
+          "sourceParameters": {
+            "r100": "0.797 / 60 = 0.0132833 um/s",
+            "r110": "1.455 / 60 = 0.02425 um/s",
+            "r111": "0.005 / 60 = 0.0000833 um/s",
+            "r311": "1.436 / 60 = 0.0239333 um/s",
+            "totalTime": "2 h = 7200 s",
+            "gridDelta": 5.0
+          }
+        }
+      ],
+      "notes": [
+        "需要把 cantilever_mask.gds 作为 GDS 资产注册；当前 samples 没有资产绑定机制。",
+        "StepV7 duration 上限 600 s；7200 s 需要拆成 12 段（每段 600 s）或在 flow definition 中循环。",
+        "源码明确 3D only；3D GDS 图层需要 baseHeight/height。"
+      ]
+    },
+    {
+      "id": "selective-epitaxy",
+      "label": "Selective Epitaxy",
+      "source": [
+        "examples/selectiveEpitaxy/config.txt",
+        "examples/selectiveEpitaxy/selectiveEpitaxy.py"
+      ],
+      "dimension": "2D (source supports 2D/3D)",
+      "domain": { "gridDelta": 0.4, "xExtent": 30.0, "yExtent": 20.0, "boundary": "reflective" },
+      "geometry": {
+        "kind": "fin",
+        "width": 7.0,
+        "height": 10.0,
+        "taperAngle": 0.0,
+        "maskHeight": 0.0,
+        "maskTaperAngle": 0.0,
+        "substrateMaterial": "Si",
+        "maskMaterial": "Mask",
+        "construction": "native",
+        "sourceNote": "源码 MakeFin(finWidth=7, finHeight=10) 后再 MakePlane(height=oxideHeight=3, material=SiO2, addToExisting=True)。"
+      },
+      "steps": [
+        {
+          "name": "Selective SiGe epitaxy",
+          "operation": "deposit",
+          "model": "specialized",
+          "nativeModel": "selectiveEpitaxy",
+          "durationSeconds": 5.0,
+          "depositMaterial": "SiGe",
+          "nativeParameters": {
+            "materialRates": { "Si": 2.0, "SiGe": 2.0 },
+            "rate111": 0.4,
+            "rate100": 1.0
+          },
+          "sourceParameters": {
+            "processTime": 5.0,
+            "epitaxyRate": 2.0,
+            "R111": 0.4,
+            "R100": 1.0,
+            "oxideHeight": 3.0,
+            "etchTime": 4.0
+          }
+        }
+      ],
+      "notes": [
+        "源码几何是 Fin + 3 µm SiO2 平面；当前 FinGeometryV7 不能叠加 oxide 平面，需用 stack/自定义几何或先 etch oxide 再外延。",
+        "config 中 etchTime=4.0 是前处理（去掉 oxide）的时间；预设只保留了外延步骤。"
+      ]
+    },
+    {
+      "id": "oxide-regrowth",
+      "label": "Redeposition During Selective Etching",
+      "source": [
+        "examples/oxideRegrowth/config.txt",
+        "examples/oxideRegrowth/oxideRegrowth.py"
+      ],
+      "dimension": "3D",
+      "domain": { "gridDelta": 0.002, "xExtent": 0.4, "yExtent": 0.1, "boundary": "reflective", "sourceUnits": "nm -> um" },
+      "geometry": {
+        "kind": "stack",
+        "substrateMaterial": "Si",
+        "baseHeight": 0.0,
+        "substrateHeight": 0.05,
+        "numLayers": 7,
+        "layerHeight": 0.03,
+        "layers": "7 alternating layers (MakeStack: Si3N4/SiO2); top layer duplicated as Polymer in source",
+        "pattern": { "kind": "trench", "width": 0.15, "taperAngle": 0.0 }
+      },
+      "steps": [
+        {
+          "name": "SiN/SiO2 selective etch + redeposition",
+          "operation": "native",
+          "model": "specialized",
+          "nativeModel": "oxideRegrowth",
+          "durationSeconds": 923.076923,
+          "nativeParameters": {
+            "nitrideEtchRate": 0.0001083333333,
+            "oxideEtchRate": 0.0,
+            "redepositionRate": 0.01,
+            "redepositionThreshold": 0.2,
+            "redepositionTimeInt": 60.0,
+            "diffusionCoefficient": 50.0,
+            "sinkStrength": 0.1,
+            "scallopVelocity": 0.005,
+            "centerVelocity": 0.0075,
+            "topHeight": 0.6,
+            "centerWidth": 1.2,
+            "stabilityFactor": 0.15
+          },
+          "sourceParameters": {
+            "gridDelta": "2 nm",
+            "xExtent": "400 nm",
+            "yExtent": "100 nm",
+            "numLayers": 7,
+            "layerHeight": "30 nm",
+            "substrateHeight": "50 nm",
+            "trenchWidth": "150 nm",
+            "nitrideEtchRate": "6.5 nm/min = 0.00010833 um/s",
+            "oxideEtchRate": "0",
+            "targetEtchDepth": "100 nm",
+            "diffusionCoefficient": "50 nm/s^2",
+            "sink": 0.1,
+            "scallopVelocity": "5 nm/s",
+            "centerVelocity": "7.5 nm/s",
+            "redepositionRate": 0.01,
+            "redepositionTimeInt": 60.0,
+            "redepositionThreshold": 0.2,
+            "processDuration": "targetEtchDepth / nitrideEtchRate * 60 = 923.08 s"
+          }
+        }
+      ],
+      "notes": [
+        "MakeStack 的层序与材料交替需在 stack 预设中精确复现；源码还会 duplicateTopLevelSet(Polymer) 并 generateCellSet(GAS)。",
+        "topHeight/centerWidth/stabilityFactor 源码未显式给出，预设用 specialized catalog 默认值 0.6/1.2/0.15。",
+        "duration 923 s 超过 StepV7 600 s 上限，需要拆分或扩展上限。",
+        "oxideRegrowth 需要 DenseCellSet；worker 会 generateCellSet，但预设应标注 requiresCellSet=true。"
+      ]
+    },
+    {
+      "id": "fin-oxidation",
+      "label": "Fin Oxidation",
+      "source": [
+        "examples/finOxidation/config.txt",
+        "examples/finOxidation/finOxidation.py"
+      ],
+      "dimension": "2D (config dimensions=2; source supports 3D)",
+      "domain": { "gridDelta": 0.01, "xExtent": 0.6, "zExtent": 0.03, "boundary": "reflective" },
+      "geometry": {
+        "kind": "fin",
+        "width": 0.2,
+        "height": 0.5,
+        "taperAngle": 0.0,
+        "maskHeight": 0.0,
+        "maskTaperAngle": 0.0,
+        "substrateMaterial": "Si",
+        "maskMaterial": "Mask",
+        "construction": "native"
+      },
+      "steps": [
+        {
+          "name": "Wet thermal oxidation",
+          "operation": "native",
+          "model": "specialized",
+          "nativeModel": "oxidation",
+          "nativeParameters": {
+            "oxidant": "Wet",
+            "orientation": "Si100",
+            "temperatureC": 1000.0,
+            "pressureAtm": 1.0,
+            "timeHours": 0.2,
+            "timeStepHours": 0.02,
+            "transferCoefficientUmHr": 0.1,
+            "initialOxideThicknessUm": 0.0,
+            "reactionActivationVolumeM3": 0.0,
+            "diffusionActivationVolumeM3": 0.0,
+            "maskMaterial": "",
+            "siliconMaterial": "Si",
+            "oxideMaterial": "SiO2"
+          },
+          "sourceParameters": {
+            "gridDelta": 0.01,
+            "xExtent": 0.6,
+            "finWidth": 0.2,
+            "finHeight": 0.5,
+            "oxideThickness": 0.0,
+            "oxidationTime": 0.2,
+            "temperature": 1000.0,
+            "pressure": 1.0,
+            "oxidant": "wet",
+            "orientation": 100,
+            "dimensions": 2
+          }
+        }
+      ],
+      "notes": [
+        "源码 oxideThickness=0 时自动生成 gridDelta 的 seed oxide；预设 initialOxideThicknessUm=0。",
+        "timeStepHours 源码未显式设置；预设用 0.02 h 占位，对接时按模型默认/CFL 调整。"
+      ]
+    },
+    {
+      "id": "locos-oxidation",
+      "label": "LOCOS Oxidation",
+      "source": [
+        "examples/locosOxidation/config.txt",
+        "examples/locosOxidation/locosOxidation.py"
+      ],
+      "dimension": "2D",
+      "domain": { "gridDelta": 0.005, "xExtent": 1.0, "sourceNote": "源码 domain xExtent=2*cfg.xExtent=2.0，xExtent 是半宽。" },
+      "geometry": {
+        "kind": "stack",
+        "substrateMaterial": "Si",
+        "baseHeight": 0.0,
+        "layers": [
+          { "id": "pad", "name": "Pad SiO2", "material": "SiO2", "thickness": 0.03, "role": "film" },
+          { "id": "nitride", "name": "Si3N4 mask", "material": "Si3N4", "thickness": 0.05, "role": "mask" }
+        ],
+        "pattern": { "kind": "none" },
+        "sourceNote": "源码 mask 只覆盖 x < maskEdge=0 的左半，需要半掩膜几何；当前 stack 预设只能全掩膜。"
+      },
+      "steps": [
+        {
+          "name": "LOCOS wet oxidation",
+          "operation": "native",
+          "model": "specialized",
+          "nativeModel": "oxidation",
+          "nativeParameters": {
+            "oxidant": "Wet",
+            "orientation": "Si100",
+            "temperatureC": 1000.0,
+            "pressureAtm": 1.0,
+            "timeHours": 0.1,
+            "timeStepHours": 0.01,
+            "transferCoefficientUmHr": 0.1,
+            "initialOxideThicknessUm": 0.0,
+            "reactionActivationVolumeM3": 0.0,
+            "diffusionActivationVolumeM3": 0.0,
+            "maskMaterial": "Si3N4",
+            "siliconMaterial": "Si",
+            "oxideMaterial": "SiO2"
+          },
+          "sourceParameters": {
+            "gridDelta": 0.005,
+            "xExtent": 1.0,
+            "padOxideThickness": 0.03,
+            "maskThickness": 0.05,
+            "maskEdge": 0.0,
+            "oxidationTime": 0.1,
+            "timeStep": 0.01,
+            "temperature": 1000.0,
+            "pressure": 1.0,
+            "oxidant": "wet",
+            "orientation": 100,
+            "maskContactMode": "twoway",
+            "maskYoungModulus": 270e9,
+            "maskPoissonRatio": 0.27,
+            "maskReferenceViscosity": 5e11
+          }
+        }
+      ],
+      "notes": [
+        "LOCOS 的关键是半掩膜（maskEdge=0）和 mask mechanics；当前 ProjectV7 的 stack 没有半掩膜/力学参数，需要几何/模型扩展。",
+        "源码 yMin=-1/yMax=2 是 2D 纵向范围；ProjectV7 2D domain 只有 xExtent。"
+      ]
+    },
+    {
+      "id": "gds-mask-import",
+      "label": "GDS Mask Import",
+      "source": [
+        "examples/GDSReader/GDSReader2D.py",
+        "examples/GDSReader/GDSReader.py",
+        "examples/GDSReader/myTest.gds",
+        "examples/GDSReader/mask.gds"
+      ],
+      "dimension": "2D and 3D",
+      "domain": { "gridDelta": 0.01, "boundary": "reflective", "sourceNote": "bounds 来自 GDS + padding；3D 为 reflective/reflective/infinite。" },
+      "geometry": {
+        "kind": "gds",
+        "asset": "myTest.gds",
+        "blur": {
+          "forwardSigma": 5.0,
+          "backSigma": 50.0,
+          "weights": [0.8, 0.2],
+          "threshold": 0.5,
+          "exposureDelta": 0.005
+        },
+        "layers2D": [
+          { "layer": 0, "material": "Mask", "baseHeight": 0.0, "height": "blur-derived" }
+        ],
+        "layers3D": [
+          { "layer": 0, "material": "Mask", "baseHeight": 0.0, "height": 0.1 },
+          { "layer": 1, "material": "SiO2", "baseHeight": -0.1, "height": 0.3 },
+          { "layer": 2, "material": "Si3N4", "baseHeight": 0.0, "height": 0.15 },
+          { "layer": 3, "material": "Cu", "baseHeight": 0.0, "height": 0.25 },
+          { "layer": 4, "material": "W", "baseHeight": 0.0, "height": 0.4 },
+          { "layer": 5, "material": "PolySi", "baseHeight": 0.0, "height": 0.2 }
+        ]
+      },
+      "steps": [],
+      "notes": [
+        "这是几何导入示例，不是工艺步骤；对接时应作为 01 Geometry Source 的 GDS 预设，而不是 02 步骤。",
+        "需要把 myTest.gds 作为资产注册；2D 走 GDSGeometry，3D 走 ps.d3.GDSGeometry + 每层 baseHeight/height。",
+        "3D GDS 需要 API 放开 /clips/{id}/compile 的 2D 限制，或在 from-project 中直接提交 3D GDS geometry。"
+      ]
+    }
+  ]
+}

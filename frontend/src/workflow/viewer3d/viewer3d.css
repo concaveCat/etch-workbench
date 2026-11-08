@@ -1,0 +1,315 @@
+/* Standalone styles for the 3D/2D process-structure viewer.
+   Scoped under .wb-viewer3d so it never leaks into the workflow shell. */
+
+.wb-viewer3d {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--wf-line, #213a53);
+  border-radius: 10px;
+  background: #0b1622;
+  color: var(--wf-text, #e6f0f8);
+  font-size: 12px;
+  overflow: hidden;
+}
+
+.wb-viewer3d__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--wf-line, #213a53);
+  background: linear-gradient(180deg, #12253a, #0e1d2e);
+}
+
+.wb-viewer3d__button {
+  padding: 4px 10px;
+  border: 1px solid var(--wf-line, #213a53);
+  border-radius: 6px;
+  background: #16324a;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.wb-viewer3d__button:hover:not(:disabled) {
+  border-color: var(--wf-teal, #35d6c2);
+  color: var(--wf-teal, #35d6c2);
+}
+
+.wb-viewer3d__button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.wb-viewer3d__button--ghost {
+  background: transparent;
+}
+
+.wb-viewer3d__field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--wf-muted, #8da6bd);
+}
+
+.wb-viewer3d__field select,
+.wb-viewer3d__clip select {
+  padding: 3px 6px;
+  border: 1px solid var(--wf-line, #213a53);
+  border-radius: 6px;
+  background: #0d1b2b;
+  color: var(--wf-text, #e6f0f8);
+  font: inherit;
+}
+
+.wb-viewer3d__field select:disabled {
+  opacity: 0.5;
+}
+
+.wb-viewer3d__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--wf-muted, #8da6bd);
+  cursor: pointer;
+}
+
+.wb-viewer3d__toggle--end {
+  margin-left: auto;
+}
+
+/* Software-rendering warning and the opt-in renderer line (debug/性能). */
+.wb-viewer3d__renderer-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 10px;
+  border-bottom: 1px solid #6b4a12;
+  background: #2a2007;
+  color: #f4d799;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.wb-viewer3d__renderer-warn code {
+  color: #ffe3a8;
+  font: 11px "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.wb-viewer3d__renderer-warn .wb-viewer3d__button {
+  margin-left: auto;
+  flex: none;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+.wb-viewer3d__renderer {
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--wf-line, #213a53);
+  background: #0d1b2b;
+  color: var(--wf-muted, #8da6bd);
+  font: 10px/1.5 "IBM Plex Mono", ui-monospace, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wb-viewer3d__toggle input {
+  accent-color: var(--wf-teal, #35d6c2);
+}
+
+.wb-viewer3d__clip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border: 1px dashed var(--wf-line, #213a53);
+  border-radius: 6px;
+}
+
+.wb-viewer3d__clip input[type="range"] {
+  width: 120px;
+  accent-color: var(--wf-teal, #35d6c2);
+}
+
+.wb-viewer3d__clip-value {
+  min-width: 104px;
+  font: 11px/1 "IBM Plex Mono", ui-monospace, monospace;
+  color: var(--wf-amber, #f0b35e);
+  text-align: right;
+}
+
+.wb-viewer3d__clip-range {
+  font: 10px/1 "IBM Plex Mono", ui-monospace, monospace;
+  color: var(--wf-muted, #8da6bd);
+  white-space: nowrap;
+}
+
+.wb-viewer3d__hint {
+  color: var(--wf-muted, #8da6bd);
+  font-size: 11px;
+}
+
+.wb-viewer3d__stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: #f7f9fb;
+}
+
+/* Live scale bar: world length per CSS pixel comes from the camera. */
+.wb-viewer3d__scalebar {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px 6px 5px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #26313a;
+  font: 11px/1.2 "IBM Plex Mono", ui-monospace, monospace;
+  pointer-events: none;
+}
+
+.wb-viewer3d__scalebar-bar {
+  display: block;
+  height: 7px;
+  border: 2px solid #26313a;
+  border-top: none;
+  box-sizing: border-box;
+}
+
+.wb-viewer3d__canvas {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* vtk appends its own canvas; force it to fill the stage. */
+.wb-viewer3d__canvas > canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  outline: none;
+}
+
+.wb-viewer3d__canvas2d {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+}
+
+.wb-viewer3d__canvas2d:active {
+  cursor: grabbing;
+}
+
+.wb-viewer3d__overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: min(440px, 82%);
+  padding: 14px 18px;
+  border-radius: 10px;
+  border: 1px solid #c9d4de;
+  background: rgba(255, 255, 255, 0.96);
+  color: #1d2a36;
+  box-shadow: 0 10px 28px rgba(12, 26, 40, 0.18);
+}
+
+.wb-viewer3d__overlay p {
+  margin: 0;
+  color: #4b5b6b;
+  line-height: 1.5;
+}
+
+.wb-viewer3d__overlay--error {
+  border-color: #e2a0a0;
+  background: rgba(255, 246, 246, 0.97);
+}
+
+.wb-viewer3d__overlay--warn {
+  border-color: #e6cfa0;
+  background: rgba(255, 251, 240, 0.97);
+}
+
+.wb-viewer3d__overlay .wb-viewer3d__button {
+  margin-top: 4px;
+  background: #e8eef4;
+  color: #1d2a36;
+  border-color: #b9c6d2;
+}
+
+.wb-viewer3d__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 7px 10px;
+  border-top: 1px solid var(--wf-line, #213a53);
+  background: #0e1d2e;
+}
+
+.wb-viewer3d__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.wb-viewer3d__legend-item input {
+  accent-color: var(--wf-teal, #35d6c2);
+}
+
+.wb-viewer3d__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.wb-viewer3d__legend-name {
+  color: var(--wf-text, #e6f0f8);
+}
+
+.wb-viewer3d__legend-count {
+  color: var(--wf-muted, #8da6bd);
+  font: 11px/1 "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.wb-viewer3d__status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 6px 10px;
+  border-top: 1px solid var(--wf-line, #213a53);
+  background: #081320;
+  color: #b9cfe2;
+  font: 11px/1.4 "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.wb-viewer3d__status-warn {
+  color: var(--wf-amber, #f0b35e);
+}
+
+.wb-viewer3d__status-marker {
+  color: #ff9b8f;
+}
+
+.wb-viewer3d__status-extent {
+  color: #cfe0ef;
+}
+
+.wb-viewer3d__status-muted {
+  color: var(--wf-muted, #8da6bd);
+}

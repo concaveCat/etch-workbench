@@ -1,0 +1,67 @@
+/* Harness-only chrome; the viewer brings its own stylesheet. */
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #07111d;
+  color: #e6f0f8;
+  font-family: "IBM Plex Sans", "Noto Sans SC", system-ui, sans-serif;
+}
+
+.harness {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  padding: 10px 12px 12px;
+}
+
+.harness__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  font-size: 12px;
+}
+
+.harness__meta {
+  color: #8da6bd;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.harness__steps {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.harness__steps button {
+  padding: 4px 10px;
+  border: 1px solid #213a53;
+  border-radius: 6px;
+  background: #0e1d2e;
+  color: #cfe2f3;
+  font: inherit;
+  cursor: pointer;
+}
+
+.harness__steps button.is-active {
+  border-color: #35d6c2;
+  color: #35d6c2;
+}
+
+.harness__stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.harness__stage > * {
+  flex: 1 1 auto;
+  min-width: 0;
+}

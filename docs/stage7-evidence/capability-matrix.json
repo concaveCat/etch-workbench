@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "viennapsVersion": "4.6.2",
+  "viennalsVersion": "5.8.5",
+  "model": "multiParticle",
+  "rows": [
+    {"dimension": 2, "model": "multiParticle", "operation": "etch", "boundaryXY": "reflective", "engine": "CPU_DISK", "status": "verified", "evidence": "direct-reference/direct-2d.json"},
+    {"dimension": 2, "model": "multiParticle", "operation": "deposit", "boundaryXY": "reflective", "engine": "CPU_DISK", "status": "verified", "evidence": "direct-reference/direct-2d.json"},
+    {"dimension": 3, "model": "multiParticle", "operation": "etch", "boundaryXY": "reflective", "engine": "CPU_DISK", "status": "verified", "evidence": "direct-reference/direct-3d.json"},
+    {"dimension": 3, "model": "multiParticle", "operation": "deposit", "boundaryXY": "reflective", "engine": "CPU_DISK", "status": "verified", "evidence": "direct-reference/direct-3d.json"}
+  ]
+}

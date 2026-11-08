@@ -1,0 +1,26 @@
+# Retained application stack for Python 3.12 on the legacy ViennaPS 4.6.2
+# system-site-packages environment.
+#
+# ViennaPS 4.7.0 / ViennaLS 5.10.0 is the default runtime (see
+# requirements-v470.lock). This file is kept so the 4.6.2 runtime can still be
+# started for replay, for runs produced before the default switch, and for the
+# capabilities the 4.7.0 binding does not provide: the patched multi-ion GPU
+# build and the 2D Faraday cage etch.
+#
+# ViennaPS and ViennaLS are intentionally not application dependencies and must
+# not be installed or upgraded from this file.
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.15.1
+click==8.5.0
+fastapi==0.162.0
+h11==0.16.0
+idna==3.7
+numpy==2.5.4
+opentelemetry-api==1.45.1
+pydantic==2.14.1
+pydantic-core==2.50.1
+starlette==1.10.0
+typing-extensions==4.16.0
+typing-inspection==0.4.4
+uvicorn==0.54.0

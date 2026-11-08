@@ -1,0 +1,2 @@
+# Local style gate tooling only (scripts/check-style.sh); not a runtime dependency.
+ruff==0.17.3

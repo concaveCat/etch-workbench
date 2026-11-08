@@ -1,0 +1,301 @@
+{
+  "schemaVersion": 2,
+  "dimension": 3,
+  "versions": {
+    "viennaps": "4.6.2",
+    "viennals": "5.8.5"
+  },
+  "axisMap": {
+    "x": 0,
+    "y": 1,
+    "z": 2
+  },
+  "rows": [
+    {
+      "dimension": 3,
+      "model": "isotropic",
+      "operation": "deposit",
+      "boundaryXY": "reflective",
+      "engine": "not-applicable",
+      "status": "verified",
+      "versions": {
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5"
+      },
+      "evidence": "var/evidence/g1/results.json",
+      "case": "reflective-isotropic-deposit"
+    },
+    {
+      "dimension": 3,
+      "model": "isotropic",
+      "operation": "etch",
+      "boundaryXY": "reflective",
+      "engine": "not-applicable",
+      "status": "verified",
+      "versions": {
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5"
+      },
+      "evidence": "var/evidence/g1/results.json",
+      "case": "reflective-isotropic-etch"
+    },
+    {
+      "dimension": 3,
+      "model": "singleParticle",
+      "operation": "deposit",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "versions": {
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5"
+      },
+      "evidence": "var/evidence/g1/results.json",
+      "case": "reflective-singleParticle-deposit"
+    },
+    {
+      "dimension": 3,
+      "model": "singleParticle",
+      "operation": "etch",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "versions": {
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5"
+      },
+      "evidence": "var/evidence/g1/results.json",
+      "case": "reflective-singleParticle-etch"
+    },
+    {
+      "dimension": 3,
+      "model": "isotropic",
+      "operation": "deposit",
+      "boundaryXY": "periodic",
+      "engine": "not-applicable",
+      "status": "verified",
+      "versions": {
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5"
+      },
+      "evidence": "var/evidence/g1/results.json",
+      "case": "periodic-isotropic-deposit"
+    },
+    {
+      "dimension": 3,
+      "model": "isotropic",
+      "operation": "etch",
+      "boundaryXY": "periodic",
+      "engine": "not-applicable",
+      "status": "verified",
+      "versions": {
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5"
+      },
+      "evidence": "var/evidence/g1/results.json",
+      "case": "periodic-isotropic-etch"
+    },
+    {
+      "dimension": 3,
+      "model": "singleParticle",
+      "operation": "deposit",
+      "boundaryXY": "periodic",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "versions": {
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5"
+      },
+      "evidence": "var/evidence/g1/results.json",
+      "case": "periodic-singleParticle-deposit"
+    },
+    {
+      "dimension": 3,
+      "model": "singleParticle",
+      "operation": "etch",
+      "boundaryXY": "periodic",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "versions": {
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5"
+      },
+      "evidence": "var/evidence/g1/results.json",
+      "case": "periodic-singleParticle-etch"
+    },
+    {
+      "status": "verified",
+      "dimension": 3,
+      "model": "singleParticle",
+      "operation": "etch",
+      "boundaryXY": "reflective",
+      "engine": "GPU_DISK",
+      "versions": {
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5"
+      },
+      "cpuThreads": 1,
+      "seed": 314159,
+      "raysPerPoint": 64,
+      "gridDelta": 0.2,
+      "repeatMaxCorrespondingPointDistance": 0.0,
+      "gpuRepeatToleranceUm": 0.0002,
+      "pointCount": 1697,
+      "triangleCount": 3224,
+      "surfaceBounds": [
+        -3.0,
+        3.0,
+        -2.0,
+        2.0,
+        -2.009483965671252,
+        0.39990000000500003
+      ],
+      "materials": [
+        0.0,
+        10.0
+      ],
+      "device": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "host": {
+        "hostname": "DESKTOP-Q11GFSL",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+        "device": "NVIDIA GeForce RTX 3060 Laptop GPU"
+      },
+      "elapsedSeconds": 0.2950809899994056,
+      "evidence": "var/evidence/gpu-host/GPU_DISK-reflective-etch-20261027-032823/result.json"
+    },
+    {
+      "status": "verified",
+      "dimension": 3,
+      "model": "singleParticle",
+      "operation": "deposit",
+      "boundaryXY": "reflective",
+      "engine": "GPU_DISK",
+      "versions": {
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5"
+      },
+      "cpuThreads": 1,
+      "seed": 314159,
+      "raysPerPoint": 64,
+      "gridDelta": 0.2,
+      "repeatMaxCorrespondingPointDistance": 0.0,
+      "gpuRepeatToleranceUm": 0.0002,
+      "pointCount": 1984,
+      "triangleCount": 3824,
+      "surfaceBounds": [
+        -3.0,
+        3.0,
+        -2.0,
+        2.0,
+        -2.0000000000002003,
+        0.39990000000500003
+      ],
+      "materials": [
+        0.0,
+        10.0,
+        30.0
+      ],
+      "device": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "host": {
+        "hostname": "DESKTOP-Q11GFSL",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+        "device": "NVIDIA GeForce RTX 3060 Laptop GPU"
+      },
+      "elapsedSeconds": 0.2142978240008233,
+      "evidence": "var/evidence/gpu-host/GPU_DISK-reflective-deposit-20261027-032825/result.json"
+    },
+    {
+      "status": "verified",
+      "dimension": 3,
+      "model": "singleParticle",
+      "operation": "etch",
+      "boundaryXY": "periodic",
+      "engine": "GPU_DISK",
+      "versions": {
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5"
+      },
+      "cpuThreads": 1,
+      "seed": 314159,
+      "raysPerPoint": 64,
+      "gridDelta": 0.2,
+      "repeatMaxCorrespondingPointDistance": 0.0,
+      "gpuRepeatToleranceUm": 0.0002,
+      "pointCount": 1697,
+      "triangleCount": 3224,
+      "surfaceBounds": [
+        -3.0,
+        3.0,
+        -2.0,
+        2.0,
+        -2.0094138749849058,
+        0.39990000000500003
+      ],
+      "materials": [
+        0.0,
+        10.0
+      ],
+      "device": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "host": {
+        "hostname": "DESKTOP-Q11GFSL",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+        "device": "NVIDIA GeForce RTX 3060 Laptop GPU"
+      },
+      "elapsedSeconds": 0.21744692100037355,
+      "evidence": "var/evidence/gpu-host/GPU_DISK-periodic-etch-20261027-032826/result.json"
+    },
+    {
+      "status": "verified",
+      "dimension": 3,
+      "model": "singleParticle",
+      "operation": "deposit",
+      "boundaryXY": "periodic",
+      "engine": "GPU_DISK",
+      "versions": {
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5"
+      },
+      "cpuThreads": 1,
+      "seed": 314159,
+      "raysPerPoint": 64,
+      "gridDelta": 0.2,
+      "repeatMaxCorrespondingPointDistance": 0.0,
+      "gpuRepeatToleranceUm": 0.0002,
+      "pointCount": 1984,
+      "triangleCount": 3824,
+      "surfaceBounds": [
+        -3.0,
+        3.0,
+        -2.0,
+        2.0,
+        -2.0000000000002003,
+        0.39990000000500003
+      ],
+      "materials": [
+        0.0,
+        10.0,
+        30.0
+      ],
+      "device": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "host": {
+        "hostname": "DESKTOP-Q11GFSL",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+        "device": "NVIDIA GeForce RTX 3060 Laptop GPU"
+      },
+      "elapsedSeconds": 0.203992864000611,
+      "evidence": "var/evidence/gpu-host/GPU_DISK-periodic-deposit-20261027-032827/result.json"
+    }
+  ],
+  "gpu": {
+    "exposed": true,
+    "status": "verified-host",
+    "evidence": "var/evidence/gpu-host/summary.json"
+  },
+  "host": {
+    "hostname": "DESKTOP-Q11GFSL",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "device": "local CPU",
+    "nativeProbeIsolation": "bounded_child.py; process group, timeout, RSS, log caps, identity and cleanup"
+  },
+  "checkedAt": "2026-10-27"
+}

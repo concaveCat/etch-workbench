@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "name": "各向同性etch验收",
+  "dimension": 2,
+  "units": {
+    "length": "um",
+    "time": "s",
+    "rate": "um/s",
+    "angle": "deg"
+  },
+  "domain": {
+    "gridDelta": 0.1,
+    "xExtent": 4.0,
+    "xBoundary": "reflective"
+  },
+  "geometry": {
+    "kind": "plane",
+    "height": 0.0,
+    "substrateMaterial": "Si"
+  },
+  "steps": [
+    {
+      "id": "step_etch_001",
+      "name": "etch",
+      "enabled": true,
+      "operation": "etch",
+      "model": "isotropic",
+      "rateMagnitude": 0.5,
+      "duration": 0.4
+    }
+  ],
+  "solver": {
+    "timeStepRatio": 0.25,
+    "raysPerPoint": 64,
+    "cpuThreads": 1,
+    "random": {
+      "mode": "fixed",
+      "seed": 314159
+    },
+    "enginePreference": "auto",
+    "timeoutSeconds": 30
+  },
+  "view": {
+    "panX": 0.0,
+    "panH": 0.0,
+    "zoom": 1.0,
+    "showGrid": true
+  }
+}

@@ -1,0 +1,200 @@
+{
+  "schemaVersion": 7,
+  "name": "22 nm FinFET bare-wafer demo (flow_front)",
+  "dimension": 3,
+  "units": {
+    "length": "um",
+    "time": "s",
+    "rate": "um/s",
+    "angle": "deg"
+  },
+  "domain": {
+    "gridDelta": 0.005,
+    "xExtent": 0.5,
+    "yExtent": 0.5,
+    "boundaryXY": "reflective"
+  },
+  "geometry": {
+    "kind": "gds",
+    "assetId": "1d2f5201d8de64163431255b4d409d02cf6dd1ec66e651571e9db440880290d5",
+    "fileName": "finfet22_05.gds",
+    "structure": "FINFET22",
+    "unitScale": 1.0,
+    "position": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "layers": [
+      {
+        "layer": 7,
+        "material": "Si",
+        "baseHeight": -0.045,
+        "height": 0.08,
+        "mask": false
+      }
+    ]
+  },
+  "solver": {
+    "timeStepRatio": 0.25,
+    "raysPerPoint": 32,
+    "cpuThreads": 4,
+    "random": {
+      "mode": "fixed",
+      "seed": 20261031
+    },
+    "enginePreference": "cpu",
+    "timeoutSeconds": 600,
+    "advection": {
+      "spatialScheme": "ENGQUIST_OSHER_1ST_ORDER",
+      "temporalScheme": "FORWARD_EULER",
+      "adaptiveTimeStepping": false,
+      "adaptiveTimeStepSubdivisions": 20,
+      "calculateIntermediateVelocities": false,
+      "checkDissipation": true,
+      "dissipationAlpha": 1.0,
+      "ignoreVoids": false,
+      "velocityOutput": false
+    },
+    "rayTracing": {
+      "diskRadius": 0.0,
+      "ignoreFluxBoundaries": false,
+      "maxBoundaryHits": 80,
+      "maxReflections": 3,
+      "minNodeDistanceFactor": 0.05,
+      "normalizationType": "SOURCE",
+      "smoothingNeighbors": 1
+    }
+  },
+  "view3D": {
+    "projection": "parallel",
+    "displayMode": "surface",
+    "visibleMaterialIds": [
+      10,
+      11,
+      13,
+      16,
+      30,
+      32,
+      70,
+      79
+    ],
+    "opacityByMaterial": {
+      "10": 1.0,
+      "11": 1.0,
+      "13": 1.0,
+      "16": 1.0,
+      "30": 1.0,
+      "32": 1.0,
+      "70": 1.0,
+      "79": 1.0
+    },
+    "clip": {
+      "enabled": false,
+      "axis": "x",
+      "position": 0.0,
+      "keep": "positive"
+    },
+    "section": {
+      "enabled": false,
+      "axis": "y",
+      "position": 0.0
+    }
+  },
+  "outputSettings": {
+    "levelSets": false,
+    "levelSetMeshes": false,
+    "surfaceMeshVtk": false,
+    "volumeMesh": false,
+    "nativeMetadata": false
+  },
+  "steps": [
+    {
+      "id": "bw_pad_ox",
+      "name": "Pad oxide hard mask 30 nm (native SiO2 deposition)",
+      "enabled": true,
+      "operation": "deposit",
+      "model": "isotropic",
+      "rateMode": "uniform",
+      "rateMagnitude": 0.03,
+      "depositMaterial": "SiO2",
+      "duration": 1.0
+    },
+    {
+      "id": "bw_fin_mask",
+      "name": "Fin hard-mask pattern (GDS layer 1, geometry-only)",
+      "enabled": true,
+      "model": "gdsBoolean",
+      "booleanOperation": "difference",
+      "applyToAll": false,
+      "gdsMask": {
+        "layer": 1,
+        "datatype": 0,
+        "unitScale": 1.0,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "baseHeight": 0.0,
+        "height": 0.2,
+        "retainedRegion": "outside"
+      }
+    },
+    {
+      "id": "bw_trench_etch",
+      "name": "STI trench directional Si etch 60 nm (native)",
+      "enabled": true,
+      "operation": "etch",
+      "model": "directional",
+      "duration": 1.2,
+      "rateSets": [
+        {
+          "direction": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "directionalVelocity": 0.05,
+          "isotropicVelocity": 0.0005,
+          "maskMaterials": [
+            "SiO2"
+          ],
+          "calculateVisibility": true
+        }
+      ]
+    },
+    {
+      "id": "bw_sti_fill",
+      "name": "STI trench fill 300 nm (native SiO2 deposition)",
+      "enabled": true,
+      "operation": "deposit",
+      "model": "isotropic",
+      "rateMode": "uniform",
+      "rateMagnitude": 0.1,
+      "depositMaterial": "SiO2",
+      "duration": 1.0
+    },
+    {
+      "id": "bw_sti_cmp",
+      "name": "STI CMP to pad-oxide top 0.065 (geometry-only)",
+      "enabled": true,
+      "model": "planarize",
+      "cutoffHeight": 0.065
+    },
+    {
+      "id": "bw_sti_recess",
+      "name": "STI recess 65 nm / pad-oxide strip (native selective SiO2 etch)",
+      "enabled": true,
+      "operation": "etch",
+      "model": "isotropic",
+      "rateMode": "material",
+      "rateMagnitude": 0.05,
+      "materialRates": {
+        "Si": 0.0,
+        "SiO2": 0.05
+      },
+      "duration": 1.3
+    }
+  ]
+}

@@ -1,0 +1,912 @@
+{
+  "schemaVersion": 1,
+  "generatedFrom": "docs/stage8-evidence/product-worker/summary.json",
+  "viennaps": "4.6.2",
+  "viennals": "5.8.5",
+  "rows": [
+    {
+      "dimension": 2,
+      "nativeModel": "sf6o2",
+      "operation": "etch",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/sf6o2-2d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/sf6o2-2d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/sf6o2-2d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/sf6o2-2d.final.direct.guard.json",
+        "productWorkerSha256": "28ea31d872ac6966f5716b2de32e2e5c674c421f85c3a35ed68487c0d23bb464",
+        "directReferenceSha256": "4b556bdcc216089053044cc5f3409d7b317047b971c9d7f97339f10221c5079f",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 2,
+      "nativeModel": "cf4o2",
+      "operation": "etch",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/cf4o2-2d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/cf4o2-2d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/cf4o2-2d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/cf4o2-2d.final.direct.guard.json",
+        "productWorkerSha256": "0c906533ff505ec6850d075fdd1d55761216907ffe31ac76b50c3cc528064fce",
+        "directReferenceSha256": "586f4879d13b784b3d41ba44562f096bd30bee60159b9de314c8f4872ff008a2",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 2,
+      "nativeModel": "hbro2",
+      "operation": "etch",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/hbro2-2d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/hbro2-2d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/hbro2-2d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/hbro2-2d.final.direct.guard.json",
+        "productWorkerSha256": "0289d2e92643e9cda4d150089b7dbf1edc61eb8ccc99cfb7bdaa9c4cb774dbdd",
+        "directReferenceSha256": "b9cf8bc760281625594721cfb31444d1cd3cf687ba0e41b47a658cf912a6464a",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 2,
+      "nativeModel": "sf6c4f8",
+      "operation": "etch",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/sf6c4f8-2d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/sf6c4f8-2d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/sf6c4f8-2d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/sf6c4f8-2d.final.direct.guard.json",
+        "productWorkerSha256": "0710e07ba900b5e99d28597de01a603b4b8b8f1a3369950eca9879d5d557c530",
+        "directReferenceSha256": "3ec08f040f3f45b43140aaacae65b6f2495e082703a81e9988fbe4f35a534730",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 2,
+      "nativeModel": "fluorocarbon",
+      "operation": "etch",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/fluorocarbon-2d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/fluorocarbon-2d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/fluorocarbon-2d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/fluorocarbon-2d.final.direct.guard.json",
+        "productWorkerSha256": "e9b2652b0cb6bb4cd3a0705e91fa177e9a294771c3ece8db94b200abb54296f9",
+        "directReferenceSha256": "020db251f316b6e709229a6ea5e5d4292f24e6ba50347badd0342e7310b4376f",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 2,
+      "nativeModel": "ionBeam",
+      "operation": "etch",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/ionBeam-2d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/ionBeam-2d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/ionBeam-2d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/ionBeam-2d.final.direct.guard.json",
+        "productWorkerSha256": "86e9bcbabbe379f11a58d447bafa7dd73b86a8502b0d104eedcef18018d3d72f",
+        "directReferenceSha256": "80b17dd35314886d4be91722cad63b009f0ed8042cd9c84bab6c3a2200f4ce93",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 2,
+      "nativeModel": "wetEtch",
+      "operation": "etch",
+      "boundaryXY": "reflective",
+      "engine": "not-applicable",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/wetEtch-2d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/wetEtch-2d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/wetEtch-2d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/wetEtch-2d.final.direct.guard.json",
+        "productWorkerSha256": "469164bfe8b0480f85a90a508921472148fe6acaa69b7a182aaa54e6222577bb",
+        "directReferenceSha256": "cd441e208a5ba1ebce316662e92ac24bb574ab7107f3f5aaa5de79d6c2a57bd0",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 2,
+      "nativeModel": "teosDeposition",
+      "operation": "deposit",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/teosDeposition-2d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/teosDeposition-2d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/teosDeposition-2d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/teosDeposition-2d.final.direct.guard.json",
+        "productWorkerSha256": "2569d8eb8862aeaf99708ab691716d92ca2d029bb4368905239d5653ebbc70be",
+        "directReferenceSha256": "dedc3aecc14ae526a1adaac6985f4ea330adb9264b374c3cd97a1bc3e06504ea",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 2,
+      "nativeModel": "teospecvd",
+      "operation": "deposit",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/teospecvd-2d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/teospecvd-2d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/teospecvd-2d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/teospecvd-2d.final.direct.guard.json",
+        "productWorkerSha256": "a5fe64f146b877369d20c84883f2d3a2306d9f17b756bc216808cff2e5aeb025",
+        "directReferenceSha256": "5e2084bda8041aedb795b079955fc3a68fa8d1af92e77e0a9e82d790be84d3fa",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 2,
+      "nativeModel": "ald",
+      "operation": "deposit",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/ald-2d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/ald-2d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/ald-2d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/ald-2d.final.direct.guard.json",
+        "productWorkerSha256": "c29c7fc575de2f3f528841d7a41305dfe8741db4cd26f7fa1dec3fb5e3fe710c",
+        "directReferenceSha256": "cc193db4a8bae54f648c22e0039ffda077a2e71782ad8922989d6b75e7712dca",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 2,
+      "nativeModel": "oxidation",
+      "operation": "native",
+      "boundaryXY": "reflective",
+      "engine": "not-applicable",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/oxidation-2d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/oxidation-2d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/oxidation-2d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/oxidation-2d.final.direct.guard.json",
+        "productWorkerSha256": "1de8d0d3ccdefb92b74fdceb2a65f69822ec37922826ee0998bbc9a90390edb5",
+        "directReferenceSha256": "004c18ee07a9819ed509f0ebdde8c9798167c069a562f999fb81564f50e52adf",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 2,
+      "nativeModel": "oxideRegrowth",
+      "operation": "native",
+      "boundaryXY": "reflective",
+      "engine": "not-applicable",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/oxideRegrowth-2d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/oxideRegrowth-2d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/oxideRegrowth-2d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/oxideRegrowth-2d.final.direct.guard.json",
+        "productWorkerSha256": "5c9883473f3d692087cbbc6a1ce449ae431bec7d9f2ef5a2ca43bda221eba23e",
+        "directReferenceSha256": "8e810abd2991d069ffb905f66b8f89936972dad2cc6519d55c5db69eaf1d3e38",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "nativeCellSet": {
+            "numberOfCells": true,
+            "fields": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 2,
+      "nativeModel": "selectiveEpitaxy",
+      "operation": "deposit",
+      "boundaryXY": "reflective",
+      "engine": "not-applicable",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/selectiveEpitaxy-2d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/selectiveEpitaxy-2d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/selectiveEpitaxy-2d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/selectiveEpitaxy-2d.final.direct.guard.json",
+        "productWorkerSha256": "1571478e662927da014f2a46d118b09d0b021d9d73e58f63580fbbece6d8635c",
+        "directReferenceSha256": "9f5bb3e539d4b9cab346c95431bd9dff73d5b81c19810036abd9ec3a74f402d2",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 2,
+      "nativeModel": "neutralTransport",
+      "operation": "native",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/neutralTransport-2d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/neutralTransport-2d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/neutralTransport-2d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/neutralTransport-2d.final.direct.guard.json",
+        "productWorkerSha256": "4ca48ddb09e61d2f8f2fb2f648e3330a54518cd8e29f87b9ca464f0fc5e7739f",
+        "directReferenceSha256": "eec40c65df5fdd92d83124ff9a36f48d12984ca2424f022c20cc4eab86a77c85",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 3,
+      "nativeModel": "sf6o2",
+      "operation": "etch",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/sf6o2-3d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/sf6o2-3d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/sf6o2-3d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/sf6o2-3d.final.direct.guard.json",
+        "productWorkerSha256": "5941d478a229893fd48964e9e508325537cb70c84cdf054092369ff3a7e1387c",
+        "directReferenceSha256": "41abf3e1b9739fa0029fb6ed16afb96188df2eb7b81e8772e00cb129344495f3",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 3,
+      "nativeModel": "cf4o2",
+      "operation": "etch",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/cf4o2-3d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/cf4o2-3d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/cf4o2-3d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/cf4o2-3d.final.direct.guard.json",
+        "productWorkerSha256": "b80133fd0e70591e5186ab7c39a7937250f75e2df0cfa9f15ab17b13840ad740",
+        "directReferenceSha256": "ec52039433ee98d3f04418d278d40ef23d95ce10b5978ee332291bb1a5a8fb50",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 3,
+      "nativeModel": "hbro2",
+      "operation": "etch",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/hbro2-3d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/hbro2-3d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/hbro2-3d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/hbro2-3d.final.direct.guard.json",
+        "productWorkerSha256": "3a3a10f04856bdb10f2f0493506ef567113a2111335af3f6afe71d95ab6944aa",
+        "directReferenceSha256": "0219728904fa15f60db8c6fe594408eae45fbc1f988d46775e8b5dc1ba8ae694",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 3,
+      "nativeModel": "sf6c4f8",
+      "operation": "etch",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/sf6c4f8-3d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/sf6c4f8-3d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/sf6c4f8-3d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/sf6c4f8-3d.final.direct.guard.json",
+        "productWorkerSha256": "6d64fa4662a34558df317710039d0f246eb3c3c1040c45cb11edf15f17c20d61",
+        "directReferenceSha256": "4df85f8f0c009b0da7710d043e017f2d4de621deb176f4bab1dd3efb61057530",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 3,
+      "nativeModel": "fluorocarbon",
+      "operation": "etch",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/fluorocarbon-3d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/fluorocarbon-3d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/fluorocarbon-3d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/fluorocarbon-3d.final.direct.guard.json",
+        "productWorkerSha256": "adc5bc54684771064847631851b5c46956188b792bad1ab703ea970355bc317f",
+        "directReferenceSha256": "f71e99102586816d6af556584a5a5c51dc5d6cbb8af2778ba76062d433709edc",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 3,
+      "nativeModel": "ionBeam",
+      "operation": "etch",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/ionBeam-3d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/ionBeam-3d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/ionBeam-3d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/ionBeam-3d.final.direct.guard.json",
+        "productWorkerSha256": "ed55309bb766b31226bafa531e0d193b4ccb4216d286119555e14ecdec8e477b",
+        "directReferenceSha256": "188653350aefbba81abbb79d119b51990ff77066e23a43d8eb3fd6ba6b4b4662",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 3,
+      "nativeModel": "wetEtch",
+      "operation": "etch",
+      "boundaryXY": "reflective",
+      "engine": "not-applicable",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/wetEtch-3d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/wetEtch-3d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/wetEtch-3d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/wetEtch-3d.final.direct.guard.json",
+        "productWorkerSha256": "3929b4353d59b7037316ab00127a783fe90ead3547f1070b93f31044a468bc72",
+        "directReferenceSha256": "f31dad133637456415ed8fedfd227b5b82534cddfa933510f7b99aa81eeaaa33",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 3,
+      "nativeModel": "teosDeposition",
+      "operation": "deposit",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/teosDeposition-3d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/teosDeposition-3d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/teosDeposition-3d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/teosDeposition-3d.final.direct.guard.json",
+        "productWorkerSha256": "b32dbf5e88aeba8753ebc65930a4dff82cd87e1d7b34b39f0d9ff7df557695be",
+        "directReferenceSha256": "4f210c55296bec22c655cc0479ca81e343b014936c229a23c2bd22cea6444832",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 3,
+      "nativeModel": "teospecvd",
+      "operation": "deposit",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/teospecvd-3d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/teospecvd-3d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/teospecvd-3d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/teospecvd-3d.final.direct.guard.json",
+        "productWorkerSha256": "869c922036ba24995357ab6deb0cf5898446a99aefe1fa2b4644fcb98c385806",
+        "directReferenceSha256": "72124a3e8764853cc38d5704f1ce48b3e0378de3322038e5e4529e30f3202d19",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 3,
+      "nativeModel": "ald",
+      "operation": "deposit",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/ald-3d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/ald-3d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/ald-3d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/ald-3d.final.direct.guard.json",
+        "productWorkerSha256": "f808afd1095d392c6d19e59a49fed7e60b885ed175a96dc512a7e231b5136a87",
+        "directReferenceSha256": "bbcf528981b522e1920f646062e38162d47917419b0362e77c70c3b3f97e7e60",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 3,
+      "nativeModel": "oxidation",
+      "operation": "native",
+      "boundaryXY": "reflective",
+      "engine": "not-applicable",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/oxidation-3d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/oxidation-3d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/oxidation-3d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/oxidation-3d.final.direct.guard.json",
+        "productWorkerSha256": "8e10bc88601fac0ef385c3acf94c5520aa9087e12e976ee5fc39467a8ae6c5dd",
+        "directReferenceSha256": "60a70636bf0f588e267811b7c33befe37fe821d206ec1468d341b372edad8a5d",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 3,
+      "nativeModel": "oxideRegrowth",
+      "operation": "native",
+      "boundaryXY": "reflective",
+      "engine": "not-applicable",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/oxideRegrowth-3d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/oxideRegrowth-3d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/oxideRegrowth-3d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/oxideRegrowth-3d.final.direct.guard.json",
+        "productWorkerSha256": "e440e1d9eb3a97f494ac577feb2aaa9bc508bf970b389e4722fb6b09a3e88a7f",
+        "directReferenceSha256": "c255e3007b25ab2e384b1a2b4a8ae512c26e389e925d8ed42266c8427639f9ee",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "nativeCellSet": {
+            "numberOfCells": true,
+            "fields": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 3,
+      "nativeModel": "selectiveEpitaxy",
+      "operation": "deposit",
+      "boundaryXY": "reflective",
+      "engine": "not-applicable",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/selectiveEpitaxy-3d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/selectiveEpitaxy-3d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/selectiveEpitaxy-3d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/selectiveEpitaxy-3d.final.direct.guard.json",
+        "productWorkerSha256": "cac8e5373db2bfb14fe0fd1cd2d346664b9f21919f1e341db2c4d4fee1b8add4",
+        "directReferenceSha256": "212c7b455aff19c67213d331c5ffad7166bf20bfbada8f2f99cc1653c4823c05",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    },
+    {
+      "dimension": 3,
+      "nativeModel": "neutralTransport",
+      "operation": "native",
+      "boundaryXY": "reflective",
+      "engine": "CPU_DISK",
+      "status": "verified",
+      "evidence": {
+        "productWorker": "docs/stage8-evidence/product-worker/neutralTransport-3d.json",
+        "productGuard": "docs/stage8-evidence/product-worker/neutralTransport-3d.final.guard.json",
+        "directReference": "docs/stage8-evidence/product-worker/neutralTransport-3d.final.direct-reference.json",
+        "directGuard": "docs/stage8-evidence/product-worker/neutralTransport-3d.final.direct.guard.json",
+        "productWorkerSha256": "c1afe21007ca66df6355fc031a3d27da234ac7d4fc1178272b3e002f2c458d27",
+        "directReferenceSha256": "41521e7c0dccbd6621d90c7444195ba9d4911365a62574db120af6ce7b5e35da",
+        "viennaps": "4.6.2",
+        "viennals": "5.8.5",
+        "comparisons": {
+          "initial": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          },
+          "final": {
+            "points": true,
+            "cells": true,
+            "materialIds": true,
+            "materialIdsByLevelSetIndex": true
+          }
+        }
+      }
+    }
+  ]
+}

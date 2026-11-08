@@ -1,0 +1,5 @@
+api = 1
+id = "wetEtch"
+version = "1.0.0"
+entrypoint = "plugins.wetEtch:register"
+description = "Native crystalline wet etch"

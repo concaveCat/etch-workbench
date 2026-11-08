@@ -1,0 +1,11 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["var", "runtime-patched", "frontend", "docs", "tests/fixtures/legacy"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"

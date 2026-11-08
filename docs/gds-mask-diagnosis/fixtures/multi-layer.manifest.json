@@ -1,0 +1,12 @@
+{
+  "file": "multi-layer.gds",
+  "sha256": "d739458df9fb8758df4632c75e0c341756dad275d4320449ff5ecec40ae59355",
+  "structure": "MULTI",
+  "mappedLayers": [
+    1,
+    2
+  ],
+  "supportBoundaryLayer": 99,
+  "databaseUnitNm": 1,
+  "purpose": "ordinary geometry.kind=gds multi-material regression; layer 99 is filtered to the support layer only to keep the GDS bounds larger than the mapped polygons"
+}

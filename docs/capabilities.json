@@ -1,0 +1,494 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-27",
+  "environment": {
+    "python": "3.12.14",
+    "viennaps": "4.6.2",
+    "viennals": "5.8.5",
+    "probeIsolation": "scripts/bounded_child.py; each probe ran in a new session/process group"
+  },
+  "dimensions": [
+    2,
+    3
+  ],
+  "axisMap": {
+    "x": 0,
+    "h": 1,
+    "z": 2,
+    "meaning": "ViennaPS 2D Mesh.getNodes() coordinates are [x, h, 0]."
+  },
+  "domain": {
+    "gridDeltaReadback": "Domain.getGridDelta() returns the requested tested values 0.1 and 0.05.",
+    "xExtent": "Reflective x bounds are centered at -xExtent/2 and +xExtent/2 for tested extents 4 and 5.",
+    "verticalExtent": "The three-argument constructor treats its third argument as BoundaryType; the four-argument yExtent form did not change the tested 2D trench bounds. No vertical-size control is exposed.",
+    "boundaries": {
+      "reflective": {
+        "status": "verified",
+        "enum": "REFLECTIVE_BOUNDARY",
+        "value": 0,
+        "readback": [
+          "REFLECTIVE_BOUNDARY",
+          "INFINITE_BOUNDARY"
+        ]
+      },
+      "periodic": {
+        "status": "verified",
+        "enum": "PERIODIC_BOUNDARY",
+        "value": 2,
+        "readback": [
+          "PERIODIC_BOUNDARY",
+          "INFINITE_BOUNDARY"
+        ]
+      }
+    }
+  },
+  "geometry": {
+    "plane": {
+      "status": "verified",
+      "constructor": "MakePlane(domain, height=0, material=Si, addToExisting=false)"
+    },
+    "trench": {
+      "status": "verified-with-postcheck",
+      "constructor": "MakeTrench(domain, trenchWidth, trenchDepth, trenchTaperAngle, maskHeight, maskTaperAngle, halfTrench=false, material=Si, maskMaterial=Mask)",
+      "positiveTaper": "Narrows the bottom in tested examples.",
+      "negativeTaper": "Widens the bottom in tested examples.",
+      "mask": "Positive maskHeight creates a Mask level set with material ID 0."
+    },
+    "degenerateOutputGuard": "A 0.1 grid, 4.0 extent, 1.2 width, 1.0 depth, zero-angle trench returned no positive-x Si sidewall cells. Production validation must reject an incomplete initial contour instead of displaying it as a successful structure."
+  },
+  "materials": {
+    "builtInIds": {
+      "Mask": 0,
+      "Si": 10,
+      "SiO2": 30
+    },
+    "surfaceCellArray": "MaterialIds",
+    "source": "ViennaPS surface mesh cell data and current Domain material map",
+    "sameMaterialDeposition": "Two SiO2 depositions preserve simulation level-set material IDs [10, 30, 30]. The repeated 30 is not a stable layer identity; snapshot JSON and VTK omit the internal boundary between adjacent equal-material level sets. Visible material IDs remain available to assign distinct colors to different materials."
+  },
+  "models": {
+    "isotropic": {
+      "status": "verified",
+      "dimension": 2,
+      "operation": [
+        "etch",
+        "deposit"
+      ],
+      "fluxEngine": "not applicable; no ray flux is used",
+      "timeStepRatio": {
+        "tested": [
+          0.05,
+          0.25,
+          0.5
+        ],
+        "default": 0.25
+      }
+    },
+    "singleParticle": {
+      "status": "verified",
+      "dimension": 2,
+      "operation": [
+        "etch",
+        "deposit"
+      ],
+      "fluxEngine": {
+        "CPU_DISK": "verified",
+        "GPU_DISK": {
+          "status": "verified-host",
+          "operations": [
+            "etch",
+            "deposit"
+          ],
+          "dimension": 2,
+          "device": "NVIDIA GeForce RTX 3060 Laptop GPU",
+          "probe": "var/probe-tests/gpu-engine-results.json"
+        }
+      },
+      "raysPerPoint": {
+        "tested": [
+          64,
+          128
+        ],
+        "applicationRange": [
+          16,
+          4096
+        ]
+      },
+      "rngSeed": "explicit and read back through RayTracingParameters.toMetaData()",
+      "useRandomSeeds": false,
+      "stickingProbability": {
+        "testedEndpoints": [
+          0,
+          1
+        ],
+        "applicationRange": [
+          0,
+          1
+        ]
+      },
+      "sourceExponent": {
+        "tested": [
+          0,
+          1
+        ],
+        "applicationRange": [
+          0,
+          20
+        ]
+      }
+    }
+  },
+  "engines": {
+    "cpu": {
+      "status": "verified",
+      "selected": "CPU_DISK",
+      "threadsTested": [
+        1,
+        2,
+        4
+      ]
+    },
+    "autoPolicy": "Schema 7 AUTO selects GPU_DISK for ray-based process steps on the selected CUDA device and does not silently fall back to CPU; schemas 1–6 retain their legacy CPU_DISK AUTO behavior. Isotropic, directional and geometry operations do not use the CUDA flux engine.",
+    "gpu": {
+      "status": "verified-host",
+      "exposed": true,
+      "engine": "GPU_DISK",
+      "model": "singleParticle",
+      "operations": [
+        "etch",
+        "deposit"
+      ],
+      "dimension": 2,
+      "deviceCount": 1,
+      "deviceNames": [
+        "NVIDIA GeForce RTX 3060 Laptop GPU"
+      ],
+      "hostProbe": {
+        "gpuAvailable": true,
+        "checkedAt": "2026-10-27",
+        "timeoutSeconds": 60,
+        "rssTerminationMiB": 2048,
+        "guardRecord": "var/evidence/gpu-host/2d-product.guard.json",
+        "result": "var/evidence/gpu-host/2d-product-probe/gpu-engine-results.json"
+      },
+      "gpuAvailableResultInSandbox": "RuntimeError: Failed to load CUDA symbol via cuGetProcAddress: cuInit",
+      "otherFluxEngines": "GPU_TRIANGLE is exposed as an opt-in schema-7 solver.gpuEngine for the measured 2D/3D specialized sf6o2 etch on a reflective stack only; GPU_LINE remains unprobed and unexposed."
+    }
+  },
+  "mesh": {
+    "surface": {
+      "method": "Domain.getSurfaceMesh(addInterfaces=true, sharpCorners=false, minNodeDistanceFactor=0.01)",
+      "status": "verified"
+    },
+    "vtk": {
+      "method": "Domain.saveSurfaceMesh(filename, addInterfaces=true, sharpCorners=false, minNodeDistanceFactor=0.01)",
+      "format": "VTK legacy ASCII UNSTRUCTURED_GRID",
+      "status": "verified"
+    },
+    "unsafeCombinations": [
+      "getSurfaceMesh(addInterfaces=false) segfaulted in an isolated probe.",
+      "getSurfaceMesh(sharpCorners=true) segfaulted in an isolated probe.",
+      "getLevelSetMesh(width=1) returned scalar-grid points without line cells; it is not the 2D display surface."
+    ]
+  },
+  "threeDimensional": {
+    "schemaVersion": 2,
+    "dimension": 3,
+    "versions": {
+      "viennaps": "4.6.2",
+      "viennals": "5.8.5"
+    },
+    "axisMap": {
+      "x": 0,
+      "y": 1,
+      "z": 2
+    },
+    "rows": [
+      {
+        "dimension": 3,
+        "model": "isotropic",
+        "operation": "deposit",
+        "boundaryXY": "reflective",
+        "engine": "not-applicable",
+        "status": "verified",
+        "versions": {
+          "viennaps": "4.6.2",
+          "viennals": "5.8.5"
+        },
+        "evidence": "var/evidence/g1/results.json",
+        "case": "reflective-isotropic-deposit"
+      },
+      {
+        "dimension": 3,
+        "model": "isotropic",
+        "operation": "etch",
+        "boundaryXY": "reflective",
+        "engine": "not-applicable",
+        "status": "verified",
+        "versions": {
+          "viennaps": "4.6.2",
+          "viennals": "5.8.5"
+        },
+        "evidence": "var/evidence/g1/results.json",
+        "case": "reflective-isotropic-etch"
+      },
+      {
+        "dimension": 3,
+        "model": "singleParticle",
+        "operation": "deposit",
+        "boundaryXY": "reflective",
+        "engine": "CPU_DISK",
+        "status": "verified",
+        "versions": {
+          "viennaps": "4.6.2",
+          "viennals": "5.8.5"
+        },
+        "evidence": "var/evidence/g1/results.json",
+        "case": "reflective-singleParticle-deposit"
+      },
+      {
+        "dimension": 3,
+        "model": "singleParticle",
+        "operation": "etch",
+        "boundaryXY": "reflective",
+        "engine": "CPU_DISK",
+        "status": "verified",
+        "versions": {
+          "viennaps": "4.6.2",
+          "viennals": "5.8.5"
+        },
+        "evidence": "var/evidence/g1/results.json",
+        "case": "reflective-singleParticle-etch"
+      },
+      {
+        "dimension": 3,
+        "model": "isotropic",
+        "operation": "deposit",
+        "boundaryXY": "periodic",
+        "engine": "not-applicable",
+        "status": "verified",
+        "versions": {
+          "viennaps": "4.6.2",
+          "viennals": "5.8.5"
+        },
+        "evidence": "var/evidence/g1/results.json",
+        "case": "periodic-isotropic-deposit"
+      },
+      {
+        "dimension": 3,
+        "model": "isotropic",
+        "operation": "etch",
+        "boundaryXY": "periodic",
+        "engine": "not-applicable",
+        "status": "verified",
+        "versions": {
+          "viennaps": "4.6.2",
+          "viennals": "5.8.5"
+        },
+        "evidence": "var/evidence/g1/results.json",
+        "case": "periodic-isotropic-etch"
+      },
+      {
+        "dimension": 3,
+        "model": "singleParticle",
+        "operation": "deposit",
+        "boundaryXY": "periodic",
+        "engine": "CPU_DISK",
+        "status": "verified",
+        "versions": {
+          "viennaps": "4.6.2",
+          "viennals": "5.8.5"
+        },
+        "evidence": "var/evidence/g1/results.json",
+        "case": "periodic-singleParticle-deposit"
+      },
+      {
+        "dimension": 3,
+        "model": "singleParticle",
+        "operation": "etch",
+        "boundaryXY": "periodic",
+        "engine": "CPU_DISK",
+        "status": "verified",
+        "versions": {
+          "viennaps": "4.6.2",
+          "viennals": "5.8.5"
+        },
+        "evidence": "var/evidence/g1/results.json",
+        "case": "periodic-singleParticle-etch"
+      },
+      {
+        "status": "verified",
+        "dimension": 3,
+        "model": "singleParticle",
+        "operation": "etch",
+        "boundaryXY": "reflective",
+        "engine": "GPU_DISK",
+        "versions": {
+          "viennaps": "4.6.2",
+          "viennals": "5.8.5"
+        },
+        "cpuThreads": 1,
+        "seed": 314159,
+        "raysPerPoint": 64,
+        "gridDelta": 0.2,
+        "repeatMaxCorrespondingPointDistance": 0.0,
+        "gpuRepeatToleranceUm": 0.0002,
+        "pointCount": 1697,
+        "triangleCount": 3224,
+        "surfaceBounds": [
+          -3.0,
+          3.0,
+          -2.0,
+          2.0,
+          -2.009483965671252,
+          0.39990000000500003
+        ],
+        "materials": [
+          0.0,
+          10.0
+        ],
+        "device": "NVIDIA GeForce RTX 3060 Laptop GPU",
+        "host": {
+          "hostname": "DESKTOP-Q11GFSL",
+          "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+          "device": "NVIDIA GeForce RTX 3060 Laptop GPU"
+        },
+        "elapsedSeconds": 0.2950809899994056,
+        "evidence": "var/evidence/gpu-host/GPU_DISK-reflective-etch-20261027-032823/result.json"
+      },
+      {
+        "status": "verified",
+        "dimension": 3,
+        "model": "singleParticle",
+        "operation": "deposit",
+        "boundaryXY": "reflective",
+        "engine": "GPU_DISK",
+        "versions": {
+          "viennaps": "4.6.2",
+          "viennals": "5.8.5"
+        },
+        "cpuThreads": 1,
+        "seed": 314159,
+        "raysPerPoint": 64,
+        "gridDelta": 0.2,
+        "repeatMaxCorrespondingPointDistance": 0.0,
+        "gpuRepeatToleranceUm": 0.0002,
+        "pointCount": 1984,
+        "triangleCount": 3824,
+        "surfaceBounds": [
+          -3.0,
+          3.0,
+          -2.0,
+          2.0,
+          -2.0000000000002003,
+          0.39990000000500003
+        ],
+        "materials": [
+          0.0,
+          10.0,
+          30.0
+        ],
+        "device": "NVIDIA GeForce RTX 3060 Laptop GPU",
+        "host": {
+          "hostname": "DESKTOP-Q11GFSL",
+          "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+          "device": "NVIDIA GeForce RTX 3060 Laptop GPU"
+        },
+        "elapsedSeconds": 0.2142978240008233,
+        "evidence": "var/evidence/gpu-host/GPU_DISK-reflective-deposit-20261027-032825/result.json"
+      },
+      {
+        "status": "verified",
+        "dimension": 3,
+        "model": "singleParticle",
+        "operation": "etch",
+        "boundaryXY": "periodic",
+        "engine": "GPU_DISK",
+        "versions": {
+          "viennaps": "4.6.2",
+          "viennals": "5.8.5"
+        },
+        "cpuThreads": 1,
+        "seed": 314159,
+        "raysPerPoint": 64,
+        "gridDelta": 0.2,
+        "repeatMaxCorrespondingPointDistance": 0.0,
+        "gpuRepeatToleranceUm": 0.0002,
+        "pointCount": 1697,
+        "triangleCount": 3224,
+        "surfaceBounds": [
+          -3.0,
+          3.0,
+          -2.0,
+          2.0,
+          -2.0094138749849058,
+          0.39990000000500003
+        ],
+        "materials": [
+          0.0,
+          10.0
+        ],
+        "device": "NVIDIA GeForce RTX 3060 Laptop GPU",
+        "host": {
+          "hostname": "DESKTOP-Q11GFSL",
+          "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+          "device": "NVIDIA GeForce RTX 3060 Laptop GPU"
+        },
+        "elapsedSeconds": 0.21744692100037355,
+        "evidence": "var/evidence/gpu-host/GPU_DISK-periodic-etch-20261027-032826/result.json"
+      },
+      {
+        "status": "verified",
+        "dimension": 3,
+        "model": "singleParticle",
+        "operation": "deposit",
+        "boundaryXY": "periodic",
+        "engine": "GPU_DISK",
+        "versions": {
+          "viennaps": "4.6.2",
+          "viennals": "5.8.5"
+        },
+        "cpuThreads": 1,
+        "seed": 314159,
+        "raysPerPoint": 64,
+        "gridDelta": 0.2,
+        "repeatMaxCorrespondingPointDistance": 0.0,
+        "gpuRepeatToleranceUm": 0.0002,
+        "pointCount": 1984,
+        "triangleCount": 3824,
+        "surfaceBounds": [
+          -3.0,
+          3.0,
+          -2.0,
+          2.0,
+          -2.0000000000002003,
+          0.39990000000500003
+        ],
+        "materials": [
+          0.0,
+          10.0,
+          30.0
+        ],
+        "device": "NVIDIA GeForce RTX 3060 Laptop GPU",
+        "host": {
+          "hostname": "DESKTOP-Q11GFSL",
+          "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+          "device": "NVIDIA GeForce RTX 3060 Laptop GPU"
+        },
+        "elapsedSeconds": 0.203992864000611,
+        "evidence": "var/evidence/gpu-host/GPU_DISK-periodic-deposit-20261027-032827/result.json"
+      }
+    ],
+    "gpu": {
+      "exposed": true,
+      "status": "verified-host",
+      "evidence": "var/evidence/gpu-host/summary.json"
+    },
+    "host": {
+      "hostname": "DESKTOP-Q11GFSL",
+      "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+      "device": "local CPU",
+      "nativeProbeIsolation": "bounded_child.py; process group, timeout, RSS, log caps, identity and cleanup"
+    }
+  }
+}

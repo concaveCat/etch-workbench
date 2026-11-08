@@ -1,0 +1,5 @@
+api = 1
+id = "sf6o2"
+version = "1.0.0"
+entrypoint = "plugins.sf6o2:register"
+description = "Native SF6/O2 plasma etch"

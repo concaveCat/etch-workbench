@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "name": "P3 2D etch fixture",
+  "dimension": 2,
+  "units": {"length": "um", "time": "s", "rate": "um/s", "angle": "deg"},
+  "domain": {"gridDelta": 0.2, "xExtent": 4.0, "xBoundary": "reflective"},
+  "geometry": {"kind": "plane", "height": 0.0, "substrateMaterial": "Si"},
+  "steps": [
+    {"id": "p3_step_01", "name": "etch", "enabled": true, "operation": "etch", "model": "isotropic", "rateMagnitude": 0.02, "duration": 0.02, "rateMode": "uniform"}
+  ],
+  "solver": {"timeStepRatio": 0.25, "raysPerPoint": 16, "cpuThreads": 1, "random": {"mode": "fixed", "seed": 7}, "enginePreference": "cpu", "timeoutSeconds": 30},
+  "view": {"panX": 0.0, "panH": 0.0, "zoom": 1.0, "showGrid": true}
+}

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 7,
+  "name": "3D plane etch fixture",
+  "dimension": 3,
+  "units": {"length": "um", "time": "s", "rate": "um/s", "angle": "deg"},
+  "domain": {"gridDelta": 0.5, "xExtent": 4.0, "yExtent": 4.0, "boundaryXY": "reflective"},
+  "geometry": {"kind": "plane", "height": 0.0, "substrateMaterial": "Si"},
+  "steps": [
+    {"id": "p3d_step_01", "name": "etch", "enabled": true, "operation": "etch", "model": "isotropic", "rateMagnitude": 0.02, "duration": 0.02, "rateMode": "uniform"}
+  ],
+  "solver": {"timeStepRatio": 0.25, "raysPerPoint": 16, "cpuThreads": 1, "random": {"mode": "fixed", "seed": 7}, "enginePreference": "cpu", "timeoutSeconds": 60},
+  "view3D": {"projection": "parallel", "camera": null, "displayMode": "surface", "visibleMaterialIds": [], "opacityByMaterial": {},
+    "clip": {"enabled": false, "axis": "x", "position": 0, "keep": "positive"}, "section": {"enabled": false, "axis": "y", "position": 0}}
+}

@@ -1,0 +1,166 @@
+{
+  "status": "passed",
+  "generatedAt": "2026-10-31T01:51:11.579Z",
+  "baseUrl": "http://127.0.0.1:8813",
+  "browser": "chromium headless (swiftshader)",
+  "environment": "software",
+  "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "webglVendor": "Google Inc. (Google)",
+  "triangles": 239432,
+  "avgFrameMs": 148.16,
+  "p50FrameMs": 172.6,
+  "webglBaselineMs": 50.25,
+  "apiMode": {
+    "triangles": 29768,
+    "prefetchedSwitchMs": 4.9
+  },
+  "p95FrameMs": 226.1,
+  "switchMs": {
+    "first": 191.7,
+    "cached": 29.6,
+    "heavy": 1164.2
+  },
+  "staticFullDetailMs": {
+    "avg": 159.42,
+    "p95": 233.9
+  },
+  "materials": [
+    {
+      "color": "#3b82f6",
+      "pixels": 28942
+    },
+    {
+      "color": "#f59e0b",
+      "pixels": 33097
+    },
+    {
+      "color": "#22c55e",
+      "pixels": 42982
+    },
+    {
+      "color": "#ef4444",
+      "pixels": 22633
+    },
+    {
+      "color": "#a855f7",
+      "pixels": 31442
+    }
+  ],
+  "checks": [
+    {
+      "name": "harness ready",
+      "triangles": 239432,
+      "parseMs": 61
+    },
+    {
+      "name": "canvas has pixels and all 5 material colours",
+      "painted": 161112,
+      "uniqueColors": 582,
+      "size": "1254x557"
+    },
+    {
+      "name": "120 rotating frames measured",
+      "avgMs": 148.16,
+      "p50Ms": 172.6,
+      "p95Ms": 226.1,
+      "maxMs": 321.4,
+      "fps": 5.4
+    },
+    {
+      "name": "full-detail static frames",
+      "avg": 159.42,
+      "p95": 233.9
+    },
+    {
+      "name": "first switch (cold parse)",
+      "ms": 191.7,
+      "parseMs": 132
+    },
+    {
+      "name": "cached switch (LRU hit)",
+      "ms": 29.6,
+      "parseMs": 0
+    },
+    {
+      "name": "canvas still painted after switching",
+      "painted": 129256
+    },
+    {
+      "name": "vertex clustering keeps the heavy step under budget",
+      "ms": 1164.2,
+      "from": 700928,
+      "to": 188298
+    },
+    {
+      "name": "X/Y/Z clipping slider removes geometry",
+      "before": 101121,
+      "after": 138119
+    },
+    {
+      "name": "wireframe/surface toggle changes the image",
+      "surfacePixels": 188887,
+      "wireframePixels": 115364
+    },
+    {
+      "name": "material visibility toggle hides only that material",
+      "before": 33097,
+      "after": 147
+    },
+    {
+      "name": "2D snapshots render on a canvas with material colours",
+      "painted": 9913,
+      "materials": 3
+    },
+    {
+      "name": "worker fetch path + idle prefetch of the next step",
+      "triangles": 29768,
+      "prefetchedSwitchMs": 4.9
+    },
+    {
+      "name": "renderer string is opt-in and software rendering is announced",
+      "environment": "software"
+    },
+    {
+      "name": "?debug=1 shows the renderer string without opening 性能"
+    },
+    {
+      "name": "raw WebGL2 baseline (no vtk)",
+      "ms": 50.25,
+      "triangles": 239432
+    },
+    {
+      "name": "no console errors"
+    }
+  ],
+  "consoleErrors": [],
+  "limitations": [
+    "平均帧时间 148.16 ms 超过 33 ms（渲染后端 ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)）。同机同分辨率的裸 WebGL2 基线（单 draw call、最简着色器、同样 239432 个三角形）为 50.25 ms/帧，查看器相对基线的开销约为 2.9x。无头 Chromium 只能用 SwiftShader 软件光栅化，这个数字不代表真机 GPU；请用 VIEWER3D_CDP_URL 连到硬件浏览器复测。"
+  ],
+  "hardware": {
+    "measuredAt": "2026-10-31",
+    "source": "Windows Edge with --force_high_performance_gpu, attached over CDP (VIEWER3D_CDP_URL)",
+    "browser": "Microsoft Edge (Windows), real GPU",
+    "environment": "hardware",
+    "webglRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Laptop GPU (0x00002560) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "triangles": 239432,
+    "avgFrameMs": 16.67,
+    "fps": 59.97,
+    "p95FrameMs": 17,
+    "staticFullDetailMs": 16.66,
+    "switchMs": {
+      "first": 55,
+      "cached": 8.4
+    },
+    "simplification": {
+      "from": 700928,
+      "to": 188298,
+      "ms": 531.7
+    },
+    "note": "Real RTX 3060 Laptop measurement; the top-level numbers in this file are the sandbox/headless SwiftShader fallback and are not representative of a user machine."
+  },
+  "simplification": {
+    "from": 700928,
+    "to": 188298,
+    "ms": 1164.2
+  }
+}

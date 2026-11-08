@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 7,
+  "name": "22 nm FinFET bare-wafer demo (flow_full)",
+  "dimension": 3,
+  "units": {
+    "length": "um",
+    "time": "s",
+    "rate": "um/s",
+    "angle": "deg"
+  },
+  "domain": {
+    "gridDelta": 0.005,
+    "xExtent": 0.5,
+    "yExtent": 0.5,
+    "boundaryXY": "reflective"
+  },
+  "geometry": {
+    "kind": "gds",
+    "assetId": "1d2f5201d8de64163431255b4d409d02cf6dd1ec66e651571e9db440880290d5",
+    "fileName": "finfet22_05.gds",
+    "structure": "FINFET22",
+    "unitScale": 1.0,
+    "position": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "layers": [
+      {
+        "layer": 7,
+        "material": "Si",
+        "baseHeight": -0.045,
+        "height": 0.08,
+        "mask": false
+      }
+    ]
+  },
+  "solver": {
+    "timeStepRatio": 0.25,
+    "raysPerPoint": 32,
+    "cpuThreads": 4,
+    "random": {
+      "mode": "fixed",
+      "seed": 20261031
+    },
+    "enginePreference": "cpu",
+    "timeoutSeconds": 600,
+    "advection": {
+      "spatialScheme": "ENGQUIST_OSHER_1ST_ORDER",
+      "temporalScheme": "FORWARD_EULER",
+      "adaptiveTimeStepping": false,
+      "adaptiveTimeStepSubdivisions": 20,
+      "calculateIntermediateVelocities": false,
+      "checkDissipation": true,
+      "dissipationAlpha": 1.0,
+      "ignoreVoids": false,
+      "velocityOutput": false
+    },
+    "rayTracing": {
+      "diskRadius": 0.0,
+      "ignoreFluxBoundaries": false,
+      "maxBoundaryHits": 80,
+      "maxReflections": 3,
+      "minNodeDistanceFactor": 0.05,
+      "normalizationType": "SOURCE",
+      "smoothingNeighbors": 1
+    }
+  },
+  "view3D": {
+    "projection": "parallel",
+    "displayMode": "surface",
+    "visibleMaterialIds": [
+      10,
+      11,
+      13,
+      16,
+      30,
+      32,
+      70,
+      79
+    ],
+    "opacityByMaterial": {
+      "10": 1.0,
+      "11": 1.0,
+      "13": 1.0,
+      "16": 1.0,
+      "30": 1.0,
+      "32": 1.0,
+      "70": 1.0,
+      "79": 1.0
+    },
+    "clip": {
+      "enabled": false,
+      "axis": "x",
+      "position": 0.0,
+      "keep": "positive"
+    },
+    "section": {
+      "enabled": false,
+      "axis": "y",
+      "position": 0.0
+    }
+  },
+  "outputSettings": {
+    "levelSets": false,
+    "levelSetMeshes": false,
+    "surfaceMeshVtk": false,
+    "volumeMesh": false,
+    "nativeMetadata": false
+  },
+  "steps": []
+}

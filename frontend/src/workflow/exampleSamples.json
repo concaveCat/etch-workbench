@@ -1,0 +1,1431 @@
+[
+  {
+    "id": "trench-deposition",
+    "label": "Trench Deposition",
+    "meta": "2D · trench · singleParticle",
+    "source": "examples/trenchDeposition",
+    "note": "参数来自 config.txt：rate=1、sticking=0.1、5 s。",
+    "sample": {
+      "schemaVersion": 7,
+      "name": "Trench Deposition",
+      "dimension": 2,
+      "units": {
+        "length": "um",
+        "time": "s",
+        "rate": "um/s",
+        "angle": "deg"
+      },
+      "domain": {
+        "gridDelta": 0.24,
+        "xExtent": 10,
+        "xBoundary": "reflective"
+      },
+      "geometry": {
+        "kind": "trench",
+        "width": 4.0,
+        "depth": 8.0,
+        "taperAngle": 0,
+        "maskHeight": 0.0,
+        "maskTaperAngle": 0,
+        "substrateMaterial": "Si",
+        "maskMaterial": "Mask"
+      },
+      "steps": [
+        {
+          "id": "sample_01",
+          "name": "Trench deposition",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "singleParticle",
+          "duration": 5.0,
+          "rateMagnitude": 1.0,
+          "rateMode": "uniform",
+          "depositMaterial": "SiO2",
+          "stickingProbability": 0.1,
+          "sourceExponent": 1.0
+        }
+      ],
+      "solver": {
+        "timeStepRatio": 0.25,
+        "raysPerPoint": 64,
+        "cpuThreads": 2,
+        "random": {
+          "mode": "fixed",
+          "seed": 7
+        },
+        "enginePreference": "cpu",
+        "timeoutSeconds": 120
+      },
+      "view": {
+        "panX": 0,
+        "panH": 0,
+        "zoom": 1,
+        "showGrid": true
+      }
+    }
+  },
+  {
+    "id": "sf6o2-hole",
+    "label": "SF6/O2 Hole Etching",
+    "meta": "3D · hole · sf6o2",
+    "source": "examples/holeEtching",
+    "note": "参数来自 config.txt；A_Si 与 quarter-hole 尚未表达。",
+    "sample": {
+      "schemaVersion": 7,
+      "name": "SF6/O2 Hole Etching",
+      "dimension": 3,
+      "units": {
+        "length": "um",
+        "time": "s",
+        "rate": "um/s",
+        "angle": "deg"
+      },
+      "domain": {
+        "gridDelta": 0.03,
+        "xExtent": 1.0,
+        "yExtent": 1.0,
+        "boundaryXY": "reflective"
+      },
+      "geometry": {
+        "kind": "hole",
+        "radius": 0.175,
+        "depth": 1.0,
+        "taperAngle": 1.193,
+        "maskHeight": 1.2,
+        "maskTaperAngle": 0,
+        "substrateMaterial": "Si",
+        "maskMaterial": "Mask"
+      },
+      "steps": [
+        {
+          "id": "sample_01",
+          "name": "SF6/O2 等离子体刻蚀",
+          "enabled": true,
+          "operation": "etch",
+          "model": "specialized",
+          "nativeModel": "sf6o2",
+          "nativeParameters": {
+            "ionFlux": 10.0,
+            "etchantFlux": 4500.0,
+            "oxygenFlux": 800.0,
+            "meanIonEnergy": 100,
+            "sigmaIonEnergy": 10,
+            "ionExponent": 1000,
+            "oxySputterYield": 2,
+            "etchStopDepth": -10
+          },
+          "duration": 60.0
+        }
+      ],
+      "solver": {
+        "timeStepRatio": 0.25,
+        "raysPerPoint": 64,
+        "cpuThreads": 2,
+        "random": {
+          "mode": "fixed",
+          "seed": 7
+        },
+        "enginePreference": "cpu",
+        "timeoutSeconds": 120
+      },
+      "view3D": {
+        "projection": "parallel",
+        "camera": null,
+        "displayMode": "surface",
+        "visibleMaterialIds": [],
+        "opacityByMaterial": {},
+        "clip": {
+          "enabled": false,
+          "axis": "x",
+          "position": 0,
+          "keep": "positive"
+        },
+        "section": {
+          "enabled": false,
+          "axis": "y",
+          "position": 0
+        }
+      }
+    }
+  },
+  {
+    "id": "bosch",
+    "label": "Bosch Process",
+    "meta": "3D · hole · 10 cycles",
+    "source": "examples/boschProcess",
+    "note": "源码为 10 个沉积→刻蚀循环；这里展开为 20 步（singleParticle 沉积 + sf6o2 刻蚀）。源码的自定义 MultiParticle rate function 仍不能完全表达。",
+    "sample": {
+      "schemaVersion": 7,
+      "name": "Bosch Process",
+      "dimension": 3,
+      "units": {
+        "length": "um",
+        "time": "s",
+        "rate": "um/s",
+        "angle": "deg"
+      },
+      "domain": {
+        "gridDelta": 0.025,
+        "xExtent": 3.5,
+        "yExtent": 3.5,
+        "boundaryXY": "reflective"
+      },
+      "geometry": {
+        "kind": "hole",
+        "radius": 1.0,
+        "depth": 3.0,
+        "taperAngle": 0,
+        "maskHeight": 0.6,
+        "maskTaperAngle": 0,
+        "substrateMaterial": "Si",
+        "maskMaterial": "Mask"
+      },
+      "steps": [
+        {
+          "id": "bosch_dep_01",
+          "name": "Cycle 1 deposition",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "singleParticle",
+          "duration": 1.0,
+          "rateMagnitude": 0.075,
+          "rateMode": "uniform",
+          "depositMaterial": "SiO2",
+          "stickingProbability": 0.01,
+          "sourceExponent": 1.0
+        },
+        {
+          "id": "bosch_etch_01",
+          "name": "Cycle 1 etch",
+          "enabled": true,
+          "operation": "etch",
+          "model": "specialized",
+          "nativeModel": "sf6o2",
+          "duration": 1.5,
+          "nativeParameters": {
+            "ionFlux": 10.0,
+            "etchantFlux": 4500.0,
+            "oxygenFlux": 800.0,
+            "meanIonEnergy": 100.0,
+            "sigmaIonEnergy": 10.0,
+            "ionExponent": 1000.0,
+            "oxySputterYield": 2.0,
+            "etchStopDepth": -10.0
+          }
+        },
+        {
+          "id": "bosch_dep_02",
+          "name": "Cycle 2 deposition",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "singleParticle",
+          "duration": 1.0,
+          "rateMagnitude": 0.075,
+          "rateMode": "uniform",
+          "depositMaterial": "SiO2",
+          "stickingProbability": 0.01,
+          "sourceExponent": 1.0
+        },
+        {
+          "id": "bosch_etch_02",
+          "name": "Cycle 2 etch",
+          "enabled": true,
+          "operation": "etch",
+          "model": "specialized",
+          "nativeModel": "sf6o2",
+          "duration": 1.5,
+          "nativeParameters": {
+            "ionFlux": 10.0,
+            "etchantFlux": 4500.0,
+            "oxygenFlux": 800.0,
+            "meanIonEnergy": 100.0,
+            "sigmaIonEnergy": 10.0,
+            "ionExponent": 1000.0,
+            "oxySputterYield": 2.0,
+            "etchStopDepth": -10.0
+          }
+        },
+        {
+          "id": "bosch_dep_03",
+          "name": "Cycle 3 deposition",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "singleParticle",
+          "duration": 1.0,
+          "rateMagnitude": 0.075,
+          "rateMode": "uniform",
+          "depositMaterial": "SiO2",
+          "stickingProbability": 0.01,
+          "sourceExponent": 1.0
+        },
+        {
+          "id": "bosch_etch_03",
+          "name": "Cycle 3 etch",
+          "enabled": true,
+          "operation": "etch",
+          "model": "specialized",
+          "nativeModel": "sf6o2",
+          "duration": 1.5,
+          "nativeParameters": {
+            "ionFlux": 10.0,
+            "etchantFlux": 4500.0,
+            "oxygenFlux": 800.0,
+            "meanIonEnergy": 100.0,
+            "sigmaIonEnergy": 10.0,
+            "ionExponent": 1000.0,
+            "oxySputterYield": 2.0,
+            "etchStopDepth": -10.0
+          }
+        },
+        {
+          "id": "bosch_dep_04",
+          "name": "Cycle 4 deposition",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "singleParticle",
+          "duration": 1.0,
+          "rateMagnitude": 0.075,
+          "rateMode": "uniform",
+          "depositMaterial": "SiO2",
+          "stickingProbability": 0.01,
+          "sourceExponent": 1.0
+        },
+        {
+          "id": "bosch_etch_04",
+          "name": "Cycle 4 etch",
+          "enabled": true,
+          "operation": "etch",
+          "model": "specialized",
+          "nativeModel": "sf6o2",
+          "duration": 1.5,
+          "nativeParameters": {
+            "ionFlux": 10.0,
+            "etchantFlux": 4500.0,
+            "oxygenFlux": 800.0,
+            "meanIonEnergy": 100.0,
+            "sigmaIonEnergy": 10.0,
+            "ionExponent": 1000.0,
+            "oxySputterYield": 2.0,
+            "etchStopDepth": -10.0
+          }
+        },
+        {
+          "id": "bosch_dep_05",
+          "name": "Cycle 5 deposition",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "singleParticle",
+          "duration": 1.0,
+          "rateMagnitude": 0.075,
+          "rateMode": "uniform",
+          "depositMaterial": "SiO2",
+          "stickingProbability": 0.01,
+          "sourceExponent": 1.0
+        },
+        {
+          "id": "bosch_etch_05",
+          "name": "Cycle 5 etch",
+          "enabled": true,
+          "operation": "etch",
+          "model": "specialized",
+          "nativeModel": "sf6o2",
+          "duration": 1.5,
+          "nativeParameters": {
+            "ionFlux": 10.0,
+            "etchantFlux": 4500.0,
+            "oxygenFlux": 800.0,
+            "meanIonEnergy": 100.0,
+            "sigmaIonEnergy": 10.0,
+            "ionExponent": 1000.0,
+            "oxySputterYield": 2.0,
+            "etchStopDepth": -10.0
+          }
+        },
+        {
+          "id": "bosch_dep_06",
+          "name": "Cycle 6 deposition",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "singleParticle",
+          "duration": 1.0,
+          "rateMagnitude": 0.075,
+          "rateMode": "uniform",
+          "depositMaterial": "SiO2",
+          "stickingProbability": 0.01,
+          "sourceExponent": 1.0
+        },
+        {
+          "id": "bosch_etch_06",
+          "name": "Cycle 6 etch",
+          "enabled": true,
+          "operation": "etch",
+          "model": "specialized",
+          "nativeModel": "sf6o2",
+          "duration": 1.5,
+          "nativeParameters": {
+            "ionFlux": 10.0,
+            "etchantFlux": 4500.0,
+            "oxygenFlux": 800.0,
+            "meanIonEnergy": 100.0,
+            "sigmaIonEnergy": 10.0,
+            "ionExponent": 1000.0,
+            "oxySputterYield": 2.0,
+            "etchStopDepth": -10.0
+          }
+        },
+        {
+          "id": "bosch_dep_07",
+          "name": "Cycle 7 deposition",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "singleParticle",
+          "duration": 1.0,
+          "rateMagnitude": 0.075,
+          "rateMode": "uniform",
+          "depositMaterial": "SiO2",
+          "stickingProbability": 0.01,
+          "sourceExponent": 1.0
+        },
+        {
+          "id": "bosch_etch_07",
+          "name": "Cycle 7 etch",
+          "enabled": true,
+          "operation": "etch",
+          "model": "specialized",
+          "nativeModel": "sf6o2",
+          "duration": 1.5,
+          "nativeParameters": {
+            "ionFlux": 10.0,
+            "etchantFlux": 4500.0,
+            "oxygenFlux": 800.0,
+            "meanIonEnergy": 100.0,
+            "sigmaIonEnergy": 10.0,
+            "ionExponent": 1000.0,
+            "oxySputterYield": 2.0,
+            "etchStopDepth": -10.0
+          }
+        },
+        {
+          "id": "bosch_dep_08",
+          "name": "Cycle 8 deposition",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "singleParticle",
+          "duration": 1.0,
+          "rateMagnitude": 0.075,
+          "rateMode": "uniform",
+          "depositMaterial": "SiO2",
+          "stickingProbability": 0.01,
+          "sourceExponent": 1.0
+        },
+        {
+          "id": "bosch_etch_08",
+          "name": "Cycle 8 etch",
+          "enabled": true,
+          "operation": "etch",
+          "model": "specialized",
+          "nativeModel": "sf6o2",
+          "duration": 1.5,
+          "nativeParameters": {
+            "ionFlux": 10.0,
+            "etchantFlux": 4500.0,
+            "oxygenFlux": 800.0,
+            "meanIonEnergy": 100.0,
+            "sigmaIonEnergy": 10.0,
+            "ionExponent": 1000.0,
+            "oxySputterYield": 2.0,
+            "etchStopDepth": -10.0
+          }
+        },
+        {
+          "id": "bosch_dep_09",
+          "name": "Cycle 9 deposition",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "singleParticle",
+          "duration": 1.0,
+          "rateMagnitude": 0.075,
+          "rateMode": "uniform",
+          "depositMaterial": "SiO2",
+          "stickingProbability": 0.01,
+          "sourceExponent": 1.0
+        },
+        {
+          "id": "bosch_etch_09",
+          "name": "Cycle 9 etch",
+          "enabled": true,
+          "operation": "etch",
+          "model": "specialized",
+          "nativeModel": "sf6o2",
+          "duration": 1.5,
+          "nativeParameters": {
+            "ionFlux": 10.0,
+            "etchantFlux": 4500.0,
+            "oxygenFlux": 800.0,
+            "meanIonEnergy": 100.0,
+            "sigmaIonEnergy": 10.0,
+            "ionExponent": 1000.0,
+            "oxySputterYield": 2.0,
+            "etchStopDepth": -10.0
+          }
+        },
+        {
+          "id": "bosch_dep_10",
+          "name": "Cycle 10 deposition",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "singleParticle",
+          "duration": 1.0,
+          "rateMagnitude": 0.075,
+          "rateMode": "uniform",
+          "depositMaterial": "SiO2",
+          "stickingProbability": 0.01,
+          "sourceExponent": 1.0
+        },
+        {
+          "id": "bosch_etch_10",
+          "name": "Cycle 10 etch",
+          "enabled": true,
+          "operation": "etch",
+          "model": "specialized",
+          "nativeModel": "sf6o2",
+          "duration": 1.5,
+          "nativeParameters": {
+            "ionFlux": 10.0,
+            "etchantFlux": 4500.0,
+            "oxygenFlux": 800.0,
+            "meanIonEnergy": 100.0,
+            "sigmaIonEnergy": 10.0,
+            "ionExponent": 1000.0,
+            "oxySputterYield": 2.0,
+            "etchStopDepth": -10.0
+          }
+        }
+      ],
+      "solver": {
+        "timeStepRatio": 0.25,
+        "raysPerPoint": 64,
+        "cpuThreads": 2,
+        "random": {
+          "mode": "fixed",
+          "seed": 7
+        },
+        "enginePreference": "cpu",
+        "timeoutSeconds": 120
+      },
+      "view3D": {
+        "projection": "parallel",
+        "camera": null,
+        "displayMode": "surface",
+        "visibleMaterialIds": [],
+        "opacityByMaterial": {},
+        "clip": {
+          "enabled": false,
+          "axis": "x",
+          "position": 0,
+          "keep": "positive"
+        },
+        "section": {
+          "enabled": false,
+          "axis": "y",
+          "position": 0
+        }
+      }
+    }
+  },
+  {
+    "id": "wet",
+    "label": "Wet Etching (Cantilever)",
+    "meta": "2D · trench · wetEtch",
+    "source": "examples/cantileverWetEtching",
+    "note": "源码为 3D GDS 悬臂梁；这里用 2D trench + 晶向速率近似。",
+    "sample": {
+      "schemaVersion": 7,
+      "name": "Wet Etching (Cantilever)",
+      "dimension": 2,
+      "units": {
+        "length": "um",
+        "time": "s",
+        "rate": "um/s",
+        "angle": "deg"
+      },
+      "domain": {
+        "gridDelta": 0.2,
+        "xExtent": 20,
+        "xBoundary": "reflective"
+      },
+      "geometry": {
+        "kind": "trench",
+        "width": 8.0,
+        "depth": 4.0,
+        "taperAngle": 0,
+        "maskHeight": 0.8,
+        "maskTaperAngle": 0,
+        "substrateMaterial": "Si",
+        "maskMaterial": "Mask"
+      },
+      "steps": [
+        {
+          "id": "sample_01",
+          "name": "晶向湿法刻蚀",
+          "enabled": true,
+          "operation": "etch",
+          "model": "specialized",
+          "nativeModel": "wetEtch",
+          "nativeParameters": {
+            "materialRates": {
+              "Si": 0.0132833,
+              "Mask": 0.0
+            },
+            "useCrystallineRates": true,
+            "direction100": [
+              1,
+              0,
+              0
+            ],
+            "direction010": [
+              0,
+              1,
+              0
+            ],
+            "rate100": 0.0132833,
+            "rate110": 0.02425,
+            "rate111": 8.33e-05,
+            "rate311": 0.023933
+          },
+          "duration": 600.0
+        }
+      ],
+      "solver": {
+        "timeStepRatio": 0.25,
+        "raysPerPoint": 64,
+        "cpuThreads": 2,
+        "random": {
+          "mode": "fixed",
+          "seed": 7
+        },
+        "enginePreference": "cpu",
+        "timeoutSeconds": 120
+      },
+      "view": {
+        "panX": 0,
+        "panH": 0,
+        "zoom": 1,
+        "showGrid": true
+      }
+    }
+  },
+  {
+    "id": "epitaxy",
+    "label": "Selective Epitaxy",
+    "meta": "2D · fin · SiGe",
+    "source": "examples/selectiveEpitaxy",
+    "note": "源码为 Fin+3 µm SiO2 平面；当前用 fin 近似。",
+    "sample": {
+      "schemaVersion": 7,
+      "name": "Selective Epitaxy",
+      "dimension": 2,
+      "units": {
+        "length": "um",
+        "time": "s",
+        "rate": "um/s",
+        "angle": "deg"
+      },
+      "domain": {
+        "gridDelta": 0.4,
+        "xExtent": 30,
+        "xBoundary": "reflective"
+      },
+      "geometry": {
+        "kind": "fin",
+        "width": 7.0,
+        "height": 10.0,
+        "taperAngle": 0,
+        "maskHeight": 0,
+        "maskTaperAngle": 0,
+        "substrateMaterial": "Si",
+        "maskMaterial": "Mask",
+        "construction": "native"
+      },
+      "steps": [
+        {
+          "id": "sample_01",
+          "name": "选择性外延 SiGe",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "specialized",
+          "nativeModel": "selectiveEpitaxy",
+          "nativeParameters": {
+            "materialRates": {
+              "Si": 2.0,
+              "SiGe": 2.0
+            },
+            "rate111": 0.4,
+            "rate100": 1.0
+          },
+          "duration": 5.0,
+          "depositMaterial": "SiGe"
+        }
+      ],
+      "solver": {
+        "timeStepRatio": 0.25,
+        "raysPerPoint": 64,
+        "cpuThreads": 2,
+        "random": {
+          "mode": "fixed",
+          "seed": 7
+        },
+        "enginePreference": "cpu",
+        "timeoutSeconds": 120
+      },
+      "view": {
+        "panX": 0,
+        "panH": 0,
+        "zoom": 1,
+        "showGrid": true
+      }
+    }
+  },
+  {
+    "id": "regrowth",
+    "label": "Redeposition During Selective Etching",
+    "meta": "3D · stack · oxideRegrowth",
+    "source": "examples/oxideRegrowth",
+    "note": "7 层 30 nm、trench 150 nm；当前用平面 stack 近似。",
+    "sample": {
+      "schemaVersion": 7,
+      "name": "Redeposition During Selective Etching",
+      "dimension": 3,
+      "units": {
+        "length": "um",
+        "time": "s",
+        "rate": "um/s",
+        "angle": "deg"
+      },
+      "domain": {
+        "gridDelta": 0.002,
+        "xExtent": 0.4,
+        "yExtent": 0.1,
+        "boundaryXY": "reflective"
+      },
+      "geometry": {
+        "kind": "stack",
+        "substrateMaterial": "Si",
+        "baseHeight": 0,
+        "layers": [
+          {
+            "id": "layer0",
+            "name": "SiO2",
+            "material": "SiO2",
+            "thickness": 0.03,
+            "role": "film"
+          },
+          {
+            "id": "layer1",
+            "name": "SiO2",
+            "material": "SiO2",
+            "thickness": 0.03,
+            "role": "film"
+          },
+          {
+            "id": "layer2",
+            "name": "SiO2",
+            "material": "SiO2",
+            "thickness": 0.03,
+            "role": "film"
+          },
+          {
+            "id": "layer3",
+            "name": "SiO2",
+            "material": "SiO2",
+            "thickness": 0.03,
+            "role": "film"
+          },
+          {
+            "id": "layer4",
+            "name": "SiO2",
+            "material": "SiO2",
+            "thickness": 0.03,
+            "role": "film"
+          },
+          {
+            "id": "layer5",
+            "name": "SiO2",
+            "material": "SiO2",
+            "thickness": 0.03,
+            "role": "film"
+          },
+          {
+            "id": "layer6",
+            "name": "Si3N4 mask",
+            "material": "Si3N4",
+            "thickness": 0.03,
+            "role": "mask"
+          }
+        ],
+        "pattern": {
+          "kind": "none"
+        }
+      },
+      "steps": [
+        {
+          "id": "sample_01",
+          "name": "氧化层再生/再沉积",
+          "enabled": true,
+          "operation": "native",
+          "model": "specialized",
+          "nativeModel": "oxideRegrowth",
+          "nativeParameters": {
+            "nitrideEtchRate": 0.0065,
+            "oxideEtchRate": 0.0,
+            "redepositionRate": 0.01,
+            "redepositionThreshold": 0.2,
+            "redepositionTimeInt": 60.0,
+            "diffusionCoefficient": 50.0,
+            "sinkStrength": 0.1,
+            "scallopVelocity": 5.0,
+            "centerVelocity": 7.5,
+            "topHeight": 0.6,
+            "centerWidth": 1.2,
+            "stabilityFactor": 0.15
+          },
+          "duration": 1.0
+        }
+      ],
+      "solver": {
+        "timeStepRatio": 0.25,
+        "raysPerPoint": 64,
+        "cpuThreads": 2,
+        "random": {
+          "mode": "fixed",
+          "seed": 7
+        },
+        "enginePreference": "cpu",
+        "timeoutSeconds": 120
+      },
+      "view3D": {
+        "projection": "parallel",
+        "camera": null,
+        "displayMode": "surface",
+        "visibleMaterialIds": [],
+        "opacityByMaterial": {},
+        "clip": {
+          "enabled": false,
+          "axis": "x",
+          "position": 0,
+          "keep": "positive"
+        },
+        "section": {
+          "enabled": false,
+          "axis": "y",
+          "position": 0
+        }
+      }
+    }
+  },
+  {
+    "id": "fin-oxidation",
+    "label": "Fin Oxidation",
+    "meta": "2D · stack · oxidation",
+    "source": "examples/finOxidation",
+    "note": "源码为 Fin+oxide；当前用平面 SiO2 seed 近似。",
+    "sample": {
+      "schemaVersion": 7,
+      "name": "Fin Oxidation",
+      "dimension": 2,
+      "units": {
+        "length": "um",
+        "time": "s",
+        "rate": "um/s",
+        "angle": "deg"
+      },
+      "domain": {
+        "gridDelta": 0.01,
+        "xExtent": 1.0,
+        "xBoundary": "reflective"
+      },
+      "geometry": {
+        "kind": "stack",
+        "substrateMaterial": "Si",
+        "baseHeight": 0,
+        "layers": [
+          {
+            "id": "seed",
+            "name": "SiO2 seed",
+            "material": "SiO2",
+            "thickness": 0.02,
+            "role": "film"
+          }
+        ],
+        "pattern": {
+          "kind": "none"
+        }
+      },
+      "steps": [
+        {
+          "id": "sample_01",
+          "name": "Fin 热氧化",
+          "enabled": true,
+          "operation": "native",
+          "model": "specialized",
+          "nativeModel": "oxidation",
+          "nativeParameters": {
+            "oxidant": "Wet",
+            "orientation": "Si100",
+            "temperatureC": 1000,
+            "pressureAtm": 1,
+            "timeHours": 0.15,
+            "timeStepHours": 0.01,
+            "transferCoefficientUmHr": 0.1,
+            "initialOxideThicknessUm": 0.0,
+            "reactionActivationVolumeM3": 0.0,
+            "diffusionActivationVolumeM3": 0.0,
+            "maskMaterial": "",
+            "siliconMaterial": "Si",
+            "oxideMaterial": "SiO2"
+          }
+        }
+      ],
+      "solver": {
+        "timeStepRatio": 0.25,
+        "raysPerPoint": 64,
+        "cpuThreads": 2,
+        "random": {
+          "mode": "fixed",
+          "seed": 7
+        },
+        "enginePreference": "cpu",
+        "timeoutSeconds": 120
+      },
+      "view": {
+        "panX": 0,
+        "panH": 0,
+        "zoom": 1,
+        "showGrid": true
+      }
+    }
+  },
+  {
+    "id": "locos",
+    "label": "LOCOS Oxidation",
+    "meta": "2D · stack · oxidation",
+    "source": "examples/locosOxidation",
+    "note": "源码含半掩膜与 mask mechanics；当前用全 stack 近似。",
+    "sample": {
+      "schemaVersion": 7,
+      "name": "LOCOS Oxidation",
+      "dimension": 2,
+      "units": {
+        "length": "um",
+        "time": "s",
+        "rate": "um/s",
+        "angle": "deg"
+      },
+      "domain": {
+        "gridDelta": 0.005,
+        "xExtent": 1.0,
+        "xBoundary": "reflective"
+      },
+      "geometry": {
+        "kind": "stack",
+        "substrateMaterial": "Si",
+        "baseHeight": 0,
+        "layers": [
+          {
+            "id": "pad",
+            "name": "SiO2 pad",
+            "material": "SiO2",
+            "thickness": 0.03,
+            "role": "film"
+          },
+          {
+            "id": "nitride",
+            "name": "Si3N4 mask",
+            "material": "Si3N4",
+            "thickness": 0.05,
+            "role": "mask"
+          }
+        ],
+        "pattern": {
+          "kind": "none"
+        }
+      },
+      "steps": [
+        {
+          "id": "sample_01",
+          "name": "LOCOS 热氧化",
+          "enabled": true,
+          "operation": "native",
+          "model": "specialized",
+          "nativeModel": "oxidation",
+          "nativeParameters": {
+            "oxidant": "Wet",
+            "orientation": "Si100",
+            "temperatureC": 1000,
+            "pressureAtm": 1,
+            "timeHours": 0.1,
+            "timeStepHours": 0.01,
+            "transferCoefficientUmHr": 0.1,
+            "initialOxideThicknessUm": 0.0,
+            "reactionActivationVolumeM3": 0.0,
+            "diffusionActivationVolumeM3": 0.0,
+            "maskMaterial": "Si3N4",
+            "siliconMaterial": "Si",
+            "oxideMaterial": "SiO2"
+          }
+        }
+      ],
+      "solver": {
+        "timeStepRatio": 0.25,
+        "raysPerPoint": 64,
+        "cpuThreads": 2,
+        "random": {
+          "mode": "fixed",
+          "seed": 7
+        },
+        "enginePreference": "cpu",
+        "timeoutSeconds": 120
+      },
+      "view": {
+        "panX": 0,
+        "panH": 0,
+        "zoom": 1,
+        "showGrid": true
+      }
+    }
+  },
+  {
+    "id": "finfet22-bare-wafer",
+    "label": "22 nm FinFET · 裸片起步",
+    "meta": "3D · GDS 掩膜 · 23 步 · 7 fin / 5 gate / 4 M0",
+    "source": "docs/finfet22-bare-wafer/flow_full.json",
+    "note": "平 wafer 起步；GDS 只作掩膜版图；含 gdsBoolean / planarize / selectiveEpitaxy。",
+    "sample": {
+      "schemaVersion": 7,
+      "name": "22 nm FinFET bare-wafer demo (flow_full)",
+      "dimension": 3,
+      "units": {
+        "length": "um",
+        "time": "s",
+        "rate": "um/s",
+        "angle": "deg"
+      },
+      "domain": {
+        "gridDelta": 0.005,
+        "xExtent": 0.5,
+        "yExtent": 0.5,
+        "boundaryXY": "reflective"
+      },
+      "geometry": {
+        "kind": "gds",
+        "assetId": "1d2f5201d8de64163431255b4d409d02cf6dd1ec66e651571e9db440880290d5",
+        "fileName": "finfet22_05.gds",
+        "structure": "FINFET22",
+        "unitScale": 1.0,
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "layers": [
+          {
+            "layer": 7,
+            "material": "Si",
+            "baseHeight": -0.045,
+            "height": 0.08,
+            "mask": false
+          }
+        ]
+      },
+      "solver": {
+        "timeStepRatio": 0.25,
+        "raysPerPoint": 32,
+        "cpuThreads": 4,
+        "random": {
+          "mode": "fixed",
+          "seed": 20261031
+        },
+        "enginePreference": "cpu",
+        "timeoutSeconds": 600,
+        "advection": {
+          "spatialScheme": "ENGQUIST_OSHER_1ST_ORDER",
+          "temporalScheme": "FORWARD_EULER",
+          "adaptiveTimeStepping": false,
+          "adaptiveTimeStepSubdivisions": 20,
+          "calculateIntermediateVelocities": false,
+          "checkDissipation": true,
+          "dissipationAlpha": 1.0,
+          "ignoreVoids": false,
+          "velocityOutput": false
+        },
+        "rayTracing": {
+          "diskRadius": 0.0,
+          "ignoreFluxBoundaries": false,
+          "maxBoundaryHits": 80,
+          "maxReflections": 3,
+          "minNodeDistanceFactor": 0.05,
+          "normalizationType": "SOURCE",
+          "smoothingNeighbors": 1
+        }
+      },
+      "view3D": {
+        "projection": "parallel",
+        "displayMode": "surface",
+        "visibleMaterialIds": [
+          10,
+          11,
+          13,
+          16,
+          30,
+          32,
+          70,
+          79
+        ],
+        "opacityByMaterial": {
+          "10": 1.0,
+          "11": 1.0,
+          "13": 1.0,
+          "16": 1.0,
+          "30": 1.0,
+          "32": 1.0,
+          "70": 1.0,
+          "79": 1.0
+        },
+        "clip": {
+          "enabled": false,
+          "axis": "x",
+          "position": 0.0,
+          "keep": "positive"
+        },
+        "section": {
+          "enabled": false,
+          "axis": "y",
+          "position": 0.0
+        }
+      },
+      "outputSettings": {
+        "levelSets": false,
+        "levelSetMeshes": false,
+        "surfaceMeshVtk": false,
+        "volumeMesh": false,
+        "nativeMetadata": false
+      },
+      "steps": [
+        {
+          "id": "bw_pad_ox",
+          "name": "Pad oxide hard mask 30 nm (native SiO2 deposition)",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "isotropic",
+          "rateMode": "uniform",
+          "rateMagnitude": 0.03,
+          "depositMaterial": "SiO2",
+          "duration": 1.0
+        },
+        {
+          "id": "bw_fin_mask",
+          "name": "Fin hard-mask pattern (GDS layer 1, geometry-only)",
+          "enabled": true,
+          "model": "gdsBoolean",
+          "booleanOperation": "difference",
+          "applyToAll": false,
+          "gdsMask": {
+            "layer": 1,
+            "datatype": 0,
+            "unitScale": 1.0,
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "baseHeight": 0.0,
+            "height": 0.2,
+            "retainedRegion": "outside"
+          }
+        },
+        {
+          "id": "bw_trench_etch",
+          "name": "STI trench directional Si etch 60 nm (native)",
+          "enabled": true,
+          "operation": "etch",
+          "model": "directional",
+          "duration": 1.2,
+          "rateSets": [
+            {
+              "direction": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "directionalVelocity": 0.05,
+              "isotropicVelocity": 0.0005,
+              "maskMaterials": [
+                "SiO2"
+              ],
+              "calculateVisibility": true
+            }
+          ]
+        },
+        {
+          "id": "bw_sti_fill",
+          "name": "STI trench fill 300 nm (native SiO2 deposition)",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "isotropic",
+          "rateMode": "uniform",
+          "rateMagnitude": 0.1,
+          "depositMaterial": "SiO2",
+          "duration": 1.0
+        },
+        {
+          "id": "bw_sti_cmp",
+          "name": "STI CMP to pad-oxide top 0.065 (geometry-only)",
+          "enabled": true,
+          "model": "planarize",
+          "cutoffHeight": 0.065
+        },
+        {
+          "id": "bw_sti_recess",
+          "name": "STI recess 65 nm / pad-oxide strip (native selective SiO2 etch)",
+          "enabled": true,
+          "operation": "etch",
+          "model": "isotropic",
+          "rateMode": "material",
+          "rateMagnitude": 0.05,
+          "materialRates": {
+            "Si": 0.0,
+            "SiO2": 0.05
+          },
+          "duration": 1.3
+        },
+        {
+          "id": "bw_gate_ox",
+          "name": "Gate oxide 2 nm (native SiO2 deposition)",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "isotropic",
+          "rateMode": "uniform",
+          "rateMagnitude": 0.002,
+          "depositMaterial": "SiO2",
+          "duration": 1.0
+        },
+        {
+          "id": "bw_poly_dep",
+          "name": "Dummy PolySi gate 120 nm (native deposition)",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "isotropic",
+          "rateMode": "uniform",
+          "rateMagnitude": 0.12,
+          "depositMaterial": "PolySi",
+          "duration": 1.0
+        },
+        {
+          "id": "bw_poly_cmp",
+          "name": "Dummy gate CMP flat at 0.115 (geometry-only)",
+          "enabled": true,
+          "model": "planarize",
+          "cutoffHeight": 0.115
+        },
+        {
+          "id": "bw_gate_pat",
+          "name": "Gate pattern difference/outside (GDS layer 2, geometry-only)",
+          "enabled": true,
+          "model": "gdsBoolean",
+          "booleanOperation": "difference",
+          "applyToAll": false,
+          "gdsMask": {
+            "layer": 2,
+            "datatype": 0,
+            "unitScale": 1.0,
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "baseHeight": 0.0,
+            "height": 0.15,
+            "retainedRegion": "outside"
+          }
+        },
+        {
+          "id": "bw_spacer_dep",
+          "name": "SiN spacer 10 nm (native deposition)",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "isotropic",
+          "rateMode": "uniform",
+          "rateMagnitude": 0.01,
+          "depositMaterial": "Si3N4",
+          "duration": 1.0
+        },
+        {
+          "id": "bw_spacer_etch",
+          "name": "Spacer directional etch (native)",
+          "enabled": true,
+          "operation": "etch",
+          "model": "directional",
+          "duration": 0.7,
+          "rateSets": [
+            {
+              "direction": [
+                0.0,
+                0.0,
+                -1.0
+              ],
+              "directionalVelocity": 0.02,
+              "isotropicVelocity": 0.001,
+              "maskMaterials": [
+                "Si",
+                "SiO2",
+                "PolySi"
+              ],
+              "calculateVisibility": true
+            }
+          ]
+        },
+        {
+          "id": "bw_sd_epi",
+          "name": "S/D SiGe selective epitaxy 15 nm (native)",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "specialized",
+          "nativeModel": "selectiveEpitaxy",
+          "duration": 0.3,
+          "depositMaterial": "SiGe",
+          "nativeParameters": {
+            "materialRates": {
+              "Si": 0.05,
+              "SiGe": 0.05
+            },
+            "rate111": 0.5,
+            "rate100": 1.0,
+            "nvFactors": [
+              0.5,
+              1.0,
+              0.5
+            ]
+          }
+        },
+        {
+          "id": "bw_ild_dep",
+          "name": "ILD SiO2 150 nm (native deposition)",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "isotropic",
+          "rateMode": "uniform",
+          "rateMagnitude": 0.15,
+          "depositMaterial": "SiO2",
+          "duration": 1.0
+        },
+        {
+          "id": "bw_ild_cmp",
+          "name": "ILD CMP to dummy gate top 0.115 (geometry-only)",
+          "enabled": true,
+          "model": "planarize",
+          "cutoffHeight": 0.115
+        },
+        {
+          "id": "bw_cb_open",
+          "name": "CB contact opening (GDS layer 4, geometry-only)",
+          "enabled": true,
+          "model": "gdsBoolean",
+          "booleanOperation": "difference",
+          "applyToAll": false,
+          "gdsMask": {
+            "layer": 4,
+            "datatype": 0,
+            "unitScale": 1.0,
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "baseHeight": 0.04,
+            "height": 0.22,
+            "retainedRegion": "inside"
+          }
+        },
+        {
+          "id": "bw_poly_strip",
+          "name": "Dummy PolySi strip (native material removal)",
+          "enabled": true,
+          "model": "removeMaterial",
+          "material": "PolySi"
+        },
+        {
+          "id": "bw_il_ald",
+          "name": "Gate IL SiO2 1 nm (native ALD/deposition)",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "isotropic",
+          "rateMode": "uniform",
+          "rateMagnitude": 0.001,
+          "depositMaterial": "SiO2",
+          "duration": 1.0
+        },
+        {
+          "id": "bw_hfo2_ald",
+          "name": "HfO2 ALD 2 nm (native deposition)",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "isotropic",
+          "rateMode": "uniform",
+          "rateMagnitude": 0.002,
+          "depositMaterial": "HfO2",
+          "duration": 1.0
+        },
+        {
+          "id": "bw_tin_ald",
+          "name": "TiN ALD 3 nm (native deposition)",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "isotropic",
+          "rateMode": "uniform",
+          "rateMagnitude": 0.003,
+          "depositMaterial": "TiN",
+          "duration": 1.0
+        },
+        {
+          "id": "bw_w_gate",
+          "name": "W gate fill 70 nm (native deposition)",
+          "enabled": true,
+          "operation": "deposit",
+          "model": "isotropic",
+          "rateMode": "uniform",
+          "rateMagnitude": 0.07,
+          "depositMaterial": "W",
+          "duration": 1.0
+        },
+        {
+          "id": "bw_w_gate_cmp",
+          "name": "W gate CMP to 0.115 (geometry-only)",
+          "enabled": true,
+          "model": "planarize",
+          "cutoffHeight": 0.115
+        },
+        {
+          "id": "bw_m0_pattern",
+          "name": "M0 local interconnect (GDS layer 5, geometry-only)",
+          "enabled": true,
+          "model": "gdsBoolean",
+          "booleanOperation": "union",
+          "applyToAll": false,
+          "gdsMask": {
+            "layer": 5,
+            "datatype": 0,
+            "unitScale": 1.0,
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "baseHeight": 0.115,
+            "height": 0.03,
+            "retainedRegion": "inside"
+          }
+        }
+      ]
+    }
+  }
+]

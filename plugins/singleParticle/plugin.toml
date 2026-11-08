@@ -1,0 +1,5 @@
+api = 1
+id = "singleParticle"
+version = "1.0.0"
+entrypoint = "plugins.singleParticle:register"
+description = "Native single-particle plasma etch/deposit"

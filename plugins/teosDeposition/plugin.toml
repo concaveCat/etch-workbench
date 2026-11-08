@@ -1,0 +1,5 @@
+api = 1
+id = "teosDeposition"
+version = "1.0.0"
+entrypoint = "plugins.teosDeposition:register"
+description = "Native TEOS thermal SiO2 deposition"

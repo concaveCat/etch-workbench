@@ -1,0 +1,2843 @@
+{
+  "schemaVersion": 1,
+  "kind": "engine-capability-matrix",
+  "checkedAt": "2026-10-30",
+  "scope": "Installed ViennaPS 4.6.2 public Python surface (audited) and the ViennaPS 4.7.0 release (evaluated, version-qualified) vs. ViennaPS Workbench schema 7 project API.",
+  "environment": {
+    "python": "3.12.14",
+    "viennaps": "4.6.2",
+    "viennals": "5.8.5",
+    "workbenchAppVersion": "0.1.0",
+    "workbenchCommit": "3eacc2c99b88e42dc82382891f1bb03eb0537694",
+    "workbenchSchema": 7,
+    "engineSitePackages": "/root/.local/lib/python3.12/site-packages/viennaps",
+    "probeMethod": "python -c introspection of viennaps/viennaps.d2/viennaps.d3; each behavioural probe ran as its own subprocess with a 40-120 s wall clock timeout in /tmp/opencode (no workbench state touched)",
+    "evaluatedViennaPS": [
+      "4.6.2",
+      "4.7.0"
+    ],
+    "evaluatedViennaLS": [
+      "5.8.5",
+      "5.10.0"
+    ],
+    "runtimePolicy": "4.6.2 is the production runtime; 4.7.0 is supported through the same backend with version-gated ALD surface diffusion and advancedOxidation controls."
+  },
+  "classifications": {
+    "exposed": "Reachable from a submitted project today, with its user-facing parameters.",
+    "engine-model-not-exposed": "A native process model with no workbench step, catalog entry or API field.",
+    "advanced-parameter-or-output-not-exposed": "Reachable only partially, or output-only: parameters/outputs that exist in the engine but cannot be set or requested from JSON.",
+    "internal-or-not-user-facing": "Native plumbing, base classes, callbacks or writer utilities. Not a user-facing modelling capability.",
+    "absent-in-engine": "Not present in ViennaPS at all; only available in the SPX (Sentaurus Process Explorer) reference flows."
+  },
+  "dimensions": [
+    2,
+    3
+  ],
+  "summary": {
+    "advanced-parameter-or-output-not-exposed": 11,
+    "engine-model-not-exposed": 4,
+    "exposed": 63,
+    "internal-or-not-user-facing": 18
+  },
+  "classes": [
+    {
+      "className": "IsotropicProcess",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "IsotropicProcess(rate=1.0, maskMaterial=Material('Undefined')) | IsotropicProcess(rate=1.0, maskMaterials=[...]) | IsotropicProcess(materialRates={Material: float}, defaultRate=0.0)",
+      "docSummary": "Isotropic (conformal) etch/deposition driven by a scalar rate and per-material overrides.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:isotropic (schema 1+)",
+        "backend/models.py:StepV4.materialRates + rateMode=material",
+        "worker/simulate.py:setMaterialRate / setMaterialRate map"
+      ],
+      "notes": "No ray flux engine: worker pins FluxEngineType.CPU_DISK and never selects GPU for it.",
+      "members": {
+        "exposed": [
+          "rate",
+          "maskMaterial",
+          "maskMaterials",
+          "materialRates",
+          "setMaterialRate"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "SingleParticleProcess",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "SingleParticleProcess(rate=1.0, stickingProbability=1.0, sourceExponent=1.0, maskMaterial=...) | ...(rate, stickingProbability, sourceExponent, maskMaterials) | ...(materialRates, stickingProbability, sourceExponent)",
+      "docSummary": "Single-species ray-traced flux model with sticking probability and source exponent.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:singleParticle (schema 1+)",
+        "solver.raysPerPoint / solver.rayTracing / solver.random"
+      ],
+      "notes": "Verified on CPU_DISK and GPU_DISK in 2D and 3D; seeds and raysPerPoint are solver fields.",
+      "members": {
+        "exposed": [
+          "rate",
+          "materialRates",
+          "stickingProbability",
+          "sourceExponent",
+          "maskMaterial",
+          "maskMaterials"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "DirectionalProcess",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "DirectionalProcess(direction, materialRates={Material:(directional,isotropic)}, ...) | (direction, directionalVelocity, isotropicVelocity=0, maskMaterial=Material('Mask'), calculateVisibility=True) | (direction, directionalVelocity, isotropicVelocity, maskMaterials, calculateVisibility) | (rateSets: Sequence[RateSet]) | (rateSet: RateSet)",
+      "docSummary": "Flux arriving along one primary direction plus an optional isotropic component.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:directional (schema 5+)",
+        "backend/models.py:DirectionalStepV5"
+      ],
+      "notes": "The scalar overload remains the default for schema-5 `directional` steps. Providing the additive `rateSets` list builds real `viennaps.RateSet` objects and calls the native `DirectionalProcess(rateSets: Sequence[RateSet])` overload; the probe in worker/probe_ratesets_native.py verifies additive directional and isotropic velocities, per-set maskMaterials and per-set calculateVisibility in 2D and 3D. The per-material `materialRates` mapping overload stays unexposed.",
+      "members": {
+        "exposed": [
+          "direction",
+          "directionalRateMagnitude",
+          "isotropicRateMagnitude",
+          "calculateVisibility",
+          "maskMaterials (derived from geometry)",
+          "rateSets[] -> RateSet(direction, directionalVelocity, isotropicVelocity, maskMaterials, calculateVisibility)",
+          "native rateSets sequence overload"
+        ],
+        "notExposed": [
+          "materialRates mapping overload"
+        ]
+      }
+    },
+    {
+      "className": "MultiParticleProcess",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "MultiParticleProcess() + addIonParticle(...) / addNeutralParticle(stickingByMaterial, defaultStickingProbability, label) + setRateFunction(callable(fluxes, material) -> float)",
+      "docSummary": "Ion+neutral multi-species flux model; the deposited/etched velocity is a user callback of the species fluxes.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:multiParticle (schema 7)",
+        "worker/simulate.py:build_multi_particle_model"
+      ],
+      "notes": "The worker itself supplies a fixed, audited linear-combination callback; submitted JSON only provides coefficients (defaultBySpecies / byMaterial). Callback invocation counts and mean fluxes are recorded per step.",
+      "members": {
+        "exposed": [
+          "addIonParticle (sourcePower, thetaR*, minAngle, B_sp, mean/sigma/threshold energy, inflectAngle, n)",
+          "addNeutralParticle (default + per-material sticking)",
+          "declarative linear rate coefficients"
+        ],
+        "notExposed": [
+          "arbitrary user Python setRateFunction"
+        ]
+      }
+    },
+    {
+      "className": "SF6O2Etching",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "SF6O2Etching(ionFlux, etchantFlux, oxygenFlux, meanIonEnergy=100, sigmaIonEnergy=10, ionExponent=100, oxySputterYield=3, etchStopDepth=-DBL_MAX) | SF6O2Etching(parameters: PlasmaEtchingParameters)",
+      "docSummary": "Fluorine/oxygen plasma etch with ion-enhanced and spontaneous etching.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/sf6o2 (schema 7)",
+        "backend/specialized_models.py:sf6o2"
+      ],
+      "notes": "Flat 8-argument form by default; optional nativeParameters.advanced selects the PlasmaEtchingParameters overload (Ions/Mask/Passivation/Polymer/Substrate, maps). CoverageParameters.tolerance is fixed at 1e-3.",
+      "members": {
+        "exposed": [
+          "ionFlux",
+          "etchantFlux",
+          "oxygenFlux",
+          "meanIonEnergy",
+          "sigmaIonEnergy",
+          "ionExponent",
+          "oxySputterYield",
+          "etchStopDepth"
+        ],
+        "notExposed": [
+          "PlasmaEtchingParameters.Ions.thetaRMin/thetaRMax",
+          "Mask/Passivation/Polymer/Substrate blocks",
+          "beta_E/beta_P",
+          "passivationFlux",
+          "rateFactors"
+        ]
+      }
+    },
+    {
+      "className": "CF4O2Etching",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "CF4O2Etching(ionFlux, etchantFlux, oxygenFlux, polymerFlux, meanIonEnergy=100, sigmaIonEnergy=10, ionExponent=100, oxySputterYield=3, polySputterYield=3, etchStopDepth=-DBL_MAX) | CF4O2Etching(CF4O2Parameters)",
+      "docSummary": "CF4/O2 plasma etch with polymerising fluorocarbon chemistry.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/cf4o2 (schema 7)",
+        "backend/specialized_models.py:cf4o2"
+      ],
+      "notes": "Flat 10-argument form by default; optional nativeParameters.advanced selects the CF4O2Parameters overload (Ions/Mask/Passivation/Si/SiGe, gamma_*, fluxIncludeSticking).",
+      "members": {
+        "exposed": [
+          "ionFlux",
+          "etchantFlux",
+          "oxygenFlux",
+          "polymerFlux",
+          "meanIonEnergy",
+          "sigmaIonEnergy",
+          "ionExponent",
+          "oxySputterYield",
+          "polySputterYield",
+          "etchStopDepth"
+        ],
+        "notExposed": [
+          "gamma_C/gamma_F/gamma_O (+oxidized/passivated variants)",
+          "fluxIncludeSticking",
+          "Ions/Mask/Passivation/Si/SiGe blocks"
+        ]
+      }
+    },
+    {
+      "className": "HBrO2Etching",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "HBrO2Etching(ionFlux, etchantFlux, oxygenFlux, meanIonEnergy=100, sigmaIonEnergy=10, ionExponent=100, oxySputterYield=3, etchStopDepth=-DBL_MAX) | HBrO2Etching(PlasmaEtchingParameters)",
+      "docSummary": "HBr/O2 plasma etch.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/hbro2 (schema 7)",
+        "backend/specialized_models.py:hbro2"
+      ],
+      "notes": "Flat 8-argument form by default; advanced selects PlasmaEtchingParameters. HBrO2-specific Substrate defaults are preserved; Substrate.B_ie is not exposed.",
+      "members": {
+        "exposed": [
+          "ionFlux",
+          "etchantFlux",
+          "oxygenFlux",
+          "meanIonEnergy",
+          "sigmaIonEnergy",
+          "ionExponent",
+          "oxySputterYield",
+          "etchStopDepth"
+        ],
+        "notExposed": [
+          "sub-parameter blocks (same gaps as sf6o2)"
+        ]
+      }
+    },
+    {
+      "className": "SF6C4F8Etching",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "SF6C4F8Etching(ionFlux, etchantFlux, meanEnergy, sigmaEnergy, ionExponent=300, etchStopDepth=-DBL_MAX) | SF6C4F8Etching(PlasmaEtchingParameters)",
+      "docSummary": "SF6/C4F8 quasi-atomic-layer etch with a fluorocarbon passivation step.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/sf6c4f8 (schema 7)",
+        "backend/specialized_models.py:sf6c4f8"
+      ],
+      "notes": "Flat 6-argument form by default; advanced selects PlasmaEtchingParameters. No passivation particle exists: passivation, passivationFlux and beta_P are deliberately rejected (positive passivationFlux SIGSEGVs).",
+      "members": {
+        "exposed": [
+          "ionFlux",
+          "etchantFlux",
+          "meanEnergy",
+          "sigmaEnergy",
+          "ionExponent",
+          "etchStopDepth"
+        ],
+        "notExposed": [
+          "passivation/polymer blocks"
+        ]
+      }
+    },
+    {
+      "className": "FluorocarbonEtching",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "FluorocarbonEtching(parameters: FluorocarbonParameters)",
+      "docSummary": "Fluorocarbon etch with an explicit per-material parameter table.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/fluorocarbon (schema 7)",
+        "backend/specialized_models.py:fluorocarbon"
+      ],
+      "notes": "Only specialized model where the full material parameter table is user-editable; polymers may use the native Material.Polymer identity. The model exposes neither defaultParameters() nor getParameters().",
+      "members": {
+        "exposed": [
+          "ionFlux",
+          "etchantFlux",
+          "polyFlux",
+          "k_ie",
+          "k_ev",
+          "delta_p",
+          "temperature",
+          "etchStopDepth",
+          "Ions.* (6)",
+          "per-material FluorocarbonMaterialParameters (10 fields each)"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "IonBeamEtching",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "IonBeamEtching(parameters: IBEParameters) | IonBeamEtching(parameters, maskMaterials: Sequence[Material])",
+      "docSummary": "Physical ion-beam etch with energy/angle yield, redeposition and cos^4 yield terms.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/ionBeam (schema 7)",
+        "backend/specialized_models.py:ionBeam"
+      ],
+      "notes": "Mask materials are taken from the geometry (GDS mask layers, stack mask role, trench/hole mask). defaultParameters() exists but the workbench always supplies explicit values.",
+      "members": {
+        "exposed": [
+          "meanEnergy",
+          "sigmaEnergy",
+          "thresholdEnergy",
+          "thetaRMin",
+          "thetaRMax",
+          "minAngle",
+          "inflectAngle",
+          "exponent",
+          "n_l",
+          "tiltAngle",
+          "planeWaferRate",
+          "redepositionRate",
+          "redepositionThreshold",
+          "cos4Yield.a1..a4",
+          "materialPlaneWaferRate"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "WetEtching",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "WetEtching(materialRates) | WetEtching(direction100, direction010, rate100, rate110, rate111, rate311, materialRates)",
+      "docSummary": "Crystallographic wet etch (or isotropic material-rate wet etch) from material rate tables.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/wetEtch (schema 7)",
+        "backend/specialized_models.py:wetEtch"
+      ],
+      "notes": "Both constructor overloads are reachable behind the useCrystallineRates flag.",
+      "members": {
+        "exposed": [
+          "materialRates",
+          "useCrystallineRates",
+          "direction100",
+          "direction010",
+          "rate100",
+          "rate110",
+          "rate111",
+          "rate311"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "TEOSDeposition",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "TEOSDeposition(stickingProbabilityP1, rateP1, orderP1, stickingProbabilityP2=0, rateP2=0, orderP2=0)",
+      "docSummary": "Two-precursor TEOS thermal CVD deposition.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/teosDeposition (schema 7)"
+      ],
+      "notes": "Deposit material is pinned to SiO2 by the workbench spec.",
+      "members": {
+        "exposed": [
+          "stickingProbabilityP1",
+          "rateP1",
+          "orderP1",
+          "stickingProbabilityP2",
+          "rateP2",
+          "orderP2"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "TEOSPECVD",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "TEOSPECVD(stickingProbabilityRadical, depositionRateRadical, depositionRateIon, exponentIon, stickingProbabilityIon=1, reactionOrderRadical=1, reactionOrderIon=1, minAngleIon=0)",
+      "docSummary": "Ion-assisted TEOS PECVD deposition.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/teospecvd (schema 7)"
+      ],
+      "notes": "Deposit material is pinned to SiO2.",
+      "members": {
+        "exposed": [
+          "stickingProbabilityRadical",
+          "depositionRateRadical",
+          "depositionRateIon",
+          "exponentIon",
+          "stickingProbabilityIon",
+          "reactionOrderRadical",
+          "reactionOrderIon",
+          "minAngleIon"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "SingleParticleALD",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "SingleParticleALD(parameters: SingleParticleALDParams)",
+      "docSummary": "Single-particle atomic layer deposition with a coverage-dependent growth per cycle.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/ald (schema 7)",
+        "AtomicLayerProcessParameters (pulse/purge/cycles)"
+      ],
+      "notes": "Only specialized model with a selectable output material (depositMaterialSelectable).",
+      "members": {
+        "exposed": [
+          "stickingProbability",
+          "gasMeanFreePath",
+          "growthPerCycle",
+          "incomingFlux",
+          "evaporationFlux",
+          "s0",
+          "coverageDiffusionCoefficient",
+          "pulseTime",
+          "purgePulseTime",
+          "coverageTimeStep",
+          "purgeTimeStep",
+          "numCycles"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "Oxidation",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "Oxidation() + setOxidant/setOrientation (Si100/Si110/Si111/PolySi)/setTemperature/setPressure/setTime/setTimeStep/setCFLFactor/setTransferCoefficient/setInitialOxideThickness/setReactionActivationVolume/setDiffusionActivationVolume/setMechanicsTolerance/setCouplingTolerance/setSimplePressureRelaxation/setSiliconMaterial/setOxideMaterial/setMaskMaterial",
+      "docSummary": "Thermal silicon oxidation with a diffusion-reaction oxide solver and optional mask mechanics.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/oxidation (schema 7, operation=native)"
+      ],
+      "notes": "Duration is derived from timeHours; the step-level duration field is rejected for this model. B5 adds the optional steps[].advancedOxidation object with the four solver setters proven to change the native surface (cflFactor, mechanicsTolerance, couplingTolerance, simplePressureRelaxation) plus Si110. Omitted block => historical request hashes unchanged. Excluded with probe evidence: GPU mode, maxGridPoints, solve bounds, iteration caps, pressure/stokes tolerance, simpleVelocityRelaxation, mask mechanics and the model-level save helpers. See docs/oxidation-advanced-contract.md.",
+      "members": {
+        "exposed": [
+          "oxidant (Dry/Wet)",
+          "orientation (Si100/Si110/Si111/PolySi)",
+          "temperature",
+          "pressure",
+          "time",
+          "timeStep",
+          "transferCoefficient",
+          "initialOxideThickness",
+          "reactionActivationVolume",
+          "diffusionActivationVolume",
+          "silicon/oxide/mask material",
+          "setCFLFactor (advancedOxidation.cflFactor)",
+          "setMechanicsTolerance (advancedOxidation.mechanicsTolerance)",
+          "setCouplingTolerance (advancedOxidation.couplingTolerance)",
+          "setSimplePressureRelaxation (advancedOxidation.simplePressureRelaxation)",
+          "estimatePlanarOxideThickness (read-only native readback)"
+        ],
+        "notExposed": [
+          "setCouplingIterations (explicit default inert; lowered value fails to converge)",
+          "setMechanicsIterations (explicit default inert; lowered value fails to converge)",
+          "setPressureIterations / setStokesIterations (explicit defaults inert; lowered pressure fails)",
+          "setPressureTolerance / setStokesTolerance (needs a coupled mechanicsTolerance adjustment)",
+          "setSimpleVelocityRelaxation (no surface change above 1e-8 um in the controlled probes)",
+          "setMaxGridPoints (solver cap; below the solve region it raises, above it is inert)",
+          "setSolveBounds / clearSolveBounds (raw Cartesian indices; controlled probe hit empty solve region)",
+          "setMaskParameters / setMask* mechanics (no verified LOCOS surface on this host)",
+          "setGpuMode / setGpuPreconditioner (CPU-only batch; GPU oxidation unverified)",
+          "model-level saveSurfaceMesh / saveVolumeMesh helpers (the workbench writes through Domain)"
+        ]
+      }
+    },
+    {
+      "className": "OxideRegrowth",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "OxideRegrowth(nitrideEtchRate, oxideEtchRate, redepositionRate, redepositionThreshold, redepositionTimeInt, diffusionCoefficient, sinkStrength, scallopVelocity, centerVelocity, topHeight, centerWidth, stabilityFactor)",
+      "docSummary": "Native oxidation/regrowth model that consumes a DenseCellSet for by-product diffusion.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/oxideRegrowth (schema 7)",
+        "output:nativeCellSet artifact"
+      ],
+      "notes": "The worker derives the cell-set height from the surface top + padding, adds byproductSum=0, builds the neighborhood, and forces AdvectionParameters.ignoreVoids=true.",
+      "members": {
+        "exposed": [
+          "all 12 constructor arguments"
+        ],
+        "notExposed": [
+          "user-defined cell-set height / cover material / scalar fields"
+        ]
+      }
+    },
+    {
+      "className": "SelectiveEpitaxy",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "SelectiveEpitaxy(rate111=0.5, rate100=1.0) | SelectiveEpitaxy(materialRates, rate111, rate100) | SelectiveEpitaxy(nvFactors, rate111, rate100)",
+      "docSummary": "Orientation-dependent selective epitaxial growth on exposed crystal facets.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/selectiveEpitaxy (schema 7)"
+      ],
+      "notes": "Registry material handles are rejected by the native top-material check, so the worker uses the native Material enum identities here only. The separate nvFactors overload is exposed as an optional three-vector in [0,1]; omitted keeps the materialRates overload and its dimension-dependent native default.",
+      "members": {
+        "exposed": [
+          "materialRates",
+          "rate111",
+          "rate100",
+          "nvFactors"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "NeutralTransport",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "NeutralTransport() | NeutralTransport(parameters: NeutralTransportParameters)",
+      "docSummary": "Neutral-species transport with surface coverage, desorption and surface diffusion.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/neutralTransport (schema 7)"
+      ],
+      "notes": "surfaceDiffusionCoefficient here is NeutralTransport's own field, unrelated to SurfaceDiffusionParameters.",
+      "members": {
+        "exposed": [
+          "incomingFlux",
+          "sourceDistributionPower",
+          "etchFrontSticking",
+          "zeroCoverageSticking",
+          "coverageTimeStep",
+          "desorptionRate",
+          "surfaceDiffusionCoefficient",
+          "surfaceSiteDensity",
+          "useSteadyStateCoverage",
+          "etchFrontMaterial",
+          "fluxLabel",
+          "coverageLabel"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "FaradayCageEtching",
+      "nativeModule": "viennaps.d2 / viennaps.d3",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "FaradayCageEtching(parameters: FaradayCageParameters, maskMaterials: Sequence[Material])",
+      "docSummary": "Ion-beam etch with a Faraday-cage angular filter (uses IBEParameters plus cageAngle).",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/faradayCage"
+      ],
+      "notes": "2D and 3D. The original 2026-10-30 probe left Process on AUTO, which resolves to the GPU kernel; that run hangs for part of the cage/tilt matrix. With CPU_DISK pinned, worker/probe_faraday_2d.py --matrix safe-2d completes all 117 cageAngle/tiltAngle pairs plus the key IBE, geometry, grid, duration, ray and thread variants within the 60 s bound. 2D is therefore admitted only when solver.enginePreference is cpu; AUTO/GPU is a 422 before the worker starts. 3D keeps its previous behaviour. Negative tiltAngle is accepted but is not symmetric to positive tilt (a small negative tilt still etches); thresholdEnergy must stay below meanEnergy in both dimensions or the native yield sign reverses.",
+      "members": {
+        "exposed": [
+          "cageAngle",
+          "embedded IBEParameters",
+          "maskMaterials"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "GeometricTrenchDeposition",
+      "nativeModule": "viennaps.d2 / viennaps.d3",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "GeometricTrenchDeposition(trenchWidth, trenchDepth, depositionRate, bottomMed, a, b, n)",
+      "docSummary": "Analytic geometric trench-fill model (closed-form profile, no level-set flux).",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/geometricTrenchDeposition (schema 7, experimental)"
+      ],
+      "notes": "Probe 2026-10-31: the 2026-10-30 3D SIGSEGV was a parameter-reach crash, not a dimension limitation; it also occurs in 2D. The guard requires depositionRate >= max(a+b, bottomMed) because rate < radius - 2*gridDelta leaves an empty deposited level set. 3D plane/trench/hole/fin/stack complete and match a direct native reference; the fin vertical extent includes finHeight+maskHeight. GDS stays rejected because its vertical span is not described by the project.",
+      "members": {
+        "exposed": [
+          "trenchWidth",
+          "trenchDepth",
+          "depositionRate",
+          "bottomMed",
+          "a",
+          "b",
+          "n"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "CSVFileProcess",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "CSVFileProcess(ratesFile: str, direction, offset, isotropicComponent=0.0, directionalComponent=1.0, maskMaterials=[Material('Mask')], calculateVisibility=True)",
+      "docSummary": "Directional+isotropic process whose rate is interpolated from a CSV rate grid.",
+      "classification": "engine-model-not-exposed",
+      "exposedBy": [],
+      "notes": "Probe 2026-10-30: runs in 2D and 3D but prints 'Interpolation mode not set.' twice and proceeds, i.e. an unset interpolation mode is not an error. Needs a CSV upload asset plus an explicit interpolation enum; setCustomInterpolator is a Python callback and must stay out of the JSON API.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "ratesFile",
+          "direction",
+          "offset",
+          "isotropicComponent",
+          "directionalComponent",
+          "maskMaterials",
+          "calculateVisibility",
+          "setInterpolationMode",
+          "setIDWNeighbors",
+          "setOffset",
+          "setCustomInterpolator"
+        ]
+      }
+    },
+    {
+      "className": "BoxDistribution",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "BoxDistribution(halfAxes, mask: viennals.d2.Domain) | BoxDistribution(halfAxes)",
+      "docSummary": "Rectangular particle-shape distribution applied as a geometric model.",
+      "classification": "advanced-parameter-or-output-not-exposed",
+      "exposedBy": [
+        "step model:particleShape, shape:box (schema 7; no-mask deposit, geometry-mask etch)"
+      ],
+      "notes": "Probe 2026-10-30 (A4 mask re-run): the no-mask overload moves the exposed surface by the L-infinity half-axis and ignores the process duration in 2D and 3D. addMaskMaterial is safe for negative (etch) displacement in 2D/3D: the mask is built from the project material level sets exactly like the native FinFET example, and the protected material does not move. Every non-empty mask with positive (deposition) displacement SIGSEGVs (returnCode -11) regardless of mask construction (material mask, raw viennals mask, applyToSingleMaterial, insertMask) and regardless of overlap (near, far, full-domain); ViennaLS 5.8.5 and 5.10.0 both keep the upstream TODO 'There are still issues with positive box distributions if there is a mask used!'. So the workbench passes addMaskMaterial only for etches and records the omitted mask materials for depositions.",
+      "members": {
+        "exposed": [
+          "halfAxes",
+          "addMaskMaterial (etch only)"
+        ],
+        "notExposed": [
+          "mask",
+          "applyToSingleMaterial"
+        ]
+      }
+    },
+    {
+      "className": "SphereDistribution",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "SphereDistribution(radius, mask: viennals.d2.Domain) | SphereDistribution(radius)",
+      "docSummary": "Spherical particle-shape distribution applied as a geometric model.",
+      "classification": "advanced-parameter-or-output-not-exposed",
+      "exposedBy": [
+        "step model:particleShape, shape:sphere (schema 7; no-mask deposit, geometry-mask etch)"
+      ],
+      "notes": "Probe 2026-10-30 (A4 mask re-run): the no-mask overload moves the exposed surface by the radius and ignores the process duration in 2D and 3D. addMaskMaterial is safe for negative (etch) displacement in 2D/3D (the native FinFET pattern); masked deposition SIGSEGVs (returnCode -11) for material masks, raw viennals masks, applyToSingleMaterial and insertMask, whether the mask is near, far or covers the whole domain. ViennaPS 4.7.0 / ViennaLS 5.10.0 still crash identically. So radius plus etch-only addMaskMaterial are exposed; the raw mask argument is not.",
+      "members": {
+        "exposed": [
+          "radius",
+          "addMaskMaterial (etch only)"
+        ],
+        "notExposed": [
+          "mask",
+          "applyToSingleMaterial"
+        ]
+      }
+    },
+    {
+      "className": "CustomSphereDistribution",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "CustomSphereDistribution(radii: Sequence[float], mask: viennals.d2.Domain = None)",
+      "docSummary": "Multi-radius sphere distribution.",
+      "classification": "engine-model-not-exposed",
+      "exposedBy": [],
+      "notes": "Probe 2026-10-30 (re-run for A4): aborts in 2D and 3D with returnCode -6, 'terminate called after throwing an instance of std::runtime_error' / 'what(): Point ID 3 is out of bounds for CustomSphereDistribution with 3 radii!', with and without a mask. It indexes one radius per surface point, so no bounded project-derived parameterization exists; stays unexposed.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "radii",
+          "mask",
+          "addMaskMaterial"
+        ]
+      }
+    },
+    {
+      "className": "ProcessModel",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "ProcessModel() + setSurfaceModel/setGeometricModel/setVelocityField/setAdvectionCallback/setPrimaryDirection",
+      "docSummary": "Generic composable process model: users assemble surface, geometric and velocity models themselves.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [],
+      "notes": "Extension hook. Exposing it would let a project recombine native sub-models in ways no evidence covers; the workbench only instantiates concrete built-in models.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "all"
+        ]
+      }
+    },
+    {
+      "className": "ProcessModelBase",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-model",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "ProcessModelBase (pybind base class, no public constructor contract)",
+      "docSummary": "Common base of every native process model; subclassing is the C++/pybind extension point.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [],
+      "notes": "Not user-facing.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "all"
+        ]
+      }
+    },
+    {
+      "className": "Process",
+      "nativeModule": "viennaps.d2",
+      "kind": "process-runner",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "Process() | Process(domain) | Process(domain, model, duration=0.0)",
+      "docSummary": "Runs one process model over a duration and advances every level set.",
+      "classification": "exposed",
+      "exposedBy": [
+        "worker/simulate.py:ps.Process(domain, model, duration) + setFluxEngineType + AdvectionParameters"
+      ],
+      "notes": "The 4.6.2 default tries CUDA even for isotropic models, so the worker always pins a concrete engine.",
+      "members": {
+        "exposed": [
+          "domain",
+          "model",
+          "duration",
+          "flux engine",
+          "advection parameters"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "PlasmaEtchingParameters",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "PlasmaEtchingParameters()",
+      "docSummary": "Nested parameter object for SF6O2/HBrO2/SF6C4F8 plasma etching models.",
+      "classification": "advanced-parameter-or-output-not-exposed",
+      "exposedBy": [
+        "model:specialized/{sf6o2,hbro2,sf6c4f8} nativeParameters.advanced",
+        "backend/specialized_models.py:_plasma_advanced"
+      ],
+      "notes": "B1 exposes the nested families through nativeParameters.advanced with a strict per-model allowlist. Flat-only defaults are preserved when advanced is omitted; Substrate.B_ie and SF6C4F8 passivation are rejected.",
+      "members": {
+        "exposed": [
+          "ionFlux",
+          "etchantFlux",
+          "passivationFlux",
+          "etchStopDepth",
+          "Ions",
+          "Mask",
+          "Passivation",
+          "Polymer",
+          "Substrate",
+          "beta_E",
+          "beta_P",
+          "rateFactors"
+        ],
+        "notExposed": [
+          "Substrate.B_ie (declared but unused by the CPU surface model)",
+          "Passivation/beta_P on SF6C4F8 (no passivation particle)"
+        ]
+      },
+      "partialExposure": true
+    },
+    {
+      "className": "PlasmaEtchingParametersIons",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "PlasmaEtchingParametersIons()",
+      "docSummary": "Ion energy/angle distribution parameters.",
+      "classification": "exposed",
+      "exposedBy": [],
+      "notes": "Exposed through nativeParameters.advanced for sf6o2/hbro2/sf6c4f8, with per-field ranges and flat-equivalent defaults where a flat field exists.",
+      "members": {
+        "exposed": [
+          "thetaRMin",
+          "thetaRMax"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "PlasmaEtchingParametersMask",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "PlasmaEtchingParametersMask()",
+      "docSummary": "Mask sputter parameters (A_sp, B_sp, Eth_sp, rho).",
+      "classification": "exposed",
+      "exposedBy": [],
+      "notes": "Exposed through nativeParameters.advanced for sf6o2/hbro2/sf6c4f8, with per-field ranges and flat-equivalent defaults where a flat field exists.",
+      "members": {
+        "exposed": [
+          "A_sp",
+          "B_sp",
+          "Eth_sp",
+          "rho"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "PlasmaEtchingParametersPassivation",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "PlasmaEtchingParametersPassivation()",
+      "docSummary": "Ion-enhanced passivation removal (A_ie, Eth_ie).",
+      "classification": "exposed",
+      "exposedBy": [],
+      "notes": "Exposed through nativeParameters.advanced for sf6o2/hbro2 (passivation particle present). SF6C4F8 rejects the block because it has no passivation particle.",
+      "members": {
+        "exposed": [
+          "A_ie",
+          "Eth_ie"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "PlasmaEtchingParametersPolymer",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "PlasmaEtchingParametersPolymer()",
+      "docSummary": "Polymer sputter yield and cos-theta coefficients.",
+      "classification": "exposed",
+      "exposedBy": [],
+      "notes": "Exposed through nativeParameters.advanced for sf6o2/hbro2/sf6c4f8; the native surface model uses it for geometry containing Material::Polymer.",
+      "members": {
+        "exposed": [
+          "A_sp",
+          "B_sp",
+          "Eth_sp",
+          "a1",
+          "a2",
+          "a3",
+          "a4",
+          "rho",
+          "usePolyCosThetaYield"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "PlasmaEtchingParametersSubstrate",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "PlasmaEtchingParametersSubstrate()",
+      "docSummary": "Substrate ion/sputter yield parameters incl. beta_sigma/k_sigma.",
+      "classification": "advanced-parameter-or-output-not-exposed",
+      "exposedBy": [
+        "model:specialized/{sf6o2,hbro2,sf6c4f8} nativeParameters.advanced"
+      ],
+      "notes": "Exposed through nativeParameters.advanced except the unused B_ie field; HBrO2-specific defaults are preserved.",
+      "members": {
+        "exposed": [
+          "A_ie",
+          "A_sp",
+          "B_sp",
+          "Eth_ie",
+          "Eth_sp",
+          "beta_sigma",
+          "k_sigma",
+          "rho"
+        ],
+        "notExposed": [
+          "B_ie (declared but unused by the CPU surface model)"
+        ]
+      },
+      "partialExposure": true
+    },
+    {
+      "className": "CF4O2Parameters",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "CF4O2Parameters()",
+      "docSummary": "Full CF4/O2 parameter object with surface-reaction gammas and material blocks.",
+      "classification": "advanced-parameter-or-output-not-exposed",
+      "exposedBy": [
+        "model:specialized/cf4o2 nativeParameters.advanced",
+        "backend/specialized_models.py:_cf4o2_advanced"
+      ],
+      "notes": "B1 exposes all consumed parameter families through nativeParameters.advanced; SiGe is limited to beta_sigma/k_sigma/rho because the native branch ignores the sputter/yield fields and x does not recompute k_sigma.",
+      "members": {
+        "exposed": [
+          "ionFlux",
+          "etchantFlux",
+          "oxygenFlux",
+          "polymerFlux",
+          "etchStopDepth",
+          "Ions",
+          "Mask",
+          "Passivation",
+          "Si",
+          "SiGe",
+          "gamma_C",
+          "gamma_C_oxidized",
+          "gamma_F",
+          "gamma_F_oxidized",
+          "gamma_O",
+          "gamma_O_passivated",
+          "fluxIncludeSticking"
+        ],
+        "notExposed": [
+          "SiGe.A_ie/A_sp/Eth_ie/Eth_sp/x (ignored by the native SiGe branch)",
+          "SiGe.k_sigma_SiGe (method, not a parameter field)"
+        ]
+      },
+      "partialExposure": true
+    },
+    {
+      "className": "CF4O2ParametersIons",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "CF4O2ParametersIons()",
+      "docSummary": "CF4/O2 ion distribution (no thetaR bounds in this family).",
+      "classification": "exposed",
+      "exposedBy": [],
+      "notes": "Exposed through model:specialized/cf4o2 nativeParameters.advanced with per-field ranges.",
+      "members": {
+        "exposed": [
+          "exponent",
+          "inflectAngle",
+          "meanEnergy",
+          "minAngle",
+          "n_l",
+          "sigmaEnergy"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "CF4O2ParametersMask",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "CF4O2ParametersMask()",
+      "docSummary": "CF4/O2 mask sputter parameters.",
+      "classification": "exposed",
+      "exposedBy": [],
+      "notes": "Exposed through model:specialized/cf4o2 nativeParameters.advanced with per-field ranges.",
+      "members": {
+        "exposed": [
+          "A_sp",
+          "Eth_sp",
+          "rho"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "CF4O2ParametersPassivation",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "CF4O2ParametersPassivation()",
+      "docSummary": "Carbon/oxygen ion-enhanced passivation removal.",
+      "classification": "exposed",
+      "exposedBy": [],
+      "notes": "Exposed through model:specialized/cf4o2 nativeParameters.advanced with per-field ranges.",
+      "members": {
+        "exposed": [
+          "A_C_ie",
+          "A_O_ie",
+          "Eth_C_ie",
+          "Eth_O_ie"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "CF4O2ParametersSi",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "CF4O2ParametersSi()",
+      "docSummary": "Silicon substrate yields inside the CF4/O2 model.",
+      "classification": "exposed",
+      "exposedBy": [],
+      "notes": "Exposed through model:specialized/cf4o2 nativeParameters.advanced with per-field ranges.",
+      "members": {
+        "exposed": [
+          "A_ie",
+          "A_sp",
+          "Eth_ie",
+          "Eth_sp",
+          "beta_sigma",
+          "k_sigma",
+          "rho"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "CF4O2ParametersSiGe",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "CF4O2ParametersSiGe()",
+      "docSummary": "SiGe substrate yields (adds x and k_sigma_SiGe).",
+      "classification": "advanced-parameter-or-output-not-exposed",
+      "exposedBy": [
+        "model:specialized/cf4o2 nativeParameters.advanced.siGe"
+      ],
+      "notes": "Only the three fields the native CF4O2 SiGe branch consumes are exposed; it is not a full SiGe yield editor.",
+      "members": {
+        "exposed": [
+          "beta_sigma",
+          "k_sigma",
+          "rho"
+        ],
+        "notExposed": [
+          "A_ie",
+          "A_sp",
+          "Eth_ie",
+          "Eth_sp",
+          "x (ignored by the native SiGe branch; x only seeds k_sigma)",
+          "k_sigma_SiGe (method)"
+        ]
+      },
+      "partialExposure": true
+    },
+    {
+      "className": "FluorocarbonParameters",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "FluorocarbonParameters() + addMaterial(FluorocarbonMaterialParameters) + getMaterialParameters(material)",
+      "docSummary": "Top-level fluorocarbon etch parameters plus a per-material table.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/fluorocarbon"
+      ],
+      "notes": "Material rows are built from the workbench material catalog; Material.Polymer is the native polymer slot.",
+      "members": {
+        "exposed": [
+          "ionFlux",
+          "etchantFlux",
+          "polyFlux",
+          "k_ie",
+          "k_ev",
+          "delta_p",
+          "temperature",
+          "etchStopDepth",
+          "Ions",
+          "addMaterial"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "FluorocarbonParametersIons",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "FluorocarbonParametersIons()",
+      "docSummary": "Fluorocarbon ion distribution.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/fluorocarbon"
+      ],
+      "notes": "All six members are user-settable.",
+      "members": {
+        "exposed": [
+          "meanEnergy",
+          "sigmaEnergy",
+          "exponent",
+          "n_l",
+          "inflectAngle",
+          "minAngle"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "FluorocarbonMaterialParameters",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "FluorocarbonMaterialParameters() + id",
+      "docSummary": "Per-material fluorocarbon etch/sputter/polymer parameters.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/fluorocarbon/materialParametersByMaterial"
+      ],
+      "notes": "The only fully exposed native material-parameter object.",
+      "members": {
+        "exposed": [
+          "A_ie",
+          "A_sp",
+          "B_sp",
+          "E_a",
+          "Eth_ie",
+          "Eth_sp",
+          "K",
+          "beta_e",
+          "beta_p",
+          "density",
+          "id"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "IBEParameters",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "IBEParameters()",
+      "docSummary": "Ion-beam etch parameters, including a material plane-wafer-rate map and cos^4 yield.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/ionBeam"
+      ],
+      "notes": "toProcessMetaData() is only used for evidence, not exposed as an output.",
+      "members": {
+        "exposed": [
+          "meanEnergy",
+          "sigmaEnergy",
+          "thresholdEnergy",
+          "thetaRMin",
+          "thetaRMax",
+          "minAngle",
+          "inflectAngle",
+          "exponent",
+          "n_l",
+          "tiltAngle",
+          "planeWaferRate",
+          "redepositionRate",
+          "redepositionThreshold",
+          "materialPlaneWaferRate",
+          "cos4Yield"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "IBEParametersCos4Yield",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "IBEParametersCos4Yield()",
+      "docSummary": "cos^4 angular yield correction coefficients.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/ionBeam/cos4YieldA1..A4"
+      ],
+      "notes": "aSum and isDefined are computed by the engine.",
+      "members": {
+        "exposed": [
+          "a1",
+          "a2",
+          "a3",
+          "a4"
+        ],
+        "notExposed": [
+          "aSum/isDefined (derived read-only)"
+        ]
+      }
+    },
+    {
+      "className": "FaradayCageParameters",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "FaradayCageParameters()",
+      "docSummary": "cageAngle plus an embedded IBEParameters object.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/faradayCage"
+      ],
+      "notes": "Unlocked together with FaradayCageEtching (batch A1). 2D is restricted to the pinned CPU_DISK flux engine.",
+      "members": {
+        "exposed": [
+          "cageAngle",
+          "ibeParams"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "NeutralTransportParameters",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "NeutralTransportParameters()",
+      "docSummary": "Neutral flux, coverage and surface-diffusion parameters.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/neutralTransport"
+      ],
+      "notes": "Full member coverage.",
+      "members": {
+        "exposed": [
+          "incomingFlux",
+          "sourceDistributionPower",
+          "etchFrontSticking",
+          "zeroCoverageSticking",
+          "coverageTimeStep",
+          "desorptionRate",
+          "surfaceDiffusionCoefficient",
+          "surfaceSiteDensity",
+          "useSteadyStateCoverage",
+          "etchFrontMaterial",
+          "fluxLabel",
+          "coverageLabel"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "SingleParticleALDParams",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "SingleParticleALDParams()",
+      "docSummary": "ALD precursor/coverage parameters.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/ald"
+      ],
+      "notes": "Full member coverage.",
+      "members": {
+        "exposed": [
+          "stickingProbability",
+          "gasMeanFreePath",
+          "growthPerCycle",
+          "incomingFlux",
+          "evaporationFlux",
+          "s0",
+          "coverageDiffusionCoefficient"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "AtomicLayerProcessParameters",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "AtomicLayerProcessParameters()",
+      "docSummary": "Pulse/purge timing and cycle count for ALD.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/ald"
+      ],
+      "notes": "Passed as an extra native process parameter next to SingleParticleALD.",
+      "members": {
+        "exposed": [
+          "pulseTime",
+          "purgePulseTime",
+          "coverageTimeStep",
+          "purgeTimeStep",
+          "numCycles"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "CoverageParameters",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "CoverageParameters()",
+      "docSummary": "Coverage solver controls (tolerance, maxIterations, initialized).",
+      "classification": "advanced-parameter-or-output-not-exposed",
+      "exposedBy": [
+        "worker/specialized.py: ps.CoverageParameters()",
+        "nativeParameters.coverageTolerance (optional; omitted keeps the historical 1e-3)"
+      ],
+      "notes": "tolerance is settable per plasma step; the native default is 0.0 and the worker keeps 1e-3 when the key is omitted. maxIterations and initialized remain unexposed.",
+      "members": {
+        "exposed": [
+          "tolerance"
+        ],
+        "notExposed": [
+          "maxIterations",
+          "initialized"
+        ]
+      },
+      "partialExposure": true
+    },
+    {
+      "className": "AdvectionParameters",
+      "nativeModule": "viennaps._core",
+      "kind": "solver-parameter",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "AdvectionParameters()",
+      "docSummary": "Level-set advection controls: schemes, time step, dissipation, velocity output.",
+      "classification": "exposed",
+      "exposedBy": [
+        "solver.advection (schema 7)"
+      ],
+      "notes": "spatialScheme/temporalScheme are passed through the ViennaLS enums; toMetaData() is recorded per run.",
+      "members": {
+        "exposed": [
+          "timeStepRatio",
+          "spatialScheme",
+          "temporalScheme",
+          "adaptiveTimeStepping",
+          "adaptiveTimeStepSubdivisions",
+          "calculateIntermediateVelocities",
+          "checkDissipation",
+          "dissipationAlpha",
+          "ignoreVoids",
+          "velocityOutput"
+        ],
+        "notExposed": [
+          "integrationScheme"
+        ]
+      }
+    },
+    {
+      "className": "RayTracingParameters",
+      "nativeModule": "viennaps._core",
+      "kind": "solver-parameter",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "RayTracingParameters()",
+      "docSummary": "Ray/flux sampling controls used by single- and multi-particle models.",
+      "classification": "exposed",
+      "exposedBy": [
+        "solver.rayTracing (schema 7)",
+        "solver.raysPerPoint",
+        "solver.random"
+      ],
+      "notes": "Seeds always come from the project/replay seed so results stay reproducible.",
+      "members": {
+        "exposed": [
+          "raysPerPoint",
+          "rngSeed",
+          "diskRadius",
+          "ignoreFluxBoundaries",
+          "maxBoundaryHits",
+          "maxReflections",
+          "minNodeDistanceFactor",
+          "normalizationType",
+          "smoothingNeighbors"
+        ],
+        "notExposed": [
+          "useRandomSeeds (pinned false)"
+        ]
+      }
+    },
+    {
+      "className": "SurfaceDiffusionParameters",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "SurfaceDiffusionParameters()",
+      "docSummary": "Surface diffusion Laplacian stencil for a scalar field on the disk mesh (radius, normals, stability).",
+      "classification": "exposed",
+      "exposedBy": [
+        "steps[].surfaceDiffusion on specialized:ald when coverageDiffusionCoefficient > 0"
+      ],
+      "notes": "The installed 4.6.2 setter is Process.setParameters(SurfaceDiffusionParameters), but the ALP strategy only builds the stencil when SingleParticleALDParams.coverageDiffusionCoefficient > 0, and that is the only 4.6.2 model that reports diffusion coefficients. It smooths the ALD Coverage scalar on the disk mesh, not the level-set surface; on every other process it is inert. See docs/ald-surface-diffusion-contract.md and worker/probe_surface_diffusion_native.py.",
+      "members": {
+        "exposed": [
+          "radius",
+          "sigmaNormal",
+          "normalCutoff",
+          "kNeighbors",
+          "normalizeByLocalScale",
+          "symmetrizeWeights",
+          "stabilityFactor"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "RateSet",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "RateSet(direction=[0,0,0], directionalVelocity=0.0, isotropicVelocity=0.0, maskMaterials=[Material('Mask')], calculateVisibility=True)",
+      "docSummary": "One directional+isotropic rate tuple, optionally selected per material or as one of many sets.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:directional rateSets (schema 5+)"
+      ],
+      "notes": "Each `rateSets` entry becomes one real `viennaps._core.RateSet`. `maskMaterials` omitted inherits the geometry-derived masks; an explicit list (including `[]`) is honoured verbatim and recorded per set. `print()` remains a debugging helper and is not called.",
+      "members": {
+        "exposed": [
+          "direction",
+          "directionalVelocity",
+          "isotropicVelocity",
+          "maskMaterials",
+          "calculateVisibility"
+        ],
+        "notExposed": [
+          "print()"
+        ]
+      },
+      "partialExposure": false
+    },
+    {
+      "className": "RateGrid",
+      "nativeModule": "viennaps.d2",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "RateGrid() + loadFromCSV(filename) + setOffset(xy) + setInterpolationMode(LINEAR|IDW|CUSTOM) + setIDWNeighbors(k) + setCustomInterpolator(callable) + interpolate(coord)",
+      "docSummary": "2D rate table interpolated at (x,z), backing CSVFileProcess.",
+      "classification": "advanced-parameter-or-output-not-exposed",
+      "exposedBy": [],
+      "notes": "Requires a file upload plus a validated CSV schema (column order, units, NaN policy). setCustomInterpolator is arbitrary Python and must stay out of the JSON API.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "loadFromCSV",
+          "setOffset",
+          "setInterpolationMode",
+          "setIDWNeighbors",
+          "interpolate",
+          "setCustomInterpolator"
+        ]
+      }
+    },
+    {
+      "className": "ProcessParams",
+      "nativeModule": "viennaps._core",
+      "kind": "parameter-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "ProcessParams() + insertNextScalar/getScalarData/getScalarDataLabel/getScalarDataIndex",
+      "docSummary": "Base class for native parameter objects that carry scalar arrays.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [],
+      "notes": "Plumbing for extra scalar data; not a modelling capability.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "all"
+        ]
+      }
+    },
+    {
+      "className": "MakePlane",
+      "nativeModule": "viennaps.d2",
+      "kind": "geometry-operator",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "MakePlane(domain, height=0, material=Si, addToExisting=False)",
+      "docSummary": "Creates a flat substrate level set.",
+      "classification": "exposed",
+      "exposedBy": [
+        "geometry:plane (schema 1+)",
+        "worker/simulate.py:MakePlane"
+      ],
+      "notes": "Also used to build every stack layer and the GDS substrate.",
+      "members": {
+        "exposed": [
+          "height",
+          "material",
+          "addToExisting"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "MakeTrench",
+      "nativeModule": "viennaps.d2",
+      "kind": "geometry-operator",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "MakeTrench(domain, trenchWidth, trenchDepth, trenchTaperAngle=0, maskHeight=0, maskTaperAngle=0, halfTrench=False, material=Si, maskMaterial=Mask); MakeTrench(domain, materialLayers, halfTrench=False)",
+      "docSummary": "Creates a trench with optional tapered walls and a mask level set, or a bottom-to-top list of per-layer cutouts.",
+      "classification": "exposed",
+      "exposedBy": [
+        "geometry:trench (schema 1+)",
+        "geometry:stack/pattern=trench",
+        "geometry:stack/pattern=trench + pattern.layers[]"
+      ],
+      "notes": "halfTrench (mirror symmetry) is fixed false. pattern.layers[] calls the native MaterialLayer[] overload directly and must list every stack layer once, bottom to top; omitted keeps the legacy top-layer stencil.",
+      "members": {
+        "exposed": [
+          "trenchWidth",
+          "trenchDepth",
+          "trenchTaperAngle",
+          "maskHeight",
+          "maskTaperAngle",
+          "material",
+          "maskMaterial",
+          "MaterialLayer.height",
+          "MaterialLayer.width",
+          "MaterialLayer.taperAngle",
+          "MaterialLayer.material",
+          "MaterialLayer.isMask"
+        ],
+        "notExposed": [
+          "halfTrench"
+        ]
+      }
+    },
+    {
+      "className": "MakeHole",
+      "nativeModule": "viennaps.d2",
+      "kind": "geometry-operator",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "MakeHole(domain, holeRadius, holeDepth, holeTaperAngle=0, maskHeight=0, maskTaperAngle=0, holeShape=HoleShape.FULL, material=Si, maskMaterial=Mask)",
+      "docSummary": "Creates a cylindrical hole with optional tapered walls and a mask level set.",
+      "classification": "exposed",
+      "exposedBy": [
+        "geometry:hole (schema 1+)",
+        "geometry:stack/pattern=hole"
+      ],
+      "notes": "Only a full hole is exposed; half/quarter holes would halve the domain and are unproven in the schema. Installed 4.6.2 and 4.7.0 have no MaterialLayer[] overload, so per-layer holes are rejected.",
+      "members": {
+        "exposed": [
+          "holeRadius",
+          "holeDepth",
+          "holeTaperAngle",
+          "maskHeight",
+          "maskTaperAngle",
+          "material",
+          "maskMaterial"
+        ],
+        "notExposed": [
+          "holeShape HALF/QUARTER (pinned FULL)",
+          "MaterialLayer[] (not bound by the installed native MakeHole)"
+        ]
+      }
+    },
+    {
+      "className": "MakeFin",
+      "nativeModule": "viennaps.d2",
+      "kind": "geometry-operator",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "MakeFin(domain, finWidth, finHeight, finTaperAngle=0, maskHeight=0, maskTaperAngle=0, halfFin=False, material=Si, maskMaterial=Mask)",
+      "docSummary": "Creates a fin (2D profile or 3D ridge) with optional mask.",
+      "classification": "exposed",
+      "exposedBy": [
+        "geometry:fin (schema 7)",
+        "geometry:fin/construction=boolean (GeometryFactory fallback)"
+      ],
+      "notes": "A boolean construction path exists for fin shapes the native constructor cannot express.",
+      "members": {
+        "exposed": [
+          "finWidth",
+          "finHeight",
+          "finTaperAngle",
+          "maskHeight",
+          "maskTaperAngle",
+          "material",
+          "maskMaterial",
+          "extrusion"
+        ],
+        "notExposed": [
+          "halfFin"
+        ]
+      }
+    },
+    {
+      "className": "MakeStack",
+      "nativeModule": "viennaps.d2",
+      "kind": "geometry-operator",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "MakeStack(domain, numLayers, layerHeight, substrateHeight=0, holeRadius=0, trenchWidth=0, maskHeight=0, taperAngle=0, halfStack=False, maskMaterial=Mask)",
+      "docSummary": "Creates a periodic multi-layer stack with an optional top opening.",
+      "classification": "exposed",
+      "exposedBy": [
+        "geometry:stack (schema 3+)"
+      ],
+      "notes": "The workbench builds the stack itself from MakePlane per layer plus a GeometryFactory boolean opening, so layers can carry arbitrary catalog materials and a GDS top mask. The native helper is a narrower subset.",
+      "members": {
+        "exposed": [
+          "(capability) per-layer material, height, role and optional GDS top mask"
+        ],
+        "notExposed": [
+          "numLayers fixed schema",
+          "halfStack"
+        ]
+      }
+    },
+    {
+      "className": "GeometryFactory",
+      "nativeModule": "viennaps.d2",
+      "kind": "geometry-operator",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "GeometryFactory(domainSetup: DomainSetup, name='GeometryFactory') + applyBooleanOperation / layerToLevelSet helpers",
+      "docSummary": "Builds level-set geometry with planar booleans and converts GDS layers into level sets.",
+      "classification": "exposed",
+      "exposedBy": [
+        "step:boolean (schema 5+)",
+        "geometry:fin/construction=boolean",
+        "geometry:gds",
+        "step:gdsBoolean (schema 7)"
+      ],
+      "notes": "Boolean operators are limited to boxes/fins; arbitrary polygon geometry arrives only through GDS.",
+      "members": {
+        "exposed": [
+          "union",
+          "intersection",
+          "difference",
+          "GDS layer to level set",
+          "z-extruded GDS mask"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "GDSGeometry",
+      "nativeModule": "viennaps.d2",
+      "kind": "geometry-operator",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "GDSGeometry(gridDelta) | GDSGeometry(gridDelta, boundaryConditions)",
+      "docSummary": "Container that maps GDS layers/datatypes onto level-set/mask geometry.",
+      "classification": "exposed",
+      "exposedBy": [
+        "geometry:gds (schema 7)",
+        "/api/gds-assets"
+      ],
+      "notes": "GDS assets are uploaded once, hashed, and re-read by geometry and gdsBoolean steps.",
+      "members": {
+        "exposed": [
+          "gridDelta",
+          "boundary conditions",
+          "layer/datatype selection",
+          "unitScale",
+          "placement",
+          "baseHeight/height",
+          "mask flag"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "GDSReader",
+      "nativeModule": "viennaps.d2",
+      "kind": "geometry-operator",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "GDSReader(gdsGeometry, fileName) | GDSReader(fileName)",
+      "docSummary": "Reads a GDSII file into a GDSGeometry.",
+      "classification": "exposed",
+      "exposedBy": [
+        "geometry:gds (schema 7)",
+        "worker/gds_mask.py"
+      ],
+      "notes": "A polygon that exactly fills the cell boundary can yield an empty level set; the worker rejects that instead of writing a broken structure.",
+      "members": {
+        "exposed": [
+          "fileName",
+          "structure",
+          "layer",
+          "datatype"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "Extrude",
+      "nativeModule": "viennaps.d2",
+      "kind": "geometry-operator",
+      "dimensions": [
+        3
+      ],
+      "constructor": "Extrude(inputDomain2D, outputDomain3D, extent, extrusionAxis, boundaryConditions) | Extrude()",
+      "docSummary": "Extrudes a 2D level-set profile into 3D along one axis.",
+      "classification": "exposed",
+      "exposedBy": [
+        "geometry:gds/3D",
+        "geometry:fin/extrusion (schema 7)"
+      ],
+      "notes": "Used internally; projects describe the extrusion, not the operator.",
+      "members": {
+        "exposed": [
+          "extent",
+          "extrusionAxis",
+          "boundaryConditions"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "Slice",
+      "nativeModule": "viennaps.d2",
+      "kind": "geometry-operator",
+      "dimensions": [
+        3
+      ],
+      "constructor": "Slice(inputDomain3D, outputDomain2D, sliceDimension, slicePosition)",
+      "docSummary": "Cuts a 3D domain into a 2D cross-section.",
+      "classification": "exposed",
+      "exposedBy": [
+        "POST /api/runs/slice",
+        "worker/simulate.py:ps.Slice(domain, sliced, 1, position)"
+      ],
+      "notes": "Only the verified y-normal axis is accepted; other axes are rejected rather than approximated.",
+      "members": {
+        "exposed": [
+          "sliceDimension (axis 1/y only)",
+          "slicePosition"
+        ],
+        "notExposed": [
+          "setReflectX"
+        ]
+      }
+    },
+    {
+      "className": "Planarize",
+      "nativeModule": "viennaps.d2",
+      "kind": "geometry-operator",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "Planarize() | Planarize(geometry, cutoffHeight=0.0) + setCutoffPosition / setDomain",
+      "docSummary": "Cuts every level set at one height (CMP-like planarisation).",
+      "classification": "exposed",
+      "exposedBy": [
+        "step:planarize (schema 5+)",
+        "stopMaterial + overPolish (material-aware CMP)"
+      ],
+      "notes": "Native Planarize has no material awareness; the workbench derives the cutoff from a measured material top. It is not a calibrated CMP model (no pattern density, pad or slurry physics).",
+      "members": {
+        "exposed": [
+          "cutoffHeight",
+          "stopMaterial (measured top)",
+          "overPolish"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "Domain",
+      "nativeModule": "viennaps.d2",
+      "kind": "geometry-operator",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "Domain(gridDelta, xExtent, yExtent, boundary=REFLECTIVE_BOUNDARY) | Domain(gridDelta, xExtent, boundary)",
+      "docSummary": "Simulation domain: grid spacing, lateral extent, boundary conditions, level-set stack.",
+      "classification": "exposed",
+      "exposedBy": [
+        "domain (schema 1+)",
+        "geometry:*",
+        "output:surface mesh / snapshot / native state"
+      ],
+      "notes": "2D domains have no vertical size control: the third constructor argument is the boundary type.",
+      "members": {
+        "exposed": [
+          "gridDelta",
+          "xExtent",
+          "yExtent (3D)",
+          "xBoundary/yBoundary (reflective, periodic)",
+          "level-set materials",
+          "surface mesh",
+          "saveSurfaceMesh",
+          "generateCellSet (oxideRegrowth only)"
+        ],
+        "notExposed": [
+          "2D vertical extent (native infinite)",
+          "Domain deep-copy/continuation internals"
+        ]
+      }
+    },
+    {
+      "className": "DomainSetup",
+      "nativeModule": "viennaps.d2",
+      "kind": "geometry-operator",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "DomainSetup(gridDelta, xExtent, yExtent, boundary=...) | DomainSetup()",
+      "docSummary": "Plain value object passed to GeometryFactory.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [],
+      "notes": "The worker constructs it inline from the project domain.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "all"
+        ]
+      }
+    },
+    {
+      "className": "ToDiskMesh",
+      "nativeModule": "viennaps.d2",
+      "kind": "output-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "ToDiskMesh(domain, mesh) | ToDiskMesh()",
+      "docSummary": "Builds the disk mesh used for bounding-box queries.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [],
+      "notes": "Referenced only in a comment about Domain.getBoundingBox().",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "all"
+        ]
+      }
+    },
+    {
+      "className": "Writer",
+      "nativeModule": "viennaps.d2",
+      "kind": "output-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "Writer(domain) | Writer(domain, fileName)",
+      "docSummary": "Native VTK/level-set writer.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [],
+      "notes": "The workbench writes its own compact VTK/snapshot/native-state artifacts for hashing and budget control.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "all"
+        ]
+      }
+    },
+    {
+      "className": "Reader",
+      "nativeModule": "viennaps.d2",
+      "kind": "output-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "Reader(fileName) | Reader(domain, fileName)",
+      "docSummary": "Native level-set reader.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [],
+      "notes": "Continuation uses the workbench's own native-state format, not the native reader.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "all"
+        ]
+      }
+    },
+    {
+      "className": "VTKRenderWindow",
+      "nativeModule": "viennaps.d2",
+      "kind": "output-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "VTKRenderWindow()",
+      "docSummary": "Offscreen VTK render helper.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [],
+      "notes": "The UI renders in the browser, not through VTK.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "all"
+        ]
+      }
+    },
+    {
+      "className": "DenseCellSet",
+      "nativeModule": "viennaps.d2",
+      "kind": "output-object",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "DenseCellSet() + fromLevelSets(domain, ...) + setCellSetPosition/setCoverMaterial/setPeriodicBoundary/setFillingFraction/addScalarData/buildNeighborhood/updateSurface/writeVTU/writeCellSetData/readCellSetData",
+      "docSummary": "Volumetric cell set over the simulation domain, carrying filling fractions and scalar fields.",
+      "classification": "exposed",
+      "exposedBy": [
+        "outputSettings.cellSet (schema 7, per step)",
+        "output:nativeCellSet (OxideRegrowth, unchanged)"
+      ],
+      "notes": "B4 exposes the generic native DenseCellSet as an opt-in per-step output: height above the measured surface, cover material, periodic flag, VTU and/or compact JSON, and the native Material/FillingFraction scalar labels. Generation is bounded by MAX_CELL_SET_CELLS = 2,000,000 and rejected before allocation/preflight when oversized; omitting outputSettings.cellSet keeps historical request hashes and artifacts unchanged. OxideRegrowth keeps its own by-product cell-set JSON and schema.",
+      "members": {
+        "exposed": [
+          "generic per-step generation from the current level sets",
+          "cell-set height, cover material, periodic flag and VTU/JSON format",
+          "Material and FillingFraction scalar labels",
+          "native VTU export and compact JSON summary",
+          "deterministic replay and lazy materialization",
+          "OxideRegrowth by-product field as JSON (unchanged)"
+        ],
+        "notExposed": [
+          "readCellSetData continuation from a cell set",
+          "arbitrary user scalar labels beyond Material/FillingFraction",
+          "below-surface cell sets (isAboveSurface=false)"
+        ]
+      },
+      "partialExposure": true
+    },
+    {
+      "className": "StencilLocalLaxFriedrichsScalar",
+      "nativeModule": "viennaps._core",
+      "kind": "solver-parameter",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "StencilLocalLaxFriedrichsScalar() + setMaxDissipation",
+      "docSummary": "Spatial-scheme helper used by the Lax-Friedrichs family.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [],
+      "notes": "Configured indirectly through solver.advection.spatialScheme only.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "setMaxDissipation"
+        ]
+      }
+    },
+    {
+      "className": "Material",
+      "nativeModule": "viennaps._core",
+      "kind": "material-api",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "Material() | Material(BuiltInMaterial) | Material(int)",
+      "docSummary": "Native material identity (name, ID, category, color).",
+      "classification": "exposed",
+      "exposedBy": [
+        "GET/POST/PATCH/DELETE /api/materials",
+        "docs/materials-catalog.json",
+        "backend/materials.py"
+      ],
+      "notes": "Material IDs are verified against the native registry before a run.",
+      "members": {
+        "exposed": [
+          "built-in catalog",
+          "custom materials with IDs",
+          "per-run material maps"
+        ],
+        "notExposed": [
+          "MaterialRegistry::duplicate/register private catalogs"
+        ]
+      }
+    },
+    {
+      "className": "MaterialRegistry",
+      "nativeModule": "viennaps._core",
+      "kind": "material-api",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "MaterialRegistry.instance() + findMaterial/getMaterial/addMaterial",
+      "docSummary": "Process-wide native material registry.",
+      "classification": "exposed",
+      "exposedBy": [
+        "backend/materials.py",
+        "worker/simulate.py:material_handle"
+      ],
+      "notes": "Custom materials are persisted in the data directory and re-registered in the worker.",
+      "members": {
+        "exposed": [
+          "lookup by name",
+          "custom registration"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "MaterialMap",
+      "nativeModule": "viennaps._core",
+      "kind": "material-api",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "MaterialMap()",
+      "docSummary": "Native map of material metadata.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [],
+      "notes": "The workbench keeps its own catalog JSON to stay replayable across engine sessions.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "all"
+        ]
+      }
+    },
+    {
+      "className": "MaterialValueMap",
+      "nativeModule": "viennaps._core",
+      "kind": "material-api",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "MaterialValueMap() + set()",
+      "docSummary": "Native map from Material to float, e.g. per-material IBE rates.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [
+        "model:specialized/ionBeam/materialPlaneWaferRate"
+      ],
+      "notes": "Only used internally when building IBEParameters.",
+      "members": {
+        "exposed": [
+          "per-material plane wafer rate (through the IBE parameter object)"
+        ],
+        "notExposed": [
+          "direct map API"
+        ]
+      }
+    },
+    {
+      "className": "AdvectionCallback",
+      "nativeModule": "viennaps.d2",
+      "kind": "callback",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "AdvectionCallback() with overridable applyPreAdvect/applyPostAdvect and a domain handle",
+      "docSummary": "Python hook invoked before/after each advection step.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [],
+      "notes": "Deliberately absent from the API: it is arbitrary Python executed inside the worker, so a project could not be hashed, replayed or bounded. MultiParticleProcess.setRateFunction is the only callback the worker itself installs, and it is a fixed linear relation, not user code.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "all"
+        ]
+      }
+    },
+    {
+      "className": "Logger",
+      "nativeModule": "viennaps.d2",
+      "kind": "utility",
+      "dimensions": [],
+      "constructor": "Logger.getInstance() + setLogLevel/setLogFile",
+      "docSummary": "Native logging singleton.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [],
+      "notes": "The worker captures stdout/stderr with byte caps instead.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "all"
+        ]
+      }
+    },
+    {
+      "className": "MetaDataLevel",
+      "nativeModule": "viennaps.d2",
+      "kind": "enum",
+      "dimensions": [],
+      "constructor": "NONE | PROCESS | GRID | FULL",
+      "docSummary": "Verbosity of native meta-data dumps.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [],
+      "notes": "Run evidence uses the explicit toMetaData() calls the worker already makes.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "all"
+        ]
+      }
+    },
+    {
+      "className": "HoleShape",
+      "nativeModule": "viennaps._core",
+      "kind": "enum",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "HoleShape.FULL | HALF | QUARTER",
+      "docSummary": "Symmetry sector of MakeHole.",
+      "classification": "exposed",
+      "exposedBy": [
+        "geometry:hole"
+      ],
+      "notes": "Only the full hole is verified in this schema; half/quarter would change domain symmetry.",
+      "members": {
+        "exposed": [
+          "FULL"
+        ],
+        "notExposed": [
+          "HALF",
+          "QUARTER"
+        ]
+      }
+    },
+    {
+      "className": "SiliconOrientation",
+      "nativeModule": "viennaps._core",
+      "kind": "enum",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "Si100 | Si110 | Si111 | PolySi",
+      "docSummary": "Substrate orientation for Oxidation.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/oxidation/orientation"
+      ],
+      "notes": "B5 exposes all four values. Si110 has native enum value 1, changes the planar Deal-Grove readback and produces a distinct 2D and 3D surface hash.",
+      "members": {
+        "exposed": [
+          "Si100",
+          "Si110",
+          "Si111",
+          "PolySi"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "OxidantType",
+      "nativeModule": "viennaps._core",
+      "kind": "enum",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "Dry | Wet",
+      "docSummary": "Oxidation ambient.",
+      "classification": "exposed",
+      "exposedBy": [
+        "model:specialized/oxidation/oxidant"
+      ],
+      "notes": "Full member coverage.",
+      "members": {
+        "exposed": [
+          "Dry",
+          "Wet"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "BoundaryType",
+      "nativeModule": "viennaps.d2",
+      "kind": "enum",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "REFLECTIVE_BOUNDARY | PERIODIC_BOUNDARY | INFINITE_BOUNDARY | POS/NEG_INFINITE_BOUNDARY",
+      "docSummary": "Lateral and vertical domain boundary conditions.",
+      "classification": "exposed",
+      "exposedBy": [
+        "domain.xBoundary / domain.yBoundary (reflective, periodic)"
+      ],
+      "notes": "2D vertical is implicitly infinite; 3D vertical is infinite too, so only the lateral pair is selectable.",
+      "members": {
+        "exposed": [
+          "reflective",
+          "periodic"
+        ],
+        "notExposed": [
+          "infinite / pos-infinite / neg-infinite"
+        ]
+      }
+    },
+    {
+      "className": "FluxEngineType",
+      "nativeModule": "viennaps.d2",
+      "kind": "enum",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "AUTO | CPU_DISK | GPU_DISK | CPU_TRIANGLE | GPU_TRIANGLE | GPU_LINE",
+      "docSummary": "Ray-flux backend selector.",
+      "classification": "exposed",
+      "exposedBy": [
+        "solver.enginePreference (auto|cpu|gpu)",
+        "solver.gpuEngine=GPU_TRIANGLE (schema 7; evidence-gated)",
+        "engineProfile=AUTO policy"
+      ],
+      "notes": "AUTO never silently falls back; unverified engines are rejected by the worker. GPU_TRIANGLE is exposed only for the measured specialized:sf6o2 etch/reflective stack pair in 2D and 3D; every other request is rejected rather than redirected to GPU_DISK or CPU_DISK.",
+      "members": {
+        "exposed": [
+          "CPU_DISK",
+          "GPU_DISK",
+          "GPU_TRIANGLE"
+        ],
+        "notExposed": [
+          "CPU_TRIANGLE",
+          "GPU_LINE",
+          "AUTO fallback"
+        ]
+      }
+    },
+    {
+      "className": "NormalizationType",
+      "nativeModule": "viennaps.d2",
+      "kind": "enum",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "SOURCE | MAX",
+      "docSummary": "Flux normalization mode.",
+      "classification": "exposed",
+      "exposedBy": [
+        "solver.rayTracing.normalizationType"
+      ],
+      "notes": "Both values are exposed.",
+      "members": {
+        "exposed": [
+          "SOURCE",
+          "MAX"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "SpatialScheme",
+      "nativeModule": "viennaps.d2",
+      "kind": "enum",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "ENGQUIST_OSHER_1ST/2ND, LAX_FRIEDRICHS_1ST/2ND, LOCAL_LAX_FRIEDRICHS_1ST/2ND, LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST, LOCAL_LOCAL_LAX_FRIEDRICHS_1ST/2ND, STENCIL_LOCAL_LAX_FRIEDRICHS_1ST, WENO_3RD/5TH",
+      "docSummary": "Level-set spatial discretisation.",
+      "classification": "exposed",
+      "exposedBy": [
+        "solver.advection.spatialScheme (schema 7)"
+      ],
+      "notes": "Passed through as a ViennaLS enum by name.",
+      "members": {
+        "exposed": [
+          "all 12 values"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "TemporalScheme",
+      "nativeModule": "viennaps.d2",
+      "kind": "enum",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "FORWARD_EULER | RUNGE_KUTTA_2ND_ORDER | RUNGE_KUTTA_3RD_ORDER",
+      "docSummary": "Time integration scheme.",
+      "classification": "exposed",
+      "exposedBy": [
+        "solver.advection.temporalScheme (schema 7)"
+      ],
+      "notes": "Passed through as a ViennaLS enum by name.",
+      "members": {
+        "exposed": [
+          "all 3 values"
+        ],
+        "notExposed": []
+      }
+    },
+    {
+      "className": "Interpolation",
+      "nativeModule": "viennaps.d2",
+      "kind": "enum",
+      "dimensions": [
+        2
+      ],
+      "constructor": "LINEAR | IDW | CUSTOM",
+      "docSummary": "RateGrid interpolation mode.",
+      "classification": "advanced-parameter-or-output-not-exposed",
+      "exposedBy": [],
+      "notes": "Unreachable until RateGrid/CSVFileProcess exist; CUSTOM maps to a Python callback and must stay unexposed.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "LINEAR",
+          "IDW",
+          "CUSTOM"
+        ]
+      }
+    },
+    {
+      "className": "GpuMode",
+      "nativeModule": "viennaps._core",
+      "kind": "enum",
+      "dimensions": [
+        2
+      ],
+      "constructor": "Auto | Cpu | Gpu",
+      "docSummary": "Oxidation solver GPU switch.",
+      "classification": "advanced-parameter-or-output-not-exposed",
+      "exposedBy": [],
+      "notes": "Oxidation runs on the CPU path only; GPU oxidation is unverified on this host.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "Auto",
+          "Cpu",
+          "Gpu"
+        ]
+      }
+    },
+    {
+      "className": "GpuPreconditioner",
+      "nativeModule": "viennaps._core",
+      "kind": "enum",
+      "dimensions": [
+        2
+      ],
+      "constructor": "Jacobi | ILU0",
+      "docSummary": "Oxidation GPU linear-solver preconditioner.",
+      "classification": "advanced-parameter-or-output-not-exposed",
+      "exposedBy": [],
+      "notes": "Same reason as GpuMode.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "Jacobi",
+          "ILU0"
+        ]
+      }
+    },
+    {
+      "className": "LengthUnit",
+      "nativeModule": "viennaps._core",
+      "kind": "enum",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "UNDEFINED | ANGSTROM | NANOMETER | MICROMETER | MILLIMETER | CENTIMETER | METER",
+      "docSummary": "Native length unit.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [],
+      "notes": "The workbench pins length to um and converts on input.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "all"
+        ]
+      }
+    },
+    {
+      "className": "TimeUnit",
+      "nativeModule": "viennaps._core",
+      "kind": "enum",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "UNDEFINED | MILLISECOND | SECOND | MINUTE",
+      "docSummary": "Native time unit.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [],
+      "notes": "The workbench pins time to seconds.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "all"
+        ]
+      }
+    },
+    {
+      "className": "MaterialKind",
+      "nativeModule": "viennaps._core",
+      "kind": "enum",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "BuiltIn | Custom",
+      "docSummary": "Material provenance.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [],
+      "notes": "Surfaced indirectly through the materials catalog.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "all"
+        ]
+      }
+    },
+    {
+      "className": "MaterialCategory",
+      "nativeModule": "viennaps._core",
+      "kind": "enum",
+      "dimensions": [
+        2,
+        3
+      ],
+      "constructor": "Silicon | OxideNitride | Metal | Hardmask | Silicide | TwoD | TCO | Compound | Generic | Misc",
+      "docSummary": "Material classification.",
+      "classification": "internal-or-not-user-facing",
+      "exposedBy": [],
+      "notes": "Category is shown from the catalog JSON, not selected through the native enum.",
+      "members": {
+        "exposed": [],
+        "notExposed": [
+          "all"
+        ]
+      }
+    }
+  ],
+  "partialExposurePolicy": "advanced-parameter-or-output-not-exposed rows may still carry exposedBy when a strict subset of the class is reachable; those rows set partialExposure=true.",
+  "workbenchExposureGaps": [
+    "docs/capabilities.json lists only isotropic and singleParticle under 'models'; the 14 exposed specialized models are documented in backend/specialized_models.py and /api/specialized-models, not in the capability file.",
+    "No single document previously mapped the native class surface (including parameter objects and enums) to the project schema; this matrix is that map."
+  ],
+  "spxOnly": [
+    {
+      "capability": "Lithography patterning (resist coat/expose/develop, litho_patterning masks)",
+      "why": "Not a ViennaPS model. The engine only consumes already-patterned masks (GDS or geometry).",
+      "workbenchStatus": "absent; a GDS mask is the closest substitute"
+    },
+    {
+      "capability": "Ion implantation (dose/energy/tilt, mask-relative profiles)",
+      "why": "No implant model in viennaps 4.6.2.",
+      "workbenchStatus": "absent"
+    },
+    {
+      "capability": "Anneal / dopant diffusion and activation",
+      "why": "No thermal budget or dopant diffusion solver in viennaps 4.6.2.",
+      "workbenchStatus": "absent"
+    },
+    {
+      "capability": "Silicide formation",
+      "why": "No silicide reaction/diffusion model. MaterialCategory.Silicide is a label, not a process.",
+      "workbenchStatus": "absent"
+    },
+    {
+      "capability": "Stress / mechanics (intrinsic film stress, deformation)",
+      "why": "Only Oxidation has an internal mask-mechanics solver; there is no general stress model.",
+      "workbenchStatus": "absent"
+    },
+    {
+      "capability": "True CMP (pattern density, pad/slurry, dishing/erosion)",
+      "why": "Planarize is a geometric cut; the workbench adds a measured stop material, not a CMP model.",
+      "workbenchStatus": "partial surrogate only: geometric planarize"
+    },
+    {
+      "capability": "Doping profiles and device/electrical simulation (IV, CV, contacts)",
+      "why": "ViennaPS is a topography engine; no device or field solver.",
+      "workbenchStatus": "absent"
+    },
+    {
+      "capability": "Contact/M0 metal routing as a process step",
+      "why": "Requires a second mask/geometry stage; not an engine limitation but a project-model limitation.",
+      "workbenchStatus": "partial: gdsBoolean + continuation can approximate it"
+    }
+  ],
+  "batches": [
+    {
+      "id": "A1",
+      "title": "FaradayCageEtching as a structured specialized model (2D CPU-only / 3D)",
+      "classification": "exposed",
+      "items": [
+        "FaradayCageEtching",
+        "FaradayCageParameters"
+      ],
+      "risk": "medium",
+      "notes": "cageAngle plus the existing ionBeam parameter group (IBEParameters). Mask materials already come from geometry. The original '2D hang' came from an unpinned AUTO/GPU Process; with CPU_DISK the full cage/tilt matrix completes, so 2D is admitted only on the pinned CPU engine and AUTO/GPU is a 422 before the worker starts. IBEParameters also requires thresholdEnergy < meanEnergy: at threshold >= mean the native yield normalization changes sign, so an etch grows the surface (mean 100/threshold 200/sigma 500 grew 0.8 -> 0.969595 um), aborts the ray trace at equality with sigma > 0, or empties the top level set at sigma = 0.",
+      "acceptanceCriteria": [
+        "2D is admitted only with the pinned CPU_DISK engine; AUTO/GPU requests are a 422 before the worker starts. 3D keeps its previous engine behaviour.",
+        "2D and 3D runs match a direct native reference within 1e-6 um (max point distance).",
+        "An independent native Faraday reference (cage source directions, not ordinary normal-incidence IBE) matches within 1e-6 um.",
+        "thresholdEnergy < meanEnergy is enforced before the worker in 2D and 3D; equal or higher is a 422.",
+        "Replay of the recorded run reproduces the artifact hashes exactly.",
+        "specialized-models catalog documents the model with engineVersion 4.6.2, dimensions 2/3 and the 2D CPU-only engine restriction."
+      ]
+    },
+    {
+      "id": "A2",
+      "title": "GeometricTrenchDeposition as a structured specialized model (2D)",
+      "classification": "engine-model-not-exposed",
+      "items": [
+        "GeometricTrenchDeposition"
+      ],
+      "risk": "low",
+      "notes": "Closed-form trench fill, 7 scalar arguments, no flux engine. Exact 2D-only: 3D aborts with SIGSEGV.",
+      "acceptanceCriteria": [
+        "Validator rejects dimension=3 for this model.",
+        "2D trench run reproduces the analytic profile of a direct native reference within 1e-6 um.",
+        "The step reports that no flux engine was used (engine=not-applicable) in the run execution record.",
+        "A degenerate parameter set (zero depositionRate or zero width) fails validation instead of hanging."
+      ]
+    },
+    {
+      "id": "A3",
+      "title": "CSV rate tables: RateGrid + CSVFileProcess",
+      "classification": "engine-model-not-exposed",
+      "items": [
+        "CSVFileProcess",
+        "RateGrid",
+        "Interpolation"
+      ],
+      "risk": "high",
+      "notes": "Needs a new uploaded asset kind (like GDS assets) with a fixed CSV schema, size cap and sha256 in the project. Must require an explicit interpolation mode because the engine only logs 'Interpolation mode not set.' and continues with an effectively empty grid. setCustomInterpolator stays unavailable.",
+      "acceptanceCriteria": [
+        "CSV upload is size-capped, hashed, schema-validated (x,z,rate columns, finite floats) and stored under the data directory; the project stores assetId + hash, never a filesystem path.",
+        "Missing interpolation mode is a 422, not a warning.",
+        "A run with a LINEAR grid matches a direct native reference (same CSV) within 1e-6 um.",
+        "Request hash changes when the CSV content changes; replay of the old hash fails with a clear error.",
+        "No API field can reach setCustomInterpolator."
+      ]
+    },
+    {
+      "id": "A4",
+      "title": "Particle shape distributions (Box/Sphere/CustomSphere)",
+      "classification": "advanced-parameter-or-output-not-exposed",
+      "status": "implemented-masked-etch",
+      "items": [
+        "BoxDistribution",
+        "SphereDistribution",
+        "CustomSphereDistribution"
+      ],
+      "risk": "high",
+      "notes": "Implemented as schema-7 geometry step particleShape (BoxDistribution/SphereDistribution, no duration). Masks come from the project geometry's native mask materials via addMaskMaterial, which is the officially supported combination for negative (etch) displacement: 2D/3D probes keep the protected material in place while the exposed surface shrinks, and the official FinFET example uses the same call. Positive (deposition) displacement with any non-empty mask SIGSEGVs in 2D/3D (material mask, raw viennals mask from getMaterialLevelSet, applyToSingleMaterial, insertMask; near, far or full-domain mask), so depositions stay maskless and the run record lists the omitted mask materials. ViennaPS 4.7.0 / ViennaLS 5.10.0 still crash identically and the upstream source still carries the positive-box-with-mask TODO. CustomSphereDistribution aborts in 2D and 3D even without a mask (returnCode -6, 'Point ID 3 is out of bounds for CustomSphereDistribution with 3 radii!'), so it stays unexposed. Evidence: docs/particle-shape-distribution-contract.md.",
+      "acceptanceCriteria": [
+        "Design note proves how the viennals mask is built from an existing project domain without a second geometry source of truth: addMaskMaterial over the project's native mask material level sets, the same rule the flux and CSV steps use.",
+        "Box and Sphere produce a geometry whose surface mesh equals a direct native reference (no-mask deposit, masked etch, 2D and 3D).",
+        "Radii/half-axes are bounded (count and magnitude) and rejected outside range.",
+        "CustomSphereDistribution is only exposed after a passing 2D and 3D probe is archived; otherwise it stays out of the catalog."
+      ]
+    },
+    {
+      "id": "B1",
+      "title": "Full plasma sub-parameter families",
+      "classification": "advanced-parameter-or-output-not-exposed",
+      "items": [
+        "PlasmaEtchingParameters*",
+        "CF4O2Parameters*"
+      ],
+      "risk": "high",
+      "notes": "Implemented by the optional nativeParameters.advanced object plus the parameter-object overloads. The allowlist is the native-consumed subset: inert SiGe fields, Substrate.B_ie, and the SF6C4F8 passivation family are rejected. Advanced defaults for flat-shared fields equal the flat catalog defaults; model-specific native defaults and per-material maps are recorded in run metadata.",
+      "acceptanceCriteria": [
+        "An optional nativeParameters.advanced object is accepted per plasma model with a strict per-model allowlist; unknown/inert keys are rejected.",
+        "Omitting the object leaves the request hash of every existing project unchanged.",
+        "Advanced defaults for flat-shared fields equal the flat catalog defaults; native-only defaults are read back and recorded in run metadata.",
+        "2D and 3D golden runs for sf6o2, hbro2, sf6c4f8 and a cf4o2 SiGe case match independent native references within 1e-6 um; archived docs evidence is still pending."
+      ],
+      "status": "implemented-backend-api"
+    },
+    {
+      "id": "B2",
+      "title": "Multi-RateSet directional model",
+      "classification": "exposed",
+      "items": [
+        "RateSet",
+        "DirectionalProcess(rateSets)"
+      ],
+      "risk": "medium",
+      "notes": "Implemented as steps[].rateSets[] on model:directional, mutually exclusive with the scalar fields. Each set carries its own direction, directional/isotropic velocities, optional maskMaterials and calculateVisibility; 1\u20138 sets are accepted and the worker uses the native Sequence[RateSet] overload. The scalar form remains the default and keeps historical hashes.",
+      "acceptanceCriteria": [
+        "A rateSets list (1\u20138 sets) is accepted alongside, and mutually exclusive with, the scalar fields.",
+        "Existing directional projects keep their request hashes and results when rateSets is omitted.",
+        "A multi-set run matches a direct native reference within 1e-6 um; opposite sets cancel additively.",
+        "Per-set maskMaterials are fully supported (including an explicit empty list), not silently ignored.",
+        "2D third-component values are normalized before the native call; unsupported scalar/rateSets mixtures are rejected."
+      ],
+      "status": "implemented-backend-api"
+    },
+    {
+      "id": "B3",
+      "title": "SurfaceDiffusionParameters for ALD coverage smoothing",
+      "classification": "exposed",
+      "items": [
+        "SurfaceDiffusionParameters"
+      ],
+      "risk": "high",
+      "status": "implemented-backend-api",
+      "notes": "The bounded probe found the real insertion point: the ALP strategy builds the stencil only for SingleParticleALD with coverageDiffusionCoefficient > 0, and diffuses the Coverage scalar (not the level-set geometry). Exposed as the optional steps[].surfaceDiffusion object on specialized:ald. Every other model is rejected as inert even when the object is disabled; a zero coverageDiffusionCoefficient is rejected only when surfaceDiffusion is enabled, because a disabled token is a no-op.",
+      "acceptanceCriteria": [
+        "A bounded probe records which process/model accepts surface diffusion and what it changes on a trench.",
+        "If no legal insertion point exists in 4.6.2, the class is documented as not applicable and stays unexposed.",
+        "If it is inserted, defaults must be a no-op (existing artifact hashes unchanged).",
+        "radius/sigmaNormal/stabilityFactor ranges are bounded in the schema with documented units."
+      ]
+    },
+    {
+      "id": "B4",
+      "title": "Generic DenseCellSet output",
+      "classification": "exposed",
+      "items": [
+        "DenseCellSet"
+      ],
+      "risk": "medium",
+      "notes": "Exposed as the opt-in outputSettings.cellSet block. The worker builds a generic native DenseCellSet from the current level sets, records counts/grid/fields, and writes VTU and/or JSON artifacts. Sizing is preflighted and re-bounded from the measured surface before allocation; OxideRegrowth output is unchanged. Below-surface sets and readCellSetData continuation remain unexposed.",
+      "acceptanceCriteria": [
+        "A per-step opt-in (height, cover material, periodic flag, format, scalar labels) is validated before the run.",
+        "The existing OxideRegrowth artifact keeps its exact schema and hash.",
+        "Artifact size is preflighted (24 B/cell VTU + 64 KiB JSON) and an oversized cell set fails before writing/allocating.",
+        "Cell counts and field arrays replay byte-identically for a fixed seed, including lazy materialization.",
+        "2D, 3D and periodic native runs produce real VTU/JSON artifacts; omitted block keeps historical hashes."
+      ],
+      "status": "implemented-backend-api"
+    },
+    {
+      "id": "B5",
+      "title": "Oxidation advanced setters and Si110",
+      "classification": "exposed",
+      "items": [
+        "Oxidation",
+        "SiliconOrientation"
+      ],
+      "risk": "high",
+      "notes": "Si110 plus the optional steps[].advancedOxidation object. Four solver setters are exposed only after controlled native probes showed a deterministic surface-hash change: cflFactor, mechanicsTolerance, couplingTolerance and simplePressureRelaxation. GPU mode, maxGridPoints, solve bounds, iteration caps, pressure/stokes tolerance, simpleVelocityRelaxation, mask mechanics and the legacy OxidationParameters names stay out with recorded evidence. Defaults are installed-native defaults and materialising them is a behaviour no-op.",
+      "acceptanceCriteria": [
+        "Si110 exists in the installed enum, changes the planar native readback and produces distinct 2D/3D surface hashes.",
+        "Advanced setters are grouped in strict steps[].advancedOxidation; omitted block keeps historical request hashes and artifacts.",
+        "Every accepted setter has a controlled native probe showing a deterministic surface-hash change.",
+        "Excluded/inert members are rejected by the strict schema, not silently ignored; no raw native object or pointer is accepted.",
+        "Mask mechanics and GPU oxidation stay out until a verified host run exists."
+      ],
+      "status": "implemented-backend-api"
+    },
+    {
+      "id": "C1",
+      "title": "Deliberately never exposed: generic Python process models and callbacks",
+      "classification": "internal-or-not-user-facing",
+      "items": [
+        "ProcessModel",
+        "ProcessModelBase",
+        "ProcessParams",
+        "AdvectionCallback",
+        "RateGrid.setCustomInterpolator",
+        "MultiParticleProcess.setRateFunction"
+      ],
+      "risk": "high",
+      "notes": "These are extension hooks. Accepting them would execute arbitrary Python inside the worker, break request hashing and replay, escape the bounded-child resource model, and make results non-reproducible. MultiParticleProcess already covers the legitimate use case with declarative coefficients.",
+      "acceptanceCriteria": [
+        "No API field, project schema field or replay field can name a Python callable or module path.",
+        "A schema-level test asserts these names never appear in project/replay JSON.",
+        "Any new modelling need is met by a declarative field plus a native reference run, not a callback."
+      ]
+    }
+  ]
+}

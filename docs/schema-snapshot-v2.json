@@ -1,0 +1,531 @@
+{
+  "$defs": {
+    "Axes": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "const": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "const": 1,
+          "title": "Y",
+          "type": "integer"
+        },
+        "z": {
+          "const": 2,
+          "title": "Z",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "title": "Axes",
+      "type": "object"
+    },
+    "CellMaterials": {
+      "additionalProperties": false,
+      "properties": {
+        "materialIds": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Materialids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "materialIds"
+      ],
+      "title": "CellMaterials",
+      "type": "object"
+    },
+    "Material": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "enum": [
+            "Mask",
+            "Si",
+            "SiO2"
+          ],
+          "title": "Name",
+          "type": "string"
+        },
+        "levelSetIndexes": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Levelsetindexes",
+          "type": "array"
+        },
+        "sourceStepId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Sourcestepid"
+        }
+      },
+      "required": [
+        "name",
+        "levelSetIndexes",
+        "sourceStepId"
+      ],
+      "title": "Material",
+      "type": "object"
+    },
+    "Mesh3D": {
+      "additionalProperties": false,
+      "properties": {
+        "vtk": {
+          "title": "Vtk",
+          "type": "string"
+        },
+        "pointCount": {
+          "ge": 0,
+          "title": "Pointcount",
+          "type": "integer"
+        },
+        "triangleCount": {
+          "ge": 0,
+          "title": "Trianglecount",
+          "type": "integer"
+        },
+        "topology": {
+          "const": "triangles",
+          "title": "Topology",
+          "type": "string"
+        }
+      },
+      "required": [
+        "vtk",
+        "pointCount",
+        "triangleCount",
+        "topology"
+      ],
+      "title": "Mesh3D",
+      "type": "object"
+    },
+    "MaterialTop": {
+      "additionalProperties": false,
+      "properties": {
+        "topHeight": {
+          "title": "Topheight",
+          "type": "number"
+        },
+        "medianTopHeight": {
+          "title": "Mediantopheight",
+          "type": "number"
+        },
+        "p90TopHeight": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "P90topheight"
+        },
+        "upFacingArea": {
+          "minimum": 0,
+          "title": "Upfacingarea",
+          "type": "number"
+        },
+        "upFacingCellCount": {
+          "minimum": 0,
+          "title": "Upfacingcellcount",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "topHeight",
+        "medianTopHeight",
+        "upFacingArea",
+        "upFacingCellCount"
+      ],
+      "title": "MaterialTop",
+      "type": "object"
+    },
+    "MeasuredMaterialChange": {
+      "additionalProperties": false,
+      "properties": {
+        "material": {
+          "title": "Material",
+          "type": "string"
+        },
+        "topHeightBefore": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Topheightbefore"
+        },
+        "topHeightAfter": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Topheightafter"
+        },
+        "medianHeightBefore": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Medianheightbefore"
+        },
+        "medianHeightAfter": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Medianheightafter"
+        },
+        "topHeightDelta": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Topheightdelta"
+        },
+        "medianHeightDelta": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Medianheightdelta"
+        },
+        "removedThickness": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Removedthickness"
+        },
+        "addedThickness": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Addedthickness"
+        },
+        "thicknessBasis": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Thicknessbasis"
+        },
+        "removedCompletely": {
+          "default": false,
+          "title": "Removedcompletely",
+          "type": "boolean"
+        },
+        "remainingTopHeight": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Remainingtopheight"
+        },
+        "materialAppeared": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Materialappeared"
+        },
+        "method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Method"
+        },
+        "materials": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "object"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Materials"
+        }
+      },
+      "required": [
+        "material"
+      ],
+      "title": "MeasuredMaterialChange",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 2,
+      "title": "Schemaversion",
+      "type": "integer"
+    },
+    "dimension": {
+      "const": 3,
+      "title": "Dimension",
+      "type": "integer"
+    },
+    "topology": {
+      "const": "triangles",
+      "title": "Topology",
+      "type": "string"
+    },
+    "runId": {
+      "title": "Runid",
+      "type": "string"
+    },
+    "stepId": {
+      "title": "Stepid",
+      "type": "string"
+    },
+    "stepName": {
+      "title": "Stepname",
+      "type": "string"
+    },
+    "stepIndex": {
+      "title": "Stepindex",
+      "type": "integer"
+    },
+    "axisMap": {
+      "$ref": "#/$defs/Axes"
+    },
+    "coordinateUnit": {
+      "const": "um",
+      "title": "Coordinateunit",
+      "type": "string"
+    },
+    "points": {
+      "items": {
+        "items": {
+          "type": "number"
+        },
+        "maxItems": 3,
+        "minItems": 3,
+        "type": "array"
+      },
+      "title": "Points",
+      "type": "array"
+    },
+    "triangles": {
+      "items": {
+        "items": {
+          "type": "integer"
+        },
+        "maxItems": 3,
+        "minItems": 3,
+        "type": "array"
+      },
+      "title": "Triangles",
+      "type": "array"
+    },
+    "cellData": {
+      "$ref": "#/$defs/CellMaterials"
+    },
+    "materials": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Material"
+      },
+      "title": "Materials",
+      "type": "object"
+    },
+    "mesh": {
+      "$ref": "#/$defs/Mesh3D"
+    },
+    "gridDelta": {
+      "gt": 0,
+      "title": "Griddelta",
+      "type": "number"
+    },
+    "materialIdsByLevelSetIndex": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Materialidsbylevelsetindex",
+      "type": "array"
+    },
+    "sameMaterialInternalInterfacesHidden": {
+      "title": "Samematerialinternalinterfaceshidden",
+      "type": "boolean"
+    },
+    "noOp": {
+      "title": "Noop",
+      "type": "boolean"
+    },
+    "measuredGeometry": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Measuredgeometry"
+    },
+    "surfaceBounds": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "title": "Surfacebounds",
+      "type": "array"
+    },
+    "domainReadback": {
+      "additionalProperties": true,
+      "title": "Domainreadback",
+      "type": "object"
+    },
+    "materialTops": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "$ref": "#/$defs/MaterialTop"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Materialtops"
+    },
+    "measuredRemoval": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MeasuredMaterialChange"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Measuredremoval"
+    },
+    "measuredAdded": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MeasuredMaterialChange"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Measuredadded"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "dimension",
+    "topology",
+    "runId",
+    "stepId",
+    "stepName",
+    "stepIndex",
+    "axisMap",
+    "coordinateUnit",
+    "points",
+    "triangles",
+    "cellData",
+    "materials",
+    "mesh",
+    "gridDelta",
+    "materialIdsByLevelSetIndex",
+    "sameMaterialInternalInterfacesHidden",
+    "noOp",
+    "measuredGeometry",
+    "surfaceBounds",
+    "domainReadback"
+  ],
+  "title": "Snapshot3D",
+  "type": "object"
+}

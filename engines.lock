@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "engines": [
+    {
+      "engineId": "viennaps",
+      "version": "1.0.0",
+      "entrypoint": "engine_plugins.viennaps_engine.plugin:PLUGIN",
+      "manifestSha256": "bd716510e812ce15f0f56a4a0f8a2961b70da1e6bea070a7e5471a25a79ab088",
+      "implementationHash": "ed22d8d4734f6a0be80547e925a87b2ded245e93458d9ae42d1207c107937f84"
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "assetId": "1243d498b8d9c14f5eb38b37c67b64fe3f15c6977b71f94bc6bda2c32bb9fb8a",
+  "fileName": "hierarchical-reference.gds",
+  "structures": [
+    {
+      "name": "LEAF_A",
+      "layers": [
+        3
+      ],
+      "references": []
+    },
+    {
+      "name": "UNRELATED",
+      "layers": [
+        3
+      ],
+      "references": []
+    },
+    {
+      "name": "TOP",
+      "layers": [],
+      "references": [
+        "LEAF_A"
+      ]
+    }
+  ],
+  "units": {
+    "userUnitsPerDatabaseUnit": 0.001,
+    "metersPerDatabaseUnit": 1e-09,
+    "micrometersPerNativeUserUnit": 1.0,
+    "nativeOutputAssumption": "ViennaPS GDSGeometry coordinates are reported in the Workbench micrometer unit"
+  },
+  "fileSizeBytes": 354
+}

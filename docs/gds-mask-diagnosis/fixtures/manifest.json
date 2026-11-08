@@ -1,0 +1,14 @@
+{
+  "file": "buf4-selected.gds",
+  "sha256": "d2bfc0254ef558735bb2dabcfcbf5ad3117dafddbaad3a15247157242db71565",
+  "sourceRun": "22b5ffe1169ae6d2799cb31a",
+  "sourceFile": "gds-mask-selected.gds",
+  "originalLayerDatatype": [
+    68,
+    16
+  ],
+  "filteredLayerDatatype": [
+    68,
+    0
+  ]
+}

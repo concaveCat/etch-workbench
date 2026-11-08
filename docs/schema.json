@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:viennaps-workbench:project:schema:v1",
+  "title": "Etch Workbench project",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "name", "dimension", "units", "domain", "geometry", "steps", "solver", "view"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "name": {"type": "string", "minLength": 1, "maxLength": 80},
+    "dimension": {"const": 2},
+    "units": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["length", "time", "rate", "angle"],
+      "properties": {"length": {"const": "um"}, "time": {"const": "s"}, "rate": {"const": "um/s"}, "angle": {"const": "deg"}}
+    },
+    "domain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gridDelta", "xExtent", "xBoundary"],
+      "properties": {
+        "gridDelta": {"type": "number", "exclusiveMinimum": 0, "maximum": 0.5},
+        "xExtent": {"type": "number", "minimum": 1, "maximum": 40},
+        "xBoundary": {"enum": ["reflective", "periodic"]}
+      }
+    },
+    "geometry": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "height", "substrateMaterial"],
+          "properties": {"kind": {"const": "plane"}, "height": {"type": "number"}, "substrateMaterial": {"const": "Si"}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "width", "depth", "taperAngle", "maskHeight", "maskTaperAngle", "substrateMaterial"],
+          "properties": {
+            "kind": {"const": "trench"},
+            "width": {"type": "number", "exclusiveMinimum": 0},
+            "depth": {"type": "number", "exclusiveMinimum": 0},
+            "taperAngle": {"type": "number", "minimum": -45, "maximum": 45},
+            "maskHeight": {"type": "number", "minimum": 0},
+            "maskTaperAngle": {"type": "number", "minimum": -45, "maximum": 45},
+            "substrateMaterial": {"const": "Si"}
+          }
+        }
+      ]
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "enabled", "operation", "model", "rateMagnitude", "duration"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{8,64}$"},
+          "name": {"type": "string", "minLength": 1, "maxLength": 80},
+          "enabled": {"type": "boolean"},
+          "operation": {"enum": ["etch", "deposit"]},
+          "model": {"enum": ["isotropic", "singleParticle"]},
+          "rateMagnitude": {"type": "number", "minimum": 0, "maximum": 2},
+          "duration": {"type": "number", "minimum": 0.01, "maximum": 600},
+          "depositMaterial": {"const": "SiO2"},
+          "stickingProbability": {"type": "number", "minimum": 0, "maximum": 1},
+          "sourceExponent": {"type": "number", "minimum": 0, "maximum": 20}
+        },
+        "allOf": [
+          {"if": {"properties": {"operation": {"const": "deposit"}}, "required": ["operation"]}, "then": {"required": ["depositMaterial"]}, "else": {"not": {"required": ["depositMaterial"]}}},
+          {"if": {"properties": {"model": {"const": "singleParticle"}}, "required": ["model"]}, "then": {"required": ["stickingProbability", "sourceExponent"]}, "else": {"not": {"anyOf": [{"required": ["stickingProbability"]}, {"required": ["sourceExponent"]}]}}}
+        ]
+      }
+    },
+    "solver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["timeStepRatio", "raysPerPoint", "cpuThreads", "random", "enginePreference", "timeoutSeconds"],
+      "properties": {
+        "timeStepRatio": {"type": "number", "minimum": 0.05, "maximum": 0.5},
+        "raysPerPoint": {"type": "integer", "minimum": 16, "maximum": 4096},
+        "cpuThreads": {"type": "integer", "minimum": 1, "description": "Runtime maximum from resourcePolicy.run.cpuThreads.maximum", "x-runtimeMaximum": "resourcePolicy.run.cpuThreads.maximum"},
+        "random": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode"],
+          "properties": {"mode": {"enum": ["fixed", "random"]}, "seed": {"type": "integer", "minimum": 0, "maximum": 4294967295}},
+          "allOf": [
+            {"if": {"properties": {"mode": {"const": "fixed"}}, "required": ["mode"]}, "then": {"required": ["seed"]}, "else": {"not": {"required": ["seed"]}}}
+          ]
+        },
+        "enginePreference": {"enum": ["auto", "cpu", "gpu"]},
+        "timeoutSeconds": {"type": "integer", "minimum": 1, "maximum": 86400}
+      }
+    },
+    "view": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["panX", "panH", "zoom", "showGrid"],
+      "properties": {
+        "panX": {"type": "number"},
+        "panH": {"type": "number"},
+        "zoom": {"type": "number", "exclusiveMinimum": 0, "maximum": 20},
+        "showGrid": {"type": "boolean"}
+      }
+    }
+  }
+}

@@ -1,0 +1,5 @@
+api = 1
+id = "oxidation"
+version = "1.0.0"
+entrypoint = "plugins.oxidation:register"
+description = "Native silicon thermal oxidation"

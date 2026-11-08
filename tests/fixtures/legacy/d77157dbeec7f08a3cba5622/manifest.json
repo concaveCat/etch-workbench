@@ -1,0 +1,288 @@
+{
+  "schemaVersion": 1,
+  "runId": "d77157dbeec7f08a3cba5622",
+  "kind": "simulate",
+  "status": "succeeded",
+  "createdAt": "2026-10-26T08:46:47Z",
+  "startedAt": "2026-10-26T08:46:47Z",
+  "finishedAt": "2026-10-26T08:46:47Z",
+  "elapsedSeconds": 0.699,
+  "failureReason": null,
+  "requestedInputHash": "5c8630d0df58c22724c61bc7c21b849e37deccb3d0bd9cfb4fce22f3dfd01bad",
+  "executionHash": "a045d8b720a6c4c1994aafe8eba1b619ec7c07cf95774e35896261f08f8371b3",
+  "normalizedProject": {
+    "schemaVersion": 1,
+    "name": "各向同性etch验收",
+    "dimension": 2,
+    "units": {
+      "length": "um",
+      "time": "s",
+      "rate": "um/s",
+      "angle": "deg"
+    },
+    "domain": {
+      "gridDelta": 0.1,
+      "xExtent": 4.0,
+      "xBoundary": "reflective"
+    },
+    "geometry": {
+      "kind": "plane",
+      "height": 0.0,
+      "substrateMaterial": "Si"
+    },
+    "steps": [
+      {
+        "id": "step_etch_001",
+        "name": "etch",
+        "enabled": true,
+        "operation": "etch",
+        "model": "isotropic",
+        "rateMagnitude": 0.5,
+        "duration": 0.4
+      }
+    ],
+    "solver": {
+      "timeStepRatio": 0.25,
+      "raysPerPoint": 64,
+      "cpuThreads": 1,
+      "random": {
+        "mode": "fixed",
+        "seed": 314159
+      },
+      "enginePreference": "auto",
+      "timeoutSeconds": 30
+    },
+    "view": {
+      "panX": 0.0,
+      "panH": 0.0,
+      "zoom": 1.0,
+      "showGrid": true
+    }
+  },
+  "requestedSolver": {
+    "timeStepRatio": 0.25,
+    "raysPerPoint": 64,
+    "cpuThreads": 1,
+    "random": {
+      "mode": "fixed",
+      "seed": 314159
+    },
+    "enginePreference": "auto",
+    "timeoutSeconds": 30
+  },
+  "actualSeed": null,
+  "cpuThreads": 1,
+  "versions": {
+    "application": "0.1.0",
+    "python": "3.12.14",
+    "viennaps": "4.6.2",
+    "viennals": "5.8.5"
+  },
+  "plannedExecution": [
+    {
+      "stepId": "step_etch_001",
+      "engine": "not-applicable",
+      "seed": null
+    }
+  ],
+  "actualExecution": [
+    {
+      "at": "2026-10-26T08:46:47Z",
+      "type": "step-configured",
+      "stepId": "step_etch_001",
+      "operation": "etch",
+      "model": "isotropic",
+      "noOp": false,
+      "actualEngine": "not-applicable",
+      "engineSelectionReason": "isotropic model does not use a ray flux engine",
+      "requestedEnginePreference": "auto",
+      "actualSeed": null,
+      "actualRate": -0.5,
+      "duration": 0.4,
+      "actualParameters": {
+        "timeStepRatio": 0.25,
+        "duration": 0.4,
+        "rate": -0.5
+      }
+    }
+  ],
+  "plannedExecutionHash": "a045d8b720a6c4c1994aafe8eba1b619ec7c07cf95774e35896261f08f8371b3",
+  "supervisorProcess": {
+    "pid": 152,
+    "processGroupId": 152,
+    "startTicks": 1169732
+  },
+  "currentStepId": null,
+  "completedStepIds": [
+    "step_etch_001"
+  ],
+  "snapshots": [
+    {
+      "stepId": "initial",
+      "name": "初始结构",
+      "stepIndex": 0,
+      "snapshot": "initial.json",
+      "vtk": "initial.vtk",
+      "pointCount": 41,
+      "lineCount": 40,
+      "materialIds": [
+        10
+      ],
+      "materialIdsByLevelSetIndex": [
+        10
+      ],
+      "noOp": false,
+      "measuredGeometry": {
+        "heightMedian": -1e-13
+      }
+    },
+    {
+      "stepId": "step_etch_001",
+      "name": "etch",
+      "stepIndex": 1,
+      "snapshot": "step_etch_001.json",
+      "vtk": "step_etch_001.vtk",
+      "pointCount": 41,
+      "lineCount": 40,
+      "materialIds": [
+        10
+      ],
+      "materialIdsByLevelSetIndex": [
+        10
+      ],
+      "noOp": false,
+      "measuredGeometry": null
+    }
+  ],
+  "noOpSteps": [],
+  "replay": false,
+  "currentStepName": null,
+  "workerResult": {
+    "schemaVersion": 1,
+    "runId": "d77157dbeec7f08a3cba5622",
+    "kind": "simulate",
+    "versions": {
+      "viennaps": "4.6.2",
+      "viennals": "5.8.5"
+    },
+    "actualSeed": null,
+    "cpuThreads": 1,
+    "actualSteps": [
+      {
+        "stepId": "step_etch_001",
+        "engine": "not-applicable",
+        "seed": null
+      }
+    ],
+    "stepRecords": [
+      {
+        "at": "2026-10-26T08:46:47Z",
+        "type": "step-configured",
+        "stepId": "step_etch_001",
+        "operation": "etch",
+        "model": "isotropic",
+        "noOp": false,
+        "actualEngine": "not-applicable",
+        "engineSelectionReason": "isotropic model does not use a ray flux engine",
+        "requestedEnginePreference": "auto",
+        "actualSeed": null,
+        "actualRate": -0.5,
+        "duration": 0.4,
+        "actualParameters": {
+          "timeStepRatio": 0.25,
+          "duration": 0.4,
+          "rate": -0.5
+        }
+      }
+    ],
+    "snapshots": [
+      {
+        "stepId": "initial",
+        "name": "初始结构",
+        "stepIndex": 0,
+        "snapshot": "initial.json",
+        "vtk": "initial.vtk",
+        "pointCount": 41,
+        "lineCount": 40,
+        "materialIds": [
+          10
+        ],
+        "materialIdsByLevelSetIndex": [
+          10
+        ],
+        "noOp": false,
+        "measuredGeometry": {
+          "heightMedian": -1e-13
+        }
+      },
+      {
+        "stepId": "step_etch_001",
+        "name": "etch",
+        "stepIndex": 1,
+        "snapshot": "step_etch_001.json",
+        "vtk": "step_etch_001.vtk",
+        "pointCount": 41,
+        "lineCount": 40,
+        "materialIds": [
+          10
+        ],
+        "materialIdsByLevelSetIndex": [
+          10
+        ],
+        "noOp": false,
+        "measuredGeometry": null
+      }
+    ],
+    "gridDeltaReadback": 0.1,
+    "xExtentRequested": 4.0,
+    "boundaryValuesReadback": [
+      "0",
+      "1"
+    ],
+    "boundingBoxReadback": [
+      [
+        -2.0,
+        -0.2,
+        0.0
+      ],
+      [
+        2.0,
+        -0.2,
+        0.0
+      ]
+    ]
+  },
+  "childRecord": {
+    "schemaVersion": 1,
+    "command": [
+      "/root/viennaps-workbench/.venv/bin/python",
+      "/root/viennaps-workbench/worker/simulate.py",
+      "/root/viennaps-workbench/var/runs/d77157dbeec7f08a3cba5622/input.json",
+      "/root/viennaps-workbench/var/runs/d77157dbeec7f08a3cba5622"
+    ],
+    "cwd": "/root/viennaps-workbench",
+    "supervisorPid": 152,
+    "pid": 153,
+    "pidStartTicks": 1169736,
+    "processGroupId": 153,
+    "startedAtUnix": 1793004407.2981555,
+    "elapsedSeconds": 0.203765,
+    "timeoutSeconds": 30.0,
+    "rssLimitMiB": 2048,
+    "peakObservedRssBytes": 4419584,
+    "rssLimitIsPollingTerminationNotHardLimit": true,
+    "maxLogBytes": 4194304,
+    "logBytesRetained": 328,
+    "logBytesDiscarded": 0,
+    "logBytesByStream": {
+      "stdout": 328,
+      "stderr": 0
+    },
+    "terminationReason": "exited",
+    "timedOut": false,
+    "rssLimited": false,
+    "logLimited": false,
+    "returnCode": 0,
+    "remainingOwnedGroupMembers": []
+  }
+}

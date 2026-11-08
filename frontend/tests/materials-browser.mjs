@@ -1,0 +1,58 @@
+/** Parent-owned acceptance of material/stack controls against real local API. */
+import {chromium,expect} from '@playwright/test';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+const root=path.resolve(import.meta.dirname,'../..'),out=path.join(root,'docs/materials-evidence');
+await fs.mkdir(out,{recursive:true});
+const identity=JSON.parse(await fs.readFile(path.join(root,'var/server.json'))),base=`http://127.0.0.1:${identity.port}`;
+const report={status:'running',baseURL:base,checks:[],errors:[]};let browser,page;
+const pass=(name,data={})=>{report.checks.push({name,...data});console.log('PASS',name);};
+try{
+ browser=await chromium.launch({headless:true,env:{...process.env,FONTCONFIG_FILE:path.join(out,'fontconfig.xml')},args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+ const context=await browser.newContext({viewport:{width:1680,height:1100},acceptDownloads:true});page=await context.newPage();
+ page.on('pageerror',e=>report.errors.push(String(e)));
+ const get=async p=>{const r=await context.request.get(base+p);expect(r.ok(),await r.text()).toBeTruthy();return r.json();};
+ const waitRun=async id=>{let value;await expect.poll(async()=>{value=await get('/api/runs/'+id);return value.status;},{timeout:60000}).toMatch(/succeeded|failed|timed_out|cancelled/);expect(value.status,value.failureReason).toBe('succeeded');return value;};
+ const preview=async()=>{const response=page.waitForResponse(r=>r.url().endsWith('/api/runs')&&r.request().method()==='POST');await page.getByRole('button',{name:'生成结构预览',exact:true}).click();const r=await response;expect(r.status(),await r.text()).toBe(202);const body=r.request().postDataJSON();const started=await r.json();const info=await waitRun(started.runId);const snap=await get(`/api/runs/${started.runId}/snapshots/initial`);return {id:started.runId,info,snap,body};};
+ const downloadJSON=async name=>{const event=page.waitForEvent('download');await page.getByRole('button',{name,exact:true}).click();const file=await event;return JSON.parse(await fs.readFile(await file.path(),'utf8'));};
+ await page.goto(base);await expect(page.getByText('本机服务已连接')).toBeVisible();
+ await expect(page.getByLabel('基底材料',{exact:true}).locator('option')).toHaveCount(13);
+ expect(await page.getByLabel('材料',{exact:true}).first().inputValue()).toBe('SiO2');
+ await page.getByLabel('项目名称',{exact:true}).fill('用户验收：材料与多层结构');
+ await page.getByLabel('基底材料',{exact:true}).selectOption('TiN');
+ const thick=page.getByLabel('厚度',{exact:false}).first();await thick.fill('0.8');await thick.blur();
+ let run=await preview();expect(run.body.project.geometry.substrateMaterial).toBe('TiN');expect(run.body.project.geometry.layers[0].thickness).toBe(.8);expect(run.snap.materialIdsByLevelSetIndex).toEqual([79,30,16]);
+ await expect(page.getByRole('img',{name:'ViennaPS 二维材料界面查看器'})).toBeVisible();
+ pass('2D材料/厚度输入真实传入引擎并显示三种材料',{runId:run.id,map:run.snap.materialIdsByLevelSetIndex});
+ await page.getByRole('button',{name:'＋ 添加层',exact:true}).click();await expect(page.locator('.layer-card')).toHaveCount(3);
+ expect(await page.getByLabel('角色',{exact:true}).nth(1).inputValue()).toBe('mask');
+ expect(await page.getByLabel('材料',{exact:true}).nth(2).inputValue()).toBe('SiO2');
+ await page.locator('.layer-card').nth(2).getByRole('button',{name:'复制',exact:true}).click();await expect(page.locator('.layer-card')).toHaveCount(4);
+ await page.locator('.layer-card').nth(3).getByRole('button',{name:'删除',exact:true}).click();await expect(page.locator('.layer-card')).toHaveCount(3);
+ await page.locator('.layer-card').nth(2).getByRole('button',{name:'↑',exact:true}).click();
+ expect(await page.getByLabel('材料',{exact:true}).nth(2).inputValue()).toBe('Si3N4');
+ await page.getByLabel('顶层图案',{exact:true}).selectOption('trench');run=await preview();expect(run.snap.materialIdsByLevelSetIndex).toEqual([79,30,30,16]);
+ pass('层增删复制排序不偷偷改变已有材料角色',{runId:run.id,map:run.snap.materialIdsByLevelSetIndex});
+ const save=page.waitForResponse(r=>r.url().includes('/api/projects')&&['POST','PUT'].includes(r.request().method()));await page.getByRole('button',{name:'保存项目',exact:true}).click();const saved=await save;expect(saved.ok(),await saved.text()).toBeTruthy();const projectId=(await saved.json()).id;
+ const exported=await downloadJSON('导出项目');expect(exported.schemaVersion).toBe(3);expect(exported.geometry.substrateMaterial).toBe('TiN');expect(exported.geometry.layers).toHaveLength(3);
+ await page.reload();await expect(page.getByText('本机服务已连接')).toBeVisible();await page.getByLabel('已保存项目').selectOption(projectId);await page.getByRole('button',{name:'打开',exact:true}).click();await expect(page.getByLabel('基底材料',{exact:true})).toHaveValue('TiN');await expect(page.locator('.layer-card')).toHaveCount(3);
+ pass('网页保存/重开/导出保留材料和层结构',{projectId});
+ await page.getByRole('button',{name:'新建工程',exact:true}).click();await page.getByRole('button',{name:'切换到 3D',exact:true}).click();await page.getByLabel('顶层图案',{exact:true}).selectOption('hole');
+ run=await preview();await expect(page.getByTestId('viewer-3d')).toBeVisible();await expect(page.locator('.vtk-canvas canvas').first()).toBeVisible();expect(run.snap.materialIdsByLevelSetIndex).toEqual([10,30,16]);
+ const checkboxes=page.locator('.material3d-controls input[type=checkbox]');await expect(checkboxes).toHaveCount(3);
+ for(let i=0;i<3;i++)await expect(checkboxes.nth(i)).toBeChecked();
+ await page.getByLabel('显示 Si3N4',{exact:true}).uncheck();await expect(page.getByLabel('显示 Si3N4',{exact:true})).not.toBeChecked();await page.getByLabel('显示 Si3N4',{exact:true}).check();
+ await page.getByRole('checkbox',{name:'正交截面',exact:true}).check();await expect(page.getByTestId('section-panel')).toBeVisible();await expect(page.locator('[data-testid=section-panel] path[data-material="16"]').first()).toBeVisible();
+ pass('3D多层圆孔、动态Si3N4显隐与真实截面',{runId:run.id});
+ await page.screenshot({path:path.join(out,'materials-3d.png'),fullPage:true});
+ await page.getByRole('button',{name:'＋ 添加各向同性步骤',exact:true}).click();await page.getByLabel('工艺操作',{exact:false}).selectOption('deposit');await page.getByLabel('沉积材料',{exact:false}).selectOption('W');
+ const response=page.waitForResponse(r=>r.url().endsWith('/api/runs')&&r.request().method()==='POST');await page.getByRole('button',{name:'运行工艺',exact:true}).click();const rr=await response;expect(rr.status(),await rr.text()).toBe(202);const body=rr.request().postDataJSON();expect(body.project.steps[0].depositMaterial).toBe('W');const sim=await rr.json();const done=await waitRun(sim.runId);const result=await get(`/api/runs/${sim.runId}/snapshots/${done.snapshots.at(-1).stepId}`);expect(result.materialIdsByLevelSetIndex).toContain(70);
+ pass('网页选W沉积传入真实引擎',{runId:sim.runId,map:result.materialIdsByLevelSetIndex});
+ await page.getByRole('button',{name:'＋ 添加单粒子步骤',exact:true}).click();
+ const gpuOption=page.getByLabel('引擎偏好',{exact:false}).locator('option[value=gpu]');
+ await expect(gpuOption).toHaveAttribute('disabled','');expect(await gpuOption.evaluate(e=>e.disabled)).toBe(true);
+ pass('新材料/多层的未核实GPU组合未被界面放行');
+ await page.screenshot({path:path.join(out,'materials-final.png'),fullPage:true});
+ expect(report.errors).toEqual([]);report.status='passed';
+}catch(e){report.status='failed';report.failure=String(e.stack??e);if(page)await page.screenshot({path:path.join(out,'browser-failure.png'),fullPage:true}).catch(()=>{});console.error(e);process.exitCode=1;}
+finally{if(browser)await browser.close();report.finishedAt=new Date().toISOString();await fs.writeFile(path.join(out,'browser-acceptance.json'),JSON.stringify(report,null,2));}

@@ -1,0 +1,5 @@
+api = 1
+id = "geometricTrenchDeposition"
+version = "1.0.0"
+entrypoint = "plugins.geometricTrenchDeposition:register"
+description = "Native GeometricTrenchDeposition geometric-advection deposition"

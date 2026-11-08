@@ -1,0 +1,5 @@
+api = 1
+id = "anneal"
+version = "1.0.0"
+entrypoint = "plugins.anneal:register"
+description = "Native dopant anneal on an on-demand DenseCellSet"

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 2,
+  "dimension": 3,
+  "default": {
+    "gridDelta": 0.2,
+    "xExtent": 6,
+    "yExtent": 6
+  },
+  "maximumResidentSnapshots": 2,
+  "maximumMaterialActors": 6,
+  "geometryToleranceUm": "2 * gridDelta",
+  "cpuReplayToleranceUm": "max(1e-8, 1e-4 * gridDelta)",
+  "vtkCoordinateToleranceUm": 0.0001,
+  "notes": "No fixed grid interval, surface point, triangle, or snapshot JSON size cap. Native mesh extraction and simulation are supervised by bounded_child.py; RSS polling is best-effort and does not measure CUDA memory. Artifact and storage quotas remain.",
+  "fixedResolutionCountCaps": false,
+  "resourceControls": {
+    "boundedChildRssMiB": 8192,
+    "boundedChildTimeoutSeconds": 600,
+    "maximumRunArtifactBytes": 4294967296,
+    "maximumRunArtifactEnvironmentVariable": "WORKBENCH_MAX_ARTIFACT_MIB",
+    "rssPollingMeasuresCudaMemory": false
+  }
+}

@@ -1,0 +1,5 @@
+api = 1
+id = "implant"
+version = "1.0.0"
+entrypoint = "plugins.implant:register"
+description = "Native ion implantation into an on-demand DenseCellSet"

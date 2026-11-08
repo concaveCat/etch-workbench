@@ -1,0 +1,1054 @@
+{
+  "$defs": {
+    "Camera3D": {
+      "additionalProperties": false,
+      "properties": {
+        "position": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Position",
+          "type": "array"
+        },
+        "focalPoint": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Focalpoint",
+          "type": "array"
+        },
+        "viewUp": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Viewup",
+          "type": "array"
+        },
+        "parallelScale": {
+          "gt": 0,
+          "title": "Parallelscale",
+          "type": "number"
+        }
+      },
+      "required": [
+        "position",
+        "focalPoint",
+        "viewUp",
+        "parallelScale"
+      ],
+      "title": "Camera3D",
+      "type": "object"
+    },
+    "Clip3D": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "axis": {
+          "enum": [
+            "x",
+            "y",
+            "z"
+          ],
+          "title": "Axis",
+          "type": "string"
+        },
+        "position": {
+          "title": "Position",
+          "type": "number"
+        },
+        "keep": {
+          "enum": [
+            "positive",
+            "negative"
+          ],
+          "title": "Keep",
+          "type": "string"
+        }
+      },
+      "required": [
+        "enabled",
+        "axis",
+        "position",
+        "keep"
+      ],
+      "title": "Clip3D",
+      "type": "object"
+    },
+    "Domain": {
+      "additionalProperties": false,
+      "properties": {
+        "gridDelta": {
+          "gt": 0,
+          "le": 0.5,
+          "title": "Griddelta",
+          "type": "number"
+        },
+        "xExtent": {
+          "ge": 1,
+          "le": 40,
+          "title": "Xextent",
+          "type": "number"
+        },
+        "xBoundary": {
+          "enum": [
+            "reflective",
+            "periodic"
+          ],
+          "title": "Xboundary",
+          "type": "string"
+        }
+      },
+      "required": [
+        "gridDelta",
+        "xExtent",
+        "xBoundary"
+      ],
+      "title": "Domain",
+      "type": "object"
+    },
+    "Domain3D": {
+      "additionalProperties": false,
+      "properties": {
+        "gridDelta": {
+          "gt": 0,
+          "le": 0.5,
+          "title": "Griddelta",
+          "type": "number"
+        },
+        "xExtent": {
+          "ge": 1,
+          "le": 40,
+          "title": "Xextent",
+          "type": "number"
+        },
+        "yExtent": {
+          "ge": 1,
+          "le": 40,
+          "title": "Yextent",
+          "type": "number"
+        },
+        "boundaryXY": {
+          "enum": [
+            "reflective",
+            "periodic"
+          ],
+          "title": "Boundaryxy",
+          "type": "string"
+        }
+      },
+      "required": [
+        "gridDelta",
+        "xExtent",
+        "yExtent",
+        "boundaryXY"
+      ],
+      "title": "Domain3D",
+      "type": "object"
+    },
+    "FixedRandom": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "const": "fixed",
+          "title": "Mode",
+          "type": "string"
+        },
+        "seed": {
+          "ge": 0,
+          "le": 4294967295,
+          "title": "Seed",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "mode",
+        "seed"
+      ],
+      "title": "FixedRandom",
+      "type": "object"
+    },
+    "ProjectV4": {
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 4,
+          "title": "Schemaversion",
+          "type": "integer"
+        },
+        "name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "dimension": {
+          "enum": [
+            2,
+            3
+          ],
+          "title": "Dimension",
+          "type": "integer"
+        },
+        "units": {
+          "$ref": "#/$defs/Units"
+        },
+        "domain": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Domain"
+            },
+            {
+              "$ref": "#/$defs/Domain3D"
+            }
+          ],
+          "title": "Domain"
+        },
+        "geometry": {
+          "discriminator": {
+            "mapping": {
+              "hole": "#/$defs/HoleV3",
+              "plane": "#/$defs/PlaneV3",
+              "stack": "#/$defs/StackV3",
+              "trench": "#/$defs/TrenchV3"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/PlaneV3"
+            },
+            {
+              "$ref": "#/$defs/TrenchV3"
+            },
+            {
+              "$ref": "#/$defs/HoleV3"
+            },
+            {
+              "$ref": "#/$defs/StackV3"
+            }
+          ]
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/StepV4"
+          },
+          "maxItems": 20,
+          "title": "Steps",
+          "type": "array"
+        },
+        "solver": {
+          "$ref": "#/$defs/Solver"
+        },
+        "view": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/View"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "view3D": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/View3DV3"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "name",
+        "dimension",
+        "units",
+        "domain",
+        "geometry",
+        "steps",
+        "solver"
+      ],
+      "title": "ProjectV4",
+      "type": "object"
+    },
+    "ReplayRequirements": {
+      "additionalProperties": false,
+      "properties": {
+        "viennapsVersion": {
+          "title": "Viennapsversion",
+          "type": "string"
+        },
+        "viennalsVersion": {
+          "title": "Viennalsversion",
+          "type": "string"
+        },
+        "cpuThreads": {
+          "ge": 1,
+          "description": "Runtime maximum from resourcePolicy.run.cpuThreads.maximum",
+          "x-runtimeMaximum": "resourcePolicy.run.cpuThreads.maximum",
+          "title": "Cputhreads",
+          "type": "integer"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/ReplayStepRequirement"
+          },
+          "title": "Steps",
+          "type": "array"
+        }
+      },
+      "required": [
+        "viennapsVersion",
+        "viennalsVersion",
+        "cpuThreads",
+        "steps"
+      ],
+      "title": "ReplayRequirements",
+      "type": "object"
+    },
+    "ReplayStepRequirement": {
+      "additionalProperties": false,
+      "properties": {
+        "stepId": {
+          "maxLength": 64,
+          "minLength": 8,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "title": "Stepid",
+          "type": "string"
+        },
+        "engine": {
+          "enum": [
+            "CPU_DISK",
+            "GPU_DISK",
+            "CPU_TRIANGLE",
+            "GPU_TRIANGLE",
+            "not-applicable"
+          ],
+          "title": "Engine",
+          "type": "string"
+        },
+        "seed": {
+          "anyOf": [
+            {
+              "ge": 0,
+              "le": 4294967295,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Seed"
+        }
+      },
+      "required": [
+        "stepId",
+        "engine"
+      ],
+      "title": "ReplayStepRequirement",
+      "type": "object"
+    },
+    "Section3D": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "axis": {
+          "enum": [
+            "x",
+            "y",
+            "z"
+          ],
+          "title": "Axis",
+          "type": "string"
+        },
+        "position": {
+          "title": "Position",
+          "type": "number"
+        }
+      },
+      "required": [
+        "enabled",
+        "axis",
+        "position"
+      ],
+      "title": "Section3D",
+      "type": "object"
+    },
+    "Solver": {
+      "additionalProperties": false,
+      "properties": {
+        "timeStepRatio": {
+          "ge": 0.05,
+          "le": 0.5,
+          "title": "Timestepratio",
+          "type": "number"
+        },
+        "raysPerPoint": {
+          "ge": 16,
+          "le": 4096,
+          "title": "Raysperpoint",
+          "type": "integer"
+        },
+        "cpuThreads": {
+          "ge": 1,
+          "description": "Runtime maximum from resourcePolicy.run.cpuThreads.maximum",
+          "x-runtimeMaximum": "resourcePolicy.run.cpuThreads.maximum",
+          "title": "Cputhreads",
+          "type": "integer"
+        },
+        "random": {
+          "discriminator": {
+            "mapping": {
+              "fixed": "#/$defs/FixedRandom",
+              "random": "#/$defs/UnseededRandom"
+            },
+            "propertyName": "mode"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/FixedRandom"
+            },
+            {
+              "$ref": "#/$defs/UnseededRandom"
+            }
+          ],
+          "title": "Random"
+        },
+        "enginePreference": {
+          "enum": [
+            "auto",
+            "cpu",
+            "gpu"
+          ],
+          "title": "Enginepreference",
+          "type": "string"
+        },
+        "timeoutSeconds": {
+          "ge": 1,
+          "le": 600,
+          "title": "Timeoutseconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "timeStepRatio",
+        "raysPerPoint",
+        "cpuThreads",
+        "random",
+        "enginePreference",
+        "timeoutSeconds"
+      ],
+      "title": "Solver",
+      "type": "object"
+    },
+    "StepV4": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "minLength": 8,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "operation": {
+          "enum": [
+            "etch",
+            "deposit"
+          ],
+          "title": "Operation",
+          "type": "string"
+        },
+        "model": {
+          "enum": [
+            "isotropic",
+            "singleParticle"
+          ],
+          "title": "Model",
+          "type": "string"
+        },
+        "rateMagnitude": {
+          "ge": 0,
+          "le": 2,
+          "title": "Ratemagnitude",
+          "type": "number"
+        },
+        "duration": {
+          "ge": 0.01,
+          "le": 600,
+          "title": "Duration",
+          "type": "number"
+        },
+        "depositMaterial": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Depositmaterial"
+        },
+        "stickingProbability": {
+          "anyOf": [
+            {
+              "ge": 0,
+              "le": 1,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stickingprobability"
+        },
+        "sourceExponent": {
+          "anyOf": [
+            {
+              "ge": 0,
+              "le": 20,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourceexponent"
+        },
+        "rateMode": {
+          "default": "uniform",
+          "enum": [
+            "uniform",
+            "material"
+          ],
+          "title": "Ratemode",
+          "type": "string"
+        },
+        "materialRates": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "ge": 0,
+                "le": 2,
+                "type": "number"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Materialrates"
+        },
+        "selectivityReference": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Selectivityreference"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "enabled",
+        "operation",
+        "model",
+        "rateMagnitude",
+        "duration"
+      ],
+      "title": "StepV4",
+      "type": "object"
+    },
+    "Units": {
+      "additionalProperties": false,
+      "properties": {
+        "length": {
+          "const": "um",
+          "title": "Length",
+          "type": "string"
+        },
+        "time": {
+          "const": "s",
+          "title": "Time",
+          "type": "string"
+        },
+        "rate": {
+          "const": "um/s",
+          "title": "Rate",
+          "type": "string"
+        },
+        "angle": {
+          "const": "deg",
+          "title": "Angle",
+          "type": "string"
+        }
+      },
+      "required": [
+        "length",
+        "time",
+        "rate",
+        "angle"
+      ],
+      "title": "Units",
+      "type": "object"
+    },
+    "UnseededRandom": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "const": "random",
+          "title": "Mode",
+          "type": "string"
+        },
+        "seed": {
+          "default": null,
+          "title": "Seed",
+          "type": "null"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "title": "UnseededRandom",
+      "type": "object"
+    },
+    "View": {
+      "additionalProperties": false,
+      "properties": {
+        "panX": {
+          "title": "Panx",
+          "type": "number"
+        },
+        "panH": {
+          "title": "Panh",
+          "type": "number"
+        },
+        "zoom": {
+          "gt": 0,
+          "le": 20,
+          "title": "Zoom",
+          "type": "number"
+        },
+        "showGrid": {
+          "title": "Showgrid",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "panX",
+        "panH",
+        "zoom",
+        "showGrid"
+      ],
+      "title": "View",
+      "type": "object"
+    },
+    "View3DV3": {
+      "additionalProperties": false,
+      "properties": {
+        "projection": {
+          "default": "parallel",
+          "enum": [
+            "parallel",
+            "perspective"
+          ],
+          "title": "Projection",
+          "type": "string"
+        },
+        "camera": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Camera3D"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "displayMode": {
+          "default": "surface",
+          "enum": [
+            "surface",
+            "wireframe",
+            "surfaceEdges"
+          ],
+          "title": "Displaymode",
+          "type": "string"
+        },
+        "visibleMaterialIds": {
+          "items": {
+            "type": "integer"
+          },
+          "maxItems": 16,
+          "title": "Visiblematerialids",
+          "type": "array"
+        },
+        "opacityByMaterial": {
+          "additionalProperties": {
+            "ge": 0,
+            "le": 1,
+            "type": "number"
+          },
+          "title": "Opacitybymaterial",
+          "type": "object"
+        },
+        "clip": {
+          "$ref": "#/$defs/Clip3D"
+        },
+        "section": {
+          "$ref": "#/$defs/Section3D"
+        }
+      },
+      "title": "View3DV3",
+      "type": "object"
+    },
+    "HoleV3": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "hole",
+          "title": "Kind",
+          "type": "string"
+        },
+        "radius": {
+          "gt": 0,
+          "title": "Radius",
+          "type": "number"
+        },
+        "depth": {
+          "gt": 0,
+          "title": "Depth",
+          "type": "number"
+        },
+        "taperAngle": {
+          "ge": -45,
+          "le": 45,
+          "title": "Taperangle",
+          "type": "number"
+        },
+        "maskHeight": {
+          "ge": 0,
+          "title": "Maskheight",
+          "type": "number"
+        },
+        "maskTaperAngle": {
+          "ge": -45,
+          "le": 45,
+          "title": "Masktaperangle",
+          "type": "number"
+        },
+        "substrateMaterial": {
+          "title": "Substratematerial",
+          "type": "string"
+        },
+        "maskMaterial": {
+          "default": "Mask",
+          "title": "Maskmaterial",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "radius",
+        "depth",
+        "taperAngle",
+        "maskHeight",
+        "maskTaperAngle",
+        "substrateMaterial"
+      ],
+      "title": "HoleV3",
+      "type": "object"
+    },
+    "PlaneV3": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "plane",
+          "title": "Kind",
+          "type": "string"
+        },
+        "height": {
+          "title": "Height",
+          "type": "number"
+        },
+        "substrateMaterial": {
+          "title": "Substratematerial",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "height",
+        "substrateMaterial"
+      ],
+      "title": "PlaneV3",
+      "type": "object"
+    },
+    "StackLayer": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "material": {
+          "title": "Material",
+          "type": "string"
+        },
+        "thickness": {
+          "gt": 0,
+          "title": "Thickness",
+          "type": "number"
+        },
+        "role": {
+          "enum": [
+            "film",
+            "mask"
+          ],
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "material",
+        "thickness",
+        "role"
+      ],
+      "title": "StackLayer",
+      "type": "object"
+    },
+    "StackPattern": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "none",
+            "trench",
+            "hole"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "width": {
+          "anyOf": [
+            {
+              "gt": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Width"
+        },
+        "radius": {
+          "anyOf": [
+            {
+              "gt": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Radius"
+        },
+        "taperAngle": {
+          "anyOf": [
+            {
+              "ge": -45,
+              "le": 45,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Taperangle"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "StackPattern",
+      "type": "object"
+    },
+    "StackV3": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "stack",
+          "title": "Kind",
+          "type": "string"
+        },
+        "substrateMaterial": {
+          "title": "Substratematerial",
+          "type": "string"
+        },
+        "baseHeight": {
+          "default": 0,
+          "title": "Baseheight",
+          "type": "number"
+        },
+        "layers": {
+          "items": {
+            "$ref": "#/$defs/StackLayer"
+          },
+          "maxItems": 16,
+          "title": "Layers",
+          "type": "array"
+        },
+        "pattern": {
+          "$ref": "#/$defs/StackPattern"
+        }
+      },
+      "required": [
+        "kind",
+        "substrateMaterial",
+        "layers",
+        "pattern"
+      ],
+      "title": "StackV3",
+      "type": "object"
+    },
+    "TrenchV3": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "trench",
+          "title": "Kind",
+          "type": "string"
+        },
+        "width": {
+          "gt": 0,
+          "title": "Width",
+          "type": "number"
+        },
+        "depth": {
+          "gt": 0,
+          "title": "Depth",
+          "type": "number"
+        },
+        "taperAngle": {
+          "ge": -45,
+          "le": 45,
+          "title": "Taperangle",
+          "type": "number"
+        },
+        "maskHeight": {
+          "ge": 0,
+          "title": "Maskheight",
+          "type": "number"
+        },
+        "maskTaperAngle": {
+          "ge": -45,
+          "le": 45,
+          "title": "Masktaperangle",
+          "type": "number"
+        },
+        "substrateMaterial": {
+          "title": "Substratematerial",
+          "type": "string"
+        },
+        "maskMaterial": {
+          "default": "Mask",
+          "title": "Maskmaterial",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "width",
+        "depth",
+        "taperAngle",
+        "maskHeight",
+        "maskTaperAngle",
+        "substrateMaterial"
+      ],
+      "title": "TrenchV3",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "viennaps-replay",
+      "title": "Format",
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": 4,
+      "title": "Schemaversion",
+      "type": "integer"
+    },
+    "normalizedProject": {
+      "$ref": "#/$defs/ProjectV4"
+    },
+    "executionRequirements": {
+      "$ref": "#/$defs/ReplayRequirements"
+    }
+  },
+  "required": [
+    "format",
+    "schemaVersion",
+    "normalizedProject",
+    "executionRequirements"
+  ],
+  "title": "ReplayProjectV4",
+  "type": "object"
+}

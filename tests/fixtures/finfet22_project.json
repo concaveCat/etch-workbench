@@ -1,0 +1,330 @@
+{
+  "schemaVersion": 7,
+  "name": "22 nm FinFET · GDS + gate-last 流程",
+  "dimension": 3,
+  "units": {
+    "length": "um",
+    "time": "s",
+    "rate": "um/s",
+    "angle": "deg"
+  },
+  "domain": {
+    "gridDelta": 0.004,
+    "xExtent": 1.0,
+    "yExtent": 1.0,
+    "boundaryXY": "reflective"
+  },
+  "geometry": {
+    "kind": "gds",
+    "assetId": "2495db9a943865cf544b7ae78672d2efe35650a45b4262c17f96e214abd0ea44",
+    "fileName": "finfet22_workbench.gds",
+    "structure": "FINFET22",
+    "unitScale": 1.0,
+    "position": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "layers": [
+      {
+        "layer": 7,
+        "material": "Si",
+        "baseHeight": -0.05,
+        "height": 0.05,
+        "mask": false
+      },
+      {
+        "layer": 1,
+        "material": "Si",
+        "baseHeight": 0.0,
+        "height": 0.04,
+        "mask": false
+      },
+      {
+        "layer": 8,
+        "material": "SiO2",
+        "baseHeight": 0.0,
+        "height": 0.036,
+        "mask": false
+      },
+      {
+        "layer": 2,
+        "material": "PolySi",
+        "baseHeight": 0.036,
+        "height": 0.06,
+        "mask": false
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "ff22_spacer_dep",
+      "name": "SiN 侧墙沉积 10 nm",
+      "enabled": true,
+      "operation": "deposit",
+      "model": "isotropic",
+      "rateMode": "uniform",
+      "rateMagnitude": 0.01,
+      "depositMaterial": "Si3N4",
+      "duration": 1.0
+    },
+    {
+      "id": "ff22_spacer_etch",
+      "name": "SiN 侧墙各向异性回刻",
+      "enabled": true,
+      "operation": "etch",
+      "model": "specialized",
+      "nativeModel": "ionBeam",
+      "duration": 1.0,
+      "nativeParameters": {
+        "meanEnergy": 100,
+        "sigmaEnergy": 10,
+        "thresholdEnergy": 20,
+        "thetaRMin": 70,
+        "thetaRMax": 90,
+        "minAngle": 85,
+        "inflectAngle": 89,
+        "exponent": 100,
+        "n_l": 10,
+        "tiltAngle": 0,
+        "planeWaferRate": 0.05,
+        "redepositionRate": 0,
+        "redepositionThreshold": 0.1,
+        "cos4YieldA1": 0,
+        "cos4YieldA2": 0,
+        "cos4YieldA3": 0,
+        "cos4YieldA4": 0,
+        "materialPlaneWaferRateByMaterial": {
+          "Si": 0.002,
+          "PolySi": 0.002,
+          "SiO2": 0.002
+        }
+      }
+    },
+    {
+      "id": "ff22_sd_sige",
+      "name": "S/D SiGe 选择性外延 15 nm",
+      "enabled": true,
+      "operation": "deposit",
+      "model": "specialized",
+      "nativeModel": "selectiveEpitaxy",
+      "duration": 0.6,
+      "depositMaterial": "SiGe",
+      "nativeParameters": {
+        "materialRates": {
+          "Si": 0.025,
+          "SiGe": 0.025
+        },
+        "rate111": 0.5,
+        "rate100": 1.0
+      }
+    },
+    {
+      "id": "ff22_ild_dep",
+      "name": "ILD SiO2 填充 120 nm",
+      "enabled": true,
+      "operation": "deposit",
+      "model": "isotropic",
+      "rateMode": "uniform",
+      "rateMagnitude": 0.06,
+      "depositMaterial": "SiO2",
+      "duration": 2.0
+    },
+    {
+      "id": "ff22_ild_cmp",
+      "name": "ILD CMP（停在 dummy gate 顶）",
+      "enabled": true,
+      "model": "planarize",
+      "cutoffHeight": 0.095
+    },
+    {
+      "id": "ff22_rmg_strip",
+      "name": "去除 dummy PolySi",
+      "enabled": true,
+      "model": "removeMaterial",
+      "material": "PolySi"
+    },
+    {
+      "id": "ff22_il_ald",
+      "name": "界面 SiO2 ALD 1 nm",
+      "enabled": true,
+      "operation": "deposit",
+      "model": "specialized",
+      "nativeModel": "ald",
+      "duration": 0.02,
+      "depositMaterial": "SiO2",
+      "nativeParameters": {
+        "stickingProbability": 0.5,
+        "gasMeanFreePath": 1,
+        "growthPerCycle": 0.001,
+        "incomingFlux": 1,
+        "evaporationFlux": 0.1,
+        "s0": 1,
+        "coverageDiffusionCoefficient": 0,
+        "pulseTime": 0.02,
+        "purgePulseTime": 0,
+        "coverageTimeStep": 0.01,
+        "purgeTimeStep": 1,
+        "numCycles": 1
+      }
+    },
+    {
+      "id": "ff22_hfo2_ald",
+      "name": "HfO2 ALD 2 nm",
+      "enabled": true,
+      "operation": "deposit",
+      "model": "specialized",
+      "nativeModel": "ald",
+      "duration": 0.02,
+      "depositMaterial": "HfO2",
+      "nativeParameters": {
+        "stickingProbability": 0.5,
+        "gasMeanFreePath": 1,
+        "growthPerCycle": 0.002,
+        "incomingFlux": 1,
+        "evaporationFlux": 0.1,
+        "s0": 1,
+        "coverageDiffusionCoefficient": 0,
+        "pulseTime": 0.02,
+        "purgePulseTime": 0,
+        "coverageTimeStep": 0.01,
+        "purgeTimeStep": 1,
+        "numCycles": 1
+      }
+    },
+    {
+      "id": "ff22_tin_ald",
+      "name": "TiN ALD 3 nm",
+      "enabled": true,
+      "operation": "deposit",
+      "model": "specialized",
+      "nativeModel": "ald",
+      "duration": 0.02,
+      "depositMaterial": "TiN",
+      "nativeParameters": {
+        "stickingProbability": 0.5,
+        "gasMeanFreePath": 1,
+        "growthPerCycle": 0.003,
+        "incomingFlux": 1,
+        "evaporationFlux": 0.1,
+        "s0": 1,
+        "coverageDiffusionCoefficient": 0,
+        "pulseTime": 0.02,
+        "purgePulseTime": 0,
+        "coverageTimeStep": 0.01,
+        "purgeTimeStep": 1,
+        "numCycles": 1
+      }
+    },
+    {
+      "id": "ff22_w_fill",
+      "name": "W 栅极填充 70 nm",
+      "enabled": true,
+      "operation": "deposit",
+      "model": "isotropic",
+      "rateMode": "uniform",
+      "rateMagnitude": 0.07,
+      "depositMaterial": "W",
+      "duration": 1.0
+    },
+    {
+      "id": "ff22_w_cmp",
+      "name": "W 栅极 CMP（去除场区残留）",
+      "enabled": true,
+      "model": "planarize",
+      "cutoffHeight": 0.092
+    },
+    {
+      "id": "ff22_ild2_dep",
+      "name": "ILD2 SiO2 100 nm（需第二道 GDS 掩膜，默认关闭）",
+      "enabled": false,
+      "operation": "deposit",
+      "model": "isotropic",
+      "rateMode": "uniform",
+      "rateMagnitude": 0.05,
+      "depositMaterial": "SiO2",
+      "duration": 2.0
+    },
+    {
+      "id": "ff22_ild2_cmp",
+      "name": "ILD2 CMP（160 nm，默认关闭）",
+      "enabled": false,
+      "model": "planarize",
+      "cutoffHeight": 0.16
+    }
+  ],
+  "solver": {
+    "timeStepRatio": 0.25,
+    "raysPerPoint": 16,
+    "cpuThreads": 4,
+    "random": {
+      "mode": "fixed",
+      "seed": 20261029
+    },
+    "enginePreference": "cpu",
+    "timeoutSeconds": 600,
+    "advection": {
+      "spatialScheme": "ENGQUIST_OSHER_1ST_ORDER",
+      "temporalScheme": "FORWARD_EULER",
+      "adaptiveTimeStepping": false,
+      "adaptiveTimeStepSubdivisions": 20,
+      "calculateIntermediateVelocities": false,
+      "checkDissipation": true,
+      "dissipationAlpha": 1.0,
+      "ignoreVoids": false,
+      "velocityOutput": false
+    },
+    "rayTracing": {
+      "diskRadius": 0.0,
+      "ignoreFluxBoundaries": false,
+      "maxBoundaryHits": 80,
+      "maxReflections": 3,
+      "minNodeDistanceFactor": 0.05,
+      "normalizationType": "SOURCE",
+      "smoothingNeighbors": 1
+    }
+  },
+  "outputSettings": {
+    "levelSets": false,
+    "levelSetMeshes": false,
+    "surfaceMeshVtk": false,
+    "volumeMesh": false,
+    "nativeMetadata": false
+  },
+  "view3D": {
+    "projection": "parallel",
+    "camera": null,
+    "displayMode": "surface",
+    "visibleMaterialIds": [
+      10,
+      11,
+      13,
+      16,
+      30,
+      32,
+      79,
+      70
+    ],
+    "opacityByMaterial": {
+      "10": 1.0,
+      "11": 1.0,
+      "13": 1.0,
+      "16": 1.0,
+      "30": 1.0,
+      "32": 1.0,
+      "79": 1.0,
+      "70": 1.0
+    },
+    "clip": {
+      "enabled": false,
+      "axis": "x",
+      "position": 0.0,
+      "keep": "positive"
+    },
+    "section": {
+      "enabled": false,
+      "axis": "y",
+      "position": 0.0
+    }
+  }
+}

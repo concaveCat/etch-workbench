@@ -1,0 +1,461 @@
+{
+  "engineVersion": "4.6.2",
+  "maxBuiltInLegacyId": 176,
+  "materials": [
+    {
+      "name": "Mask",
+      "legacyId": 0,
+      "builtIn": true
+    },
+    {
+      "name": "Polymer",
+      "legacyId": 1,
+      "builtIn": true
+    },
+    {
+      "name": "Air",
+      "legacyId": 2,
+      "builtIn": true
+    },
+    {
+      "name": "GAS",
+      "legacyId": 3,
+      "builtIn": true
+    },
+    {
+      "name": "Dielectric",
+      "legacyId": 4,
+      "builtIn": true
+    },
+    {
+      "name": "Metal",
+      "legacyId": 5,
+      "builtIn": true
+    },
+    {
+      "name": "Undefined",
+      "legacyId": 6,
+      "builtIn": true
+    },
+    {
+      "name": "Si",
+      "legacyId": 10,
+      "builtIn": true
+    },
+    {
+      "name": "PolySi",
+      "legacyId": 11,
+      "builtIn": true
+    },
+    {
+      "name": "aSi",
+      "legacyId": 12,
+      "builtIn": true
+    },
+    {
+      "name": "SiGe",
+      "legacyId": 13,
+      "builtIn": true
+    },
+    {
+      "name": "SiC",
+      "legacyId": 14,
+      "builtIn": true
+    },
+    {
+      "name": "SiN",
+      "legacyId": 15,
+      "builtIn": true
+    },
+    {
+      "name": "Si3N4",
+      "legacyId": 16,
+      "builtIn": true
+    },
+    {
+      "name": "SiON",
+      "legacyId": 17,
+      "builtIn": true
+    },
+    {
+      "name": "SiCN",
+      "legacyId": 18,
+      "builtIn": true
+    },
+    {
+      "name": "SiBCN",
+      "legacyId": 19,
+      "builtIn": true
+    },
+    {
+      "name": "SiCOH",
+      "legacyId": 20,
+      "builtIn": true
+    },
+    {
+      "name": "SiOCN",
+      "legacyId": 21,
+      "builtIn": true
+    },
+    {
+      "name": "BulkSi",
+      "legacyId": 22,
+      "builtIn": true
+    },
+    {
+      "name": "SiO2",
+      "legacyId": 30,
+      "builtIn": true
+    },
+    {
+      "name": "Al2O3",
+      "legacyId": 31,
+      "builtIn": true
+    },
+    {
+      "name": "HfO2",
+      "legacyId": 32,
+      "builtIn": true
+    },
+    {
+      "name": "ZrO2",
+      "legacyId": 33,
+      "builtIn": true
+    },
+    {
+      "name": "TiO2",
+      "legacyId": 34,
+      "builtIn": true
+    },
+    {
+      "name": "Y2O3",
+      "legacyId": 35,
+      "builtIn": true
+    },
+    {
+      "name": "La2O3",
+      "legacyId": 36,
+      "builtIn": true
+    },
+    {
+      "name": "AlN",
+      "legacyId": 37,
+      "builtIn": true
+    },
+    {
+      "name": "Ta2O5",
+      "legacyId": 38,
+      "builtIn": true
+    },
+    {
+      "name": "BN",
+      "legacyId": 39,
+      "builtIn": true
+    },
+    {
+      "name": "hBN",
+      "legacyId": 40,
+      "builtIn": true
+    },
+    {
+      "name": "C",
+      "legacyId": 50,
+      "builtIn": true
+    },
+    {
+      "name": "aC",
+      "legacyId": 51,
+      "builtIn": true
+    },
+    {
+      "name": "SOC",
+      "legacyId": 52,
+      "builtIn": true
+    },
+    {
+      "name": "SOG",
+      "legacyId": 53,
+      "builtIn": true
+    },
+    {
+      "name": "BPSG",
+      "legacyId": 54,
+      "builtIn": true
+    },
+    {
+      "name": "PSG",
+      "legacyId": 55,
+      "builtIn": true
+    },
+    {
+      "name": "SiLK",
+      "legacyId": 56,
+      "builtIn": true
+    },
+    {
+      "name": "ARC",
+      "legacyId": 57,
+      "builtIn": true
+    },
+    {
+      "name": "PMMA",
+      "legacyId": 58,
+      "builtIn": true
+    },
+    {
+      "name": "PHS",
+      "legacyId": 59,
+      "builtIn": true
+    },
+    {
+      "name": "HSQ",
+      "legacyId": 60,
+      "builtIn": true
+    },
+    {
+      "name": "W",
+      "legacyId": 70,
+      "builtIn": true
+    },
+    {
+      "name": "Cu",
+      "legacyId": 71,
+      "builtIn": true
+    },
+    {
+      "name": "Co",
+      "legacyId": 72,
+      "builtIn": true
+    },
+    {
+      "name": "Ru",
+      "legacyId": 73,
+      "builtIn": true
+    },
+    {
+      "name": "Ni",
+      "legacyId": 74,
+      "builtIn": true
+    },
+    {
+      "name": "Pt",
+      "legacyId": 75,
+      "builtIn": true
+    },
+    {
+      "name": "Ta",
+      "legacyId": 76,
+      "builtIn": true
+    },
+    {
+      "name": "TaN",
+      "legacyId": 77,
+      "builtIn": true
+    },
+    {
+      "name": "Ti",
+      "legacyId": 78,
+      "builtIn": true
+    },
+    {
+      "name": "TiN",
+      "legacyId": 79,
+      "builtIn": true
+    },
+    {
+      "name": "Mo",
+      "legacyId": 80,
+      "builtIn": true
+    },
+    {
+      "name": "Ir",
+      "legacyId": 81,
+      "builtIn": true
+    },
+    {
+      "name": "Rh",
+      "legacyId": 82,
+      "builtIn": true
+    },
+    {
+      "name": "Pd",
+      "legacyId": 83,
+      "builtIn": true
+    },
+    {
+      "name": "RuTa",
+      "legacyId": 84,
+      "builtIn": true
+    },
+    {
+      "name": "CoW",
+      "legacyId": 85,
+      "builtIn": true
+    },
+    {
+      "name": "NiW",
+      "legacyId": 86,
+      "builtIn": true
+    },
+    {
+      "name": "TiAlN",
+      "legacyId": 87,
+      "builtIn": true
+    },
+    {
+      "name": "Mn",
+      "legacyId": 88,
+      "builtIn": true
+    },
+    {
+      "name": "MnO",
+      "legacyId": 89,
+      "builtIn": true
+    },
+    {
+      "name": "MnN",
+      "legacyId": 90,
+      "builtIn": true
+    },
+    {
+      "name": "Au",
+      "legacyId": 91,
+      "builtIn": true
+    },
+    {
+      "name": "Cr",
+      "legacyId": 92,
+      "builtIn": true
+    },
+    {
+      "name": "WSi2",
+      "legacyId": 100,
+      "builtIn": true
+    },
+    {
+      "name": "TiSi2",
+      "legacyId": 101,
+      "builtIn": true
+    },
+    {
+      "name": "MoSi2",
+      "legacyId": 102,
+      "builtIn": true
+    },
+    {
+      "name": "Ge",
+      "legacyId": 110,
+      "builtIn": true
+    },
+    {
+      "name": "GaN",
+      "legacyId": 111,
+      "builtIn": true
+    },
+    {
+      "name": "GaAs",
+      "legacyId": 112,
+      "builtIn": true
+    },
+    {
+      "name": "InP",
+      "legacyId": 113,
+      "builtIn": true
+    },
+    {
+      "name": "InGaAs",
+      "legacyId": 114,
+      "builtIn": true
+    },
+    {
+      "name": "SiGaN",
+      "legacyId": 115,
+      "builtIn": true
+    },
+    {
+      "name": "SiOCH",
+      "legacyId": 116,
+      "builtIn": true
+    },
+    {
+      "name": "Graphene",
+      "legacyId": 130,
+      "builtIn": true
+    },
+    {
+      "name": "MoS2",
+      "legacyId": 131,
+      "builtIn": true
+    },
+    {
+      "name": "WS2",
+      "legacyId": 132,
+      "builtIn": true
+    },
+    {
+      "name": "WSe2",
+      "legacyId": 133,
+      "builtIn": true
+    },
+    {
+      "name": "VO2",
+      "legacyId": 134,
+      "builtIn": true
+    },
+    {
+      "name": "GST",
+      "legacyId": 135,
+      "builtIn": true
+    },
+    {
+      "name": "ITO",
+      "legacyId": 150,
+      "builtIn": true
+    },
+    {
+      "name": "ZnO",
+      "legacyId": 151,
+      "builtIn": true
+    },
+    {
+      "name": "AZO",
+      "legacyId": 152,
+      "builtIn": true
+    },
+    {
+      "name": "SiON_HM",
+      "legacyId": 170,
+      "builtIn": true
+    },
+    {
+      "name": "SiN_HM",
+      "legacyId": 171,
+      "builtIn": true
+    },
+    {
+      "name": "SiC_HM",
+      "legacyId": 172,
+      "builtIn": true
+    },
+    {
+      "name": "TiO",
+      "legacyId": 173,
+      "builtIn": true
+    },
+    {
+      "name": "ZrO",
+      "legacyId": 174,
+      "builtIn": true
+    },
+    {
+      "name": "SiO2_HM",
+      "legacyId": 175,
+      "builtIn": true
+    },
+    {
+      "name": "Custom",
+      "legacyId": 176,
+      "builtIn": true
+    }
+  ]
+}

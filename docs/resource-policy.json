@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "status": "bounded-runtime-policy",
+  "scope": "2D and 3D single-user local application; fixed grid and mesh counts are not capped by the workbench.",
+  "probe": {
+    "timeoutSeconds": 30,
+    "rssTerminationMiB": 2048,
+    "rssPollMilliseconds": 200,
+    "combinedLogBytes": 1048576
+  },
+  "run": {
+    "defaultTimeoutSeconds": 120,
+    "maximumTimeoutSeconds": 600,
+    "rssTerminationMiB": 8192,
+    "rssTerminationEnvironmentVariable": "WORKBENCH_RSS_LIMIT_MIB",
+    "rssTerminationDefaultMiB": 8192,
+    "rssTerminationMinimumMiB": 512,
+    "rssTerminationMaximumMiB": null,
+    "rssPollMilliseconds": 200,
+    "rssLimitIsHard": false,
+    "rssLimitDescription": "Poll /proc RSS for this owned process group; terminate after the observed total exceeds the threshold. Sampling delay applies. This is not a hard memory limit and does not measure CUDA memory.",
+    "cancelGraceSeconds": 5,
+    "maximumCombinedStdoutStderrBytes": 4194304,
+    "maximumCombinedStdoutStderrEnvironmentVariable": "WORKBENCH_MAX_LOG_MIB",
+    "maximumCombinedStdoutStderrDefaultMiB": 4,
+    "maximumCombinedStdoutStderrMinimumMiB": 1,
+    "maximumCombinedStdoutStderrMaximumMiB": null,
+    "maximumProjectImportBytes": null,
+    "maximumProjectImportBytesDescription": "No fixed byte cap for JSON project or replay imports.",
+    "maximumArtifactBytes": 4294967296,
+    "maximumResultArchiveBytes": 4294967296,
+    "artifactLimitBytes": 4294967296,
+    "artifactLimitMiB": 4096,
+    "artifactLimitSource": "default",
+    "artifactLimitEnvironmentVariable": "WORKBENCH_MAX_ARTIFACT_MIB",
+    "artifactLimitDefaultMiB": 4096,
+    "artifactLimitMinimumMiB": 64,
+    "artifactLimitMaximumMiB": null,
+    "artifactLimitDescription": "Effective runtime value. WORKBENCH_MAX_ARTIFACT_MIB sets the per-run artifact and archive/package cap; default 4096 MiB, minimum 64 MiB, no maximum. GET /api/capabilities reports the effective value and whether it came from env or the default.",
+    "artifactPreflight": {
+      "schemaVersion": 1,
+      "status": "advisory-warning-hard-rejection",
+      "capBytes": 4294967296,
+      "capMiB": 4096,
+      "warningFraction": 0.75,
+      "rejectFraction": 1.0,
+      "safetyFactor": 1.2,
+      "rejectStatusCode": 422,
+      "description": "backend/preflight.py estimates the run-directory footprint before the worker starts using the effective WORKBENCH_MAX_ARTIFACT_MIB cap (default 4096 MiB). Estimates at or above 75% of the cap start with an artifactWarning; estimates above the cap return 422. Configurations with uncalibrated level-set exports are downgraded to a warning instead of a rejection.",
+      "validationContract": "POST /api/projects/validate always returns valid=true for a valid project and adds an additive artifactEstimate field plus a warning string when the estimate is in the warning or rejection band.",
+      "runContract": "POST /api/runs returns 202 with additive artifactEstimate (and artifactWarning in the warning band), or 422 with detail.code=artifact-budget-preflight when the estimate exceeds the cap.",
+      "lazySnapshots": "VIENNAPS_WORKBENCH_LAZY_SNAPSHOTS=0 makes every step snapshot eager; the estimator then counts every snapshot instead of only the initial and largest one.",
+      "calibrationRuns": [
+        {"shape": "3D GDS 1x1 um, gridDelta 0.003, 13 steps", "onDiskMiB": 599, "estimateMiB": 684},
+        {"shape": "3D GDS 1x1 um, gridDelta 0.004, 13 steps", "onDiskMiB": 387, "estimateMiB": 385},
+        {"shape": "3D GDS 1x1 um, gridDelta 0.004, 11 steps", "onDiskMiB": 244, "estimateMiB": 320},
+        {"shape": "3D GDS 1x1 um, gridDelta 0.004, 2 steps", "onDiskMiB": 75, "estimateMiB": 91},
+        {"shape": "3D GDS 1x1 um, gridDelta 0.002, preview only", "onDiskMiB": 139, "estimateMiB": 132},
+        {"shape": "3D fin 5x5 um, gridDelta 0.05, 7 steps + volume mesh", "onDiskMiB": 108, "estimateMiB": 166}
+      ],
+      "formula": "cells = x*y/gridDelta^2 (3D) or x/gridDelta (2D); states = cells * stateGeometryFactor * layerFactor * sum(160 + 18*i); initial snapshot = 300*cells*meshFactor*layerFactor; largest deferred snapshot = (300 + 75*weightedSteps)*cells*meshFactor*layerFactor. The raw sum is multiplied by safetyFactor. archiveEstimateBytes additionally counts every step snapshot."
+    },
+    "maximumSteps": null,
+    "maximumStepsDescription": "No fixed step-count cap; memory, timeout, artifact and storage limits still apply.",
+    "maximumActiveRuns": 1,
+    "webWorkers": 1,
+    "cpuThreads": {
+      "default": 1,
+      "minimum": 1,
+      "maximum": null,
+      "maximumIsDynamic": true,
+      "limitSource": "process CPU affinity; os.cpu_count fallback"
+    },
+    "storage": {
+      "maximumWorkbenchBytes": 10737418240,
+      "maximumWorkbenchGiB": 10,
+      "maximumWorkbenchEnvironmentVariable": "WORKBENCH_MAX_DATA_GIB",
+      "maximumWorkbenchDefaultGiB": 10,
+      "maximumWorkbenchMinimumGiB": 1,
+      "maximumWorkbenchMaximumGiB": null,
+      "minimumFreeBytes": 21474836480,
+      "minimumFreeGiB": 20,
+      "minimumFreeEnvironmentVariable": "WORKBENCH_MIN_FREE_GIB",
+      "minimumFreeDefaultGiB": 20,
+      "minimumFreeMinimumGiB": 0,
+      "minimumFreeMaximumGiB": null,
+      "checkIntervalSeconds": 5,
+      "automaticHistoryDeletion": false,
+      "archiveSpace": "The archive uses a streaming response; no second full-size archive is staged on disk.",
+      "description": "Effective runtime values. WORKBENCH_MAX_DATA_GIB (default 10, minimum 1, no maximum) caps total application data; WORKBENCH_MIN_FREE_GIB (default 20, minimum 0, no maximum) is the free-disk floor before data is accepted. A large artifact cap does not bypass either guard. GET /api/capabilities reports the effective values."
+    }
+  },
+  "numerics": {
+    "dimension": 2,
+    "gridDeltaMicrometers": {
+      "minimumExclusive": 0.0,
+      "maximum": 0.5,
+      "suggested": [
+        0.2,
+        0.1,
+        0.05,
+        0.025,
+        0.01,
+        0.005
+      ]
+    },
+    "xExtentMicrometers": {
+      "minimum": 1.0,
+      "maximum": 40.0
+    },
+    "raysPerPoint": {
+      "minimum": 16,
+      "default": 256,
+      "maximum": 4096
+    },
+    "timeStepRatio": {
+      "minimum": 0.05,
+      "default": 0.25,
+      "maximum": 0.5
+    },
+    "rateMagnitudeMicrometersPerSecond": {
+      "minimum": 0.0,
+      "maximum": 2.0
+    },
+    "durationSecondsPerStep": {
+      "minimum": 0.01,
+      "maximum": 600.0
+    },
+    "stickingProbability": {
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "sourceExponent": {
+      "minimum": 0.0,
+      "maximum": 20.0
+    },
+    "trenchTaperAngleDegrees": {
+      "minimum": -45.0,
+      "maximum": 45.0
+    },
+    "minimumFeatureGridIntervals": 2,
+    "precisionWarningFeatureGridIntervals": 5,
+    "smallFeaturePolicy": "Reject a positive physical feature smaller than 2 grid intervals; warn from 2 up to 5 intervals. A zero mask height disables the mask; a zero taper angle is valid. Trench geometry also requires a positive post-taper bottom width."
+  },
+  "engineLimitsVsApplicationLimits": {
+    "engine": "Only verified API behavior is described in capabilities.json. No undocumented engine maximum is asserted.",
+    "application": "Physical feature constraints and bounded runtime/storage controls remain; there is no fixed application grid, surface point, triangle, or snapshot JSON size cap."
+  },
+  "memoryControlMechanism": {
+    "availableHardLimit": false,
+    "finding": "The sandbox exposes no usable cgroup memory.max. RLIMIT_AS is not used because it can conflict with CUDA address space and is not a GPU memory limit.",
+    "fallback": "Process-group RSS polling and explicit termination only."
+  },
+  "threeDimensional": {
+    "schemaVersion": 2,
+    "dimension": 3,
+    "default": {
+      "gridDelta": 0.2,
+      "xExtent": 6,
+      "yExtent": 6
+    },
+    "maximumResidentSnapshots": 2,
+    "maximumMaterialActors": 6,
+    "geometryToleranceUm": "2 * gridDelta",
+    "cpuReplayToleranceUm": "max(1e-8, 1e-4 * gridDelta)",
+    "vtkCoordinateToleranceUm": 0.0001,
+    "notes": "No fixed grid interval, surface point, triangle, or snapshot JSON size cap. Native mesh extraction and execution remain inside bounded_child.py process-group timeout/RSS/log supervision; the RSS poll is best-effort and does not measure CUDA memory. Run artifact and storage quotas remain.",
+    "fixedResolutionCountCaps": false
+  }
+}

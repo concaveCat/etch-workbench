@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "name": "API 集成验收",
+  "dimension": 2,
+  "units": {
+    "length": "um",
+    "time": "s",
+    "rate": "um/s",
+    "angle": "deg"
+  },
+  "domain": {
+    "gridDelta": 0.025,
+    "xExtent": 5.0,
+    "xBoundary": "reflective"
+  },
+  "geometry": {
+    "kind": "trench",
+    "width": 1.2,
+    "depth": 3.2,
+    "taperAngle": 0.0,
+    "maskHeight": 0.0,
+    "maskTaperAngle": 0.0,
+    "substrateMaterial": "Si"
+  },
+  "steps": [
+    {
+      "id": "step_c9eac7b7e332437ea5594207",
+      "name": "步骤 1",
+      "enabled": true,
+      "operation": "etch",
+      "model": "singleParticle",
+      "rateMagnitude": 0.36,
+      "duration": 2.0,
+      "stickingProbability": 0.5,
+      "sourceExponent": 1.0
+    }
+  ],
+  "solver": {
+    "timeStepRatio": 0.25,
+    "raysPerPoint": 64,
+    "cpuThreads": 1,
+    "random": {
+      "mode": "fixed",
+      "seed": 314159
+    },
+    "enginePreference": "gpu",
+    "timeoutSeconds": 30
+  },
+  "view": {
+    "panX": -0.1130865497178351,
+    "panH": 0.11951173485519262,
+    "zoom": 1.4049280000000028,
+    "showGrid": true
+  }
+}

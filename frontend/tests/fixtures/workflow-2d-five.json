@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 7,
+  "name": "P1 2D five-step fixture",
+  "dimension": 2,
+  "units": {"length": "um", "time": "s", "rate": "um/s", "angle": "deg"},
+  "domain": {"gridDelta": 0.2, "xExtent": 4.0, "xBoundary": "reflective"},
+  "geometry": {"kind": "plane", "height": 0.0, "substrateMaterial": "Si"},
+  "steps": [
+    {"id": "p1_step_01", "name": "one", "enabled": true, "operation": "etch", "model": "isotropic", "rateMagnitude": 0.0, "duration": 0.01, "rateMode": "uniform"},
+    {"id": "p1_step_02", "name": "two", "enabled": true, "operation": "etch", "model": "isotropic", "rateMagnitude": 0.0, "duration": 0.01, "rateMode": "uniform"},
+    {"id": "p1_step_03", "name": "three", "enabled": true, "operation": "etch", "model": "isotropic", "rateMagnitude": 0.0, "duration": 0.01, "rateMode": "uniform"},
+    {"id": "p1_step_04", "name": "four", "enabled": true, "operation": "etch", "model": "isotropic", "rateMagnitude": 0.0, "duration": 0.01, "rateMode": "uniform"},
+    {"id": "p1_step_05", "name": "five", "enabled": true, "operation": "etch", "model": "isotropic", "rateMagnitude": 0.0, "duration": 0.01, "rateMode": "uniform"}
+  ],
+  "solver": {"timeStepRatio": 0.25, "raysPerPoint": 16, "cpuThreads": 1, "random": {"mode": "fixed", "seed": 7}, "enginePreference": "cpu", "timeoutSeconds": 30},
+  "view": {"panX": 0.0, "panH": 0.0, "zoom": 1.0, "showGrid": true}
+}

@@ -1,0 +1,5 @@
+api = 1
+id = "directional"
+version = "1.0.0"
+entrypoint = "plugins.directional:register"
+description = "Native DirectionalProcess etch and deposition"

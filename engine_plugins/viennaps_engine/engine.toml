@@ -1,0 +1,5 @@
+api = 1
+engine_id = "viennaps"
+version = "1.0.0"
+entrypoint = "engine_plugins.viennaps_engine.plugin:PLUGIN"
+description = "ViennaPS CPU/GPU level-set and ray-tracing engine"

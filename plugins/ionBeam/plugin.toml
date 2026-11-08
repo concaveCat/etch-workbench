@@ -1,0 +1,5 @@
+api = 1
+id = "ionBeam"
+version = "1.0.0"
+entrypoint = "plugins.ionBeam:register"
+description = "Native ion-beam etch (IBE)"

@@ -1,0 +1,5 @@
+api = 1
+id = "faradayCage"
+version = "1.0.0"
+entrypoint = "plugins.faradayCage:register"
+description = "Native Faraday-cage ion-beam etch"

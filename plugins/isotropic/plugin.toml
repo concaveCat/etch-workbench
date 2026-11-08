@@ -1,0 +1,5 @@
+api = 1
+id = "isotropic"
+version = "1.0.0"
+entrypoint = "plugins.isotropic:register"
+description = "Native isotropic etch/deposit"

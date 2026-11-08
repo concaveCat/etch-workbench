@@ -1,0 +1,205 @@
+{
+  "versions": {
+    "viennaps": "4.6.2",
+    "viennals": "5.8.5"
+  },
+  "packagePath": "/root/.local/lib/python3.12/site-packages/viennaps/__init__.py",
+  "cases": [
+    {
+      "mode": "box-unwrapped",
+      "returnCode": 0,
+      "before": {
+        "points": 5355,
+        "triangles": 10464,
+        "materialTriangles": {
+          "10": 5000,
+          "30": 5000,
+          "0": 464
+        },
+        "bounds": [
+          -2.5,
+          2.5,
+          -2.5,
+          2.5,
+          -1e-13,
+          5.2999999999999
+        ],
+        "levelSetPoints": [
+          7803,
+          5202,
+          737
+        ]
+      },
+      "after": {
+        "points": 234,
+        "triangles": 464,
+        "materialTriangles": {
+          "0": 464
+        },
+        "bounds": [
+          -0.9999999999999001,
+          -1e-13,
+          -0.4999999999999,
+          0.4999999999999,
+          5.001999999800001,
+          5.2999999999999
+        ],
+        "levelSetPoints": [
+          0,
+          0,
+          403
+        ]
+      }
+    },
+    {
+      "mode": "box-wrapped",
+      "returnCode": 0,
+      "before": {
+        "points": 5355,
+        "triangles": 10343,
+        "materialTriangles": {
+          "10": 5000,
+          "30": 5000,
+          "0": 343
+        },
+        "bounds": [
+          -2.5,
+          2.5,
+          -2.5,
+          2.5,
+          -1e-13,
+          5.2999999999999
+        ],
+        "levelSetPoints": [
+          7803,
+          5202,
+          5386
+        ]
+      },
+      "after": {
+        "points": 5355,
+        "triangles": 10343,
+        "materialTriangles": {
+          "10": 5000,
+          "30": 5000,
+          "0": 343
+        },
+        "bounds": [
+          -2.5,
+          2.5,
+          -2.5,
+          2.5,
+          -1e-13,
+          5.2999999999999
+        ],
+        "levelSetPoints": [
+          5202,
+          5202,
+          5201
+        ]
+      }
+    },
+    {
+      "mode": "gds-unwrapped",
+      "returnCode": 0,
+      "before": {
+        "points": 5268,
+        "triangles": 10128,
+        "materialTriangles": {
+          "10": 5000,
+          "30": 5000,
+          "0": 128
+        },
+        "bounds": [
+          -2.5,
+          2.5,
+          -2.5,
+          2.805000066757202,
+          -1e-13,
+          5.3000000000001
+        ],
+        "levelSetPoints": [
+          7803,
+          5202,
+          80
+        ]
+      },
+      "after": {
+        "points": 68,
+        "triangles": 128,
+        "materialTriangles": {
+          "0": 128
+        },
+        "bounds": [
+          0.1500000109604639,
+          0.31999999084744335,
+          -0.0769230758650062,
+          2.805000066257195,
+          4.950000010960465,
+          5.349999989039536
+        ],
+        "levelSetPoints": [
+          0,
+          0,
+          92
+        ]
+      }
+    },
+    {
+      "mode": "gds-wrapped",
+      "returnCode": -11
+    },
+    {
+      "mode": "gds-matched-wrapped",
+      "returnCode": 0,
+      "before": {
+        "points": 44752,
+        "triangles": 88156,
+        "materialTriangles": {
+          "10": 44022,
+          "30": 44022,
+          "0": 112
+        },
+        "bounds": [
+          -8.5,
+          16.8,
+          -3.0,
+          5.7,
+          -1e-13,
+          5.3000000000001
+        ],
+        "levelSetPoints": [
+          67056,
+          44704,
+          44758
+        ]
+      },
+      "after": {
+        "points": 44766,
+        "triangles": 88184,
+        "materialTriangles": {
+          "10": 44022,
+          "30": 44022,
+          "0": 140
+        },
+        "bounds": [
+          -8.5,
+          16.8,
+          -3.0,
+          5.7,
+          -1e-13,
+          5.349999989039536
+        ],
+        "levelSetPoints": [
+          44704,
+          44704,
+          44764
+        ]
+      }
+    },
+    {
+      "mode": "box-mismatched-wrapped",
+      "returnCode": -11
+    }
+  ]
+}

@@ -1,0 +1,942 @@
+{
+  "schemaVersion": 1,
+  "referenceScript": {
+    "file": "FinFET_um.py",
+    "sha256": "80cc1a28e8cd92713a64e2ca625f919f386238b770d93f32a1b05e927338ddc4",
+    "lineCount": 243
+  },
+  "engine": {
+    "viennaps": "4.7.0",
+    "dimension": 3,
+    "threads": 1
+  },
+  "domain": {
+    "coordinateUnit": "um",
+    "bounds": [
+      0.0,
+      0.09,
+      0.0,
+      0.1,
+      0.0,
+      0.07
+    ],
+    "gridDelta": 0.00079,
+    "boundsUm": [
+      0.0,
+      0.09,
+      0.0,
+      0.1,
+      0.0,
+      0.07
+    ],
+    "gridDeltaUm": 0.00079,
+    "boundaries": [
+      "reflective",
+      "reflective",
+      "infinite"
+    ],
+    "unitScaleNmToUm": 1.0
+  },
+  "surfaces": [
+    {
+      "index": 0,
+      "file": "FinFET_0.vtp",
+      "pointCount": 14720,
+      "triangleCount": 28956,
+      "materialMap": [
+        10
+      ],
+      "materialNames": {
+        "10": "Si"
+      },
+      "surfaceMaterialCounts": {
+        "10": 28956
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        0.07,
+        0.07
+      ],
+      "digest": "c8b9d50a8ce23d461b692711ecc1a3c34c124ced393437229d7db9cee796709a"
+    },
+    {
+      "index": 1,
+      "file": "FinFET_1.vtp",
+      "pointCount": 26112,
+      "triangleCount": 51816,
+      "materialMap": [
+        10,
+        0
+      ],
+      "materialNames": {
+        "10": "Si",
+        "0": "Mask"
+      },
+      "surfaceMaterialCounts": {
+        "0": 22860,
+        "10": 28956
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        0.07,
+        0.09
+      ],
+      "digest": "295ed027b11d56a935f5f5cca9ee4c2674fd4c00bdd7cac5ed1ed89f0949d09d"
+    },
+    {
+      "index": 2,
+      "file": "FinFET_2.vtp",
+      "pointCount": 47744,
+      "triangleCount": 94488,
+      "materialMap": [
+        10,
+        0,
+        5
+      ],
+      "materialNames": {
+        "10": "Si",
+        "0": "Mask",
+        "5": "Metal"
+      },
+      "surfaceMaterialCounts": {
+        "0": 22860,
+        "5": 42672,
+        "10": 28956
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        0.07,
+        0.09402700367629835
+      ],
+      "digest": "6d81806e8bcefae2880af6457da9af8a92dab606f5e56cb1caadb3609d8bbd03"
+    },
+    {
+      "index": 3,
+      "file": "FinFET_3.vtp",
+      "pointCount": 32768,
+      "triangleCount": 65532,
+      "materialMap": [
+        10,
+        0,
+        5
+      ],
+      "materialNames": {
+        "10": "Si",
+        "0": "Mask",
+        "5": "Metal"
+      },
+      "surfaceMaterialCounts": {
+        "0": 21844,
+        "5": 14732,
+        "10": 28956
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        0.07,
+        0.08800000115188368
+      ],
+      "digest": "c0f5ba8d73ec1c2b8d492d38e225c98cd107c4aad7353c1b10ff809dc9463199"
+    },
+    {
+      "index": 4,
+      "file": "FinFET_4.vtp",
+      "pointCount": 27776,
+      "triangleCount": 55372,
+      "materialMap": [
+        10,
+        5
+      ],
+      "materialNames": {
+        "10": "Si",
+        "5": "Metal"
+      },
+      "surfaceMaterialCounts": {
+        "5": 26416,
+        "10": 28956
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        0.07,
+        0.08776176420342363
+      ],
+      "digest": "a9ab1270893e4aa0ceb3d05d7b19d9673bb838c22d0f13e39541b4096e4dbe64"
+    },
+    {
+      "index": 5,
+      "file": "FinFET_5.vtp",
+      "pointCount": 79744,
+      "triangleCount": 158496,
+      "materialMap": [
+        10,
+        5
+      ],
+      "materialNames": {
+        "10": "Si",
+        "5": "Metal"
+      },
+      "surfaceMaterialCounts": {
+        "5": 26162,
+        "10": 132334
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.08774343958985831
+      ],
+      "digest": "fa12bd128f62a4146c4fd615f23764e1e8ce357856434061e36f94b6f1c93ec6"
+    },
+    {
+      "index": 6,
+      "file": "FinFET_6.vtp",
+      "pointCount": 66816,
+      "triangleCount": 132334,
+      "materialMap": [
+        10
+      ],
+      "materialNames": {
+        "10": "Si"
+      },
+      "surfaceMaterialCounts": {
+        "10": 132334
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.07
+      ],
+      "digest": "2776b298712dfdebc8e43d711d7795473c1035c690534f0a1f2a02648a08fb3e"
+    },
+    {
+      "index": 7,
+      "file": "FinFET_7.vtp",
+      "pointCount": 87680,
+      "triangleCount": 173482,
+      "materialMap": [
+        10,
+        30
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2"
+      },
+      "surfaceMaterialCounts": {
+        "10": 132334,
+        "30": 41148
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.10509799601371303
+      ],
+      "digest": "f66fd564bb3f32e25347753b7570c53f09c8ae92be56e52a31980458f3971d66"
+    },
+    {
+      "index": 8,
+      "file": "FinFET_8.vtp",
+      "pointCount": 81536,
+      "triangleCount": 161290,
+      "materialMap": [
+        10,
+        30
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2"
+      },
+      "surfaceMaterialCounts": {
+        "10": 132334,
+        "30": 28956
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.08
+      ],
+      "digest": "ec68181e4a0f8dc68c6bd0a77f33a6656825318ec2142e9e826d3e3ccc3110d3"
+    },
+    {
+      "index": 9,
+      "file": "FinFET_9.vtp",
+      "pointCount": 79232,
+      "triangleCount": 157226,
+      "materialMap": [
+        10,
+        30
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2"
+      },
+      "surfaceMaterialCounts": {
+        "10": 132334,
+        "30": 24892
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.07
+      ],
+      "digest": "f899cdd49612017414f36d3e2ac0074ddb1e9a24793ca69bfd06b8d8bca0a7ee"
+    },
+    {
+      "index": 10,
+      "file": "FinFET_10.vtp",
+      "pointCount": 110336,
+      "triangleCount": 218694,
+      "materialMap": [
+        10,
+        30,
+        32
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2",
+        "32": "HfO2"
+      },
+      "surfaceMaterialCounts": {
+        "10": 132334,
+        "30": 24892,
+        "32": 61468
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.0720930841719112
+      ],
+      "digest": "b47c04218ebbd6c9c610452d70e01bc0788d639f77caba157cdbe683d161b949"
+    },
+    {
+      "index": 11,
+      "file": "FinFET_11.vtp",
+      "pointCount": 126336,
+      "triangleCount": 250190,
+      "materialMap": [
+        10,
+        30,
+        32,
+        11
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2",
+        "32": "HfO2",
+        "11": "PolySi"
+      },
+      "surfaceMaterialCounts": {
+        "10": 132334,
+        "11": 31496,
+        "30": 24892,
+        "32": 61468
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.17609164691554952
+      ],
+      "digest": "d45251433f812e922d90cf07471d69f9994ad97acfb2242ff3cfef07a2b397b7"
+    },
+    {
+      "index": 12,
+      "file": "FinFET_12.vtp",
+      "pointCount": 125056,
+      "triangleCount": 247650,
+      "materialMap": [
+        10,
+        30,
+        32,
+        11
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2",
+        "32": "HfO2",
+        "11": "PolySi"
+      },
+      "surfaceMaterialCounts": {
+        "10": 132334,
+        "11": 28956,
+        "30": 24892,
+        "32": 61468
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.15
+      ],
+      "digest": "24bb3607aee378ec4ec3548d863e6a3f72e8c0dc5e2451ec7abb4dbc5a87d504"
+    },
+    {
+      "index": 13,
+      "file": "FinFET_13.vtp",
+      "pointCount": 138281,
+      "triangleCount": 274098,
+      "materialMap": [
+        10,
+        30,
+        32,
+        11,
+        0
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2",
+        "32": "HfO2",
+        "11": "PolySi",
+        "0": "Mask"
+      },
+      "surfaceMaterialCounts": {
+        "0": 26448,
+        "10": 132334,
+        "11": 28956,
+        "30": 24892,
+        "32": 61468
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.175
+      ],
+      "digest": "7b99b131df90681949684e1b97e9043907bb38ef146b78b2cd1dd09e3e7e8ce3"
+    },
+    {
+      "index": 14,
+      "file": "FinFET_14.vtp",
+      "pointCount": 140359,
+      "triangleCount": 279710,
+      "materialMap": [
+        10,
+        30,
+        32,
+        11,
+        0
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2",
+        "32": "HfO2",
+        "11": "PolySi",
+        "0": "Mask"
+      },
+      "surfaceMaterialCounts": {
+        "0": 26448,
+        "10": 132334,
+        "11": 68400,
+        "30": 24892,
+        "32": 27636
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.175
+      ],
+      "digest": "6f2858b959df221b80d768dd26bd438d2f7ac2232f29037d3e0b7688c7844684"
+    },
+    {
+      "index": 15,
+      "file": "FinFET_15.vtp",
+      "pointCount": 127134,
+      "triangleCount": 253262,
+      "materialMap": [
+        10,
+        30,
+        32,
+        11
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2",
+        "32": "HfO2",
+        "11": "PolySi"
+      },
+      "surfaceMaterialCounts": {
+        "10": 132334,
+        "11": 68400,
+        "30": 24892,
+        "32": 27636
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.15
+      ],
+      "digest": "0ae6b5b90826b38c84b93affd226a6b208ef65cedda44b9073c33fc1024d774c"
+    },
+    {
+      "index": 16,
+      "file": "FinFET_16.vtp",
+      "pointCount": 175299,
+      "triangleCount": 348322,
+      "materialMap": [
+        10,
+        30,
+        32,
+        11,
+        16
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2",
+        "32": "HfO2",
+        "11": "PolySi",
+        "16": "Si3N4"
+      },
+      "surfaceMaterialCounts": {
+        "10": 132334,
+        "11": 68400,
+        "16": 95060,
+        "30": 24892,
+        "32": 27636
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.16001594957359583
+      ],
+      "digest": "0a7bc25bfa86768649f8746390ff006cee2b89d2637acc775c084b652b81207f"
+    },
+    {
+      "index": 17,
+      "file": "FinFET_17.vtp",
+      "pointCount": 148096,
+      "triangleCount": 295747,
+      "materialMap": [
+        10,
+        30,
+        32,
+        11,
+        16
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2",
+        "32": "HfO2",
+        "11": "PolySi",
+        "16": "Si3N4"
+      },
+      "surfaceMaterialCounts": {
+        "10": 132334,
+        "11": 68400,
+        "16": 42485,
+        "30": 24892,
+        "32": 27636
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.15
+      ],
+      "digest": "b03dda4d44e628b8d2c3dedffcf95182e9169c7f8c74023698b97996ef57f4aa"
+    },
+    {
+      "index": 18,
+      "file": "FinFET_18.vtp",
+      "pointCount": 144911,
+      "triangleCount": 289861,
+      "materialMap": [
+        10,
+        30,
+        32,
+        11,
+        16
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2",
+        "32": "HfO2",
+        "11": "PolySi",
+        "16": "Si3N4"
+      },
+      "surfaceMaterialCounts": {
+        "10": 123906,
+        "11": 68400,
+        "16": 44315,
+        "30": 25604,
+        "32": 27636
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.150000000005
+      ],
+      "digest": "8c14c01e300ae16ae53908618d93c66f3a5f034a122a833baf423e249d4cf20c"
+    },
+    {
+      "index": 19,
+      "file": "FinFET_19.vtp",
+      "pointCount": 156715,
+      "triangleCount": 313665,
+      "materialMap": [
+        10,
+        30,
+        32,
+        11,
+        16,
+        13
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2",
+        "32": "HfO2",
+        "11": "PolySi",
+        "16": "Si3N4",
+        "13": "SiGe"
+      },
+      "surfaceMaterialCounts": {
+        "10": 123906,
+        "11": 68400,
+        "13": 23804,
+        "16": 44315,
+        "30": 25604,
+        "32": 27636
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.1500000000075
+      ],
+      "digest": "0b8c9d3ae61f9dc22bd6f4310ebd5316a7302dfceca89079173dfa35da57c737"
+    },
+    {
+      "index": 20,
+      "file": "FinFET_20.vtp",
+      "pointCount": 174540,
+      "triangleCount": 348777,
+      "materialMap": [
+        10,
+        30,
+        32,
+        11,
+        16,
+        13,
+        4
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2",
+        "32": "HfO2",
+        "11": "PolySi",
+        "16": "Si3N4",
+        "13": "SiGe",
+        "4": "Dielectric"
+      },
+      "surfaceMaterialCounts": {
+        "4": 35112,
+        "10": 123906,
+        "11": 68400,
+        "13": 23804,
+        "16": 44315,
+        "30": 25604,
+        "32": 27636
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.20001600337821138
+      ],
+      "digest": "5ef5e63b7f88aca189e79d3ddffefedd92685090163a85d74c66e37a8acd76f0"
+    },
+    {
+      "index": 21,
+      "file": "FinFET_21.vtp",
+      "pointCount": 139810,
+      "triangleCount": 280149,
+      "materialMap": [
+        10,
+        30,
+        32,
+        11,
+        16,
+        13,
+        4
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2",
+        "32": "HfO2",
+        "11": "PolySi",
+        "16": "Si3N4",
+        "13": "SiGe",
+        "4": "Dielectric"
+      },
+      "surfaceMaterialCounts": {
+        "4": 12540,
+        "10": 123906,
+        "11": 33744,
+        "13": 23804,
+        "16": 32915,
+        "30": 25604,
+        "32": 27636
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.09
+      ],
+      "digest": "5e9e45420ffcdce18942d8fff8844162b34ce18a5c6381f1afd9e1d2d95323cd"
+    },
+    {
+      "index": 22,
+      "file": "FinFET_22.vtp",
+      "pointCount": 133715,
+      "triangleCount": 267837,
+      "materialMap": [
+        10,
+        30,
+        32,
+        16,
+        13,
+        4
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2",
+        "32": "HfO2",
+        "16": "Si3N4",
+        "13": "SiGe",
+        "4": "Dielectric"
+      },
+      "surfaceMaterialCounts": {
+        "4": 12540,
+        "10": 123906,
+        "13": 23804,
+        "16": 54347,
+        "30": 25604,
+        "32": 27636
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.09
+      ],
+      "digest": "8620cebf93c406d8f709236d394df20df6521c9155f20f9a07a37b924e7148fc"
+    },
+    {
+      "index": 23,
+      "file": "FinFET_23.vtp",
+      "pointCount": 163977,
+      "triangleCount": 327653,
+      "materialMap": [
+        10,
+        30,
+        32,
+        16,
+        13,
+        4,
+        79
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2",
+        "32": "HfO2",
+        "16": "Si3N4",
+        "13": "SiGe",
+        "4": "Dielectric",
+        "79": "TiN"
+      },
+      "surfaceMaterialCounts": {
+        "4": 12540,
+        "10": 123906,
+        "13": 23804,
+        "16": 54347,
+        "30": 25604,
+        "32": 27636,
+        "79": 59816
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.09402769591486572
+      ],
+      "digest": "fa0b13be17bc9fa7457bf901434c5e0e9fc079628f44a6539f8bab931cec586c"
+    },
+    {
+      "index": 24,
+      "file": "FinFET_24.vtp",
+      "pointCount": 180077,
+      "triangleCount": 359345,
+      "materialMap": [
+        10,
+        30,
+        32,
+        16,
+        13,
+        4,
+        79,
+        11
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2",
+        "32": "HfO2",
+        "16": "Si3N4",
+        "13": "SiGe",
+        "4": "Dielectric",
+        "79": "TiN",
+        "11": "PolySi"
+      },
+      "surfaceMaterialCounts": {
+        "4": 12540,
+        "10": 123906,
+        "11": 31692,
+        "13": 23804,
+        "16": 54347,
+        "30": 25604,
+        "32": 27636,
+        "79": 59816
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.13402767280604255
+      ],
+      "digest": "c9c35d1ecffc1474fe4dab99d57da0b59fcb2ebc08a4f34402cc45758a55ff82"
+    },
+    {
+      "index": 25,
+      "file": "FinFET_25.vtp",
+      "pointCount": 158687,
+      "triangleCount": 317849,
+      "materialMap": [
+        10,
+        30,
+        32,
+        16,
+        13,
+        4,
+        79,
+        11
+      ],
+      "materialNames": {
+        "10": "Si",
+        "30": "SiO2",
+        "32": "HfO2",
+        "16": "Si3N4",
+        "13": "SiGe",
+        "4": "Dielectric",
+        "79": "TiN",
+        "11": "PolySi"
+      },
+      "surfaceMaterialCounts": {
+        "4": 12540,
+        "10": 123906,
+        "11": 10032,
+        "13": 23804,
+        "16": 54347,
+        "30": 25604,
+        "32": 27636,
+        "79": 39980
+      },
+      "boundsUm": [
+        0.0,
+        0.09006,
+        0.0,
+        0.10033,
+        -0.010999999973388365,
+        0.09
+      ],
+      "digest": "2465419c18cf80ea8abf3099e315c1eb6dae41694c23b7f3772b2d7c862410a5"
+    }
+  ],
+  "volume": {
+    "file": "FinFET_Final_volume.vtu",
+    "fileSha256": "f922a7a6583f5c9cf42a6de087505210056cf6eb811bad6803d87b69557fe8cf",
+    "fileBytes": 98180685,
+    "nodeCount": 2074708,
+    "cellCount": 12132792,
+    "cellType": "tetra",
+    "materialCounts": {
+      "4": 1738084,
+      "10": 2528878,
+      "11": 1124855,
+      "13": 445518,
+      "16": 964958,
+      "30": 4356509,
+      "32": 248758,
+      "79": 725232
+    },
+    "boundsUm": [
+      0.0,
+      0.09006000310182571,
+      0.0,
+      0.10033000260591507,
+      -0.011850000359117985,
+      0.09000000357627869
+    ],
+    "digest": "e8320f7196489f55806accd5d9c41982e4b2d365b9c8d6712ebb35a7e98e6a21"
+  }
+}

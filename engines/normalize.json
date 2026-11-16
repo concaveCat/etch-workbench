@@ -7,20 +7,83 @@
   "signConvention": "removal negative, deposition positive",
   "halfCellOffset": 0.0,
   "materials": {
-    "Si":        {"spx": "Silicon",     "color": "#78909C"},
-    "SiO2":      {"spx": "Oxide",       "color": "#00e5ff"},
-    "Si3N4":     {"spx": "Nitride",     "color": "#dce775"},
-    "PolySi":    {"spx": "PolySilicon", "color": "#ff3d00"},
-    "SiGe":      {"spx": "SiGe",        "color": "#00bfa5"},
-    "Al2O3":     {"spx": "AlO",         "color": "#72abab"},
-    "HfO2":      {"spx": "HfO2",        "color": "#ff1744"},
-    "TiN":       {"spx": "TiN",         "color": "#9e9e9e"},
-    "W":         {"spx": "Tungsten",    "color": "#607d8b"},
-    "Cu":        {"spx": "Copper",      "color": "#b87333"},
-    "PMMA":      {"spx": "Photoresist", "color": "#fff59d"},
-    "Mask":      {"spx": "Photoresist", "color": "#fff59d"},
-    "SiN":       {"spx": "SiN",         "color": "#55aaff"},
-    "Metal":     {"spx": "TiN",         "color": "#9e9e9e"},
-    "Dielectric":{"spx": "Oxide",       "color": "#00e5ff"}
+    "Si": {
+      "spx": "Silicon",
+      "color": "#78909C"
+    },
+    "SiO2": {
+      "spx": "Oxide",
+      "color": "#00e5ff"
+    },
+    "Si3N4": {
+      "spx": "Nitride",
+      "color": "#dce775"
+    },
+    "PolySi": {
+      "spx": "PolySilicon",
+      "color": "#ff3d00"
+    },
+    "SiGe": {
+      "spx": "SiGe",
+      "color": "#00bfa5"
+    },
+    "Al2O3": {
+      "spx": "AlO",
+      "color": "#72abab"
+    },
+    "HfO2": {
+      "spx": "HfO2",
+      "color": "#ff1744"
+    },
+    "TiN": {
+      "spx": "TiN",
+      "color": "#9e9e9e"
+    },
+    "W": {
+      "spx": "Tungsten",
+      "color": "#607d8b"
+    },
+    "Cu": {
+      "spx": "Copper",
+      "color": "#b87333"
+    },
+    "PMMA": {
+      "spx": "Photoresist",
+      "color": "#fff59d"
+    },
+    "Mask": {
+      "spx": "Photoresist",
+      "color": "#fff59d"
+    },
+    "SiN": {
+      "spx": "SiN",
+      "color": "#55aaff"
+    },
+    "Metal": {
+      "spx": "TiN",
+      "color": "#9e9e9e"
+    },
+    "Dielectric": {
+      "spx": "Oxide",
+      "color": "#00e5ff"
+    }
+  },
+  "layouts": {
+    "memory1": {
+      "comment": "Measured 2026-11-17 by comparing a post-etch unpatterned-oxide probe grid (12x12) per SPX layer name against the polygon coverage of every GDS layer: 144/144 agreement for each pair, and the polarity is negative (litho removes resist where the layer has polygons). BC/layer 17 is weakly evidenced: its 16 contact rectangles are smaller than the probe pitch, so the grid saw no coverage on both sides.",
+      "path": "/root/SPX/spx/V-2024.03/linux64/examples/Memory1_Layout.oasis",
+      "layersByName": {
+        "M1": 9,
+        "PLG": 11,
+        "CS": 15,
+        "BC": 17,
+        "PC": 19,
+        "M2": 21
+      }
+    }
+  },
+  "litho": {
+    "coatUm": 0.1,
+    "comment": "SPX litho_patterning coats a fresh resist layer on top before clearing the openings; measured 0.1 um (resist top 0.15 -> 0.25 on the recorded case). The ViennaPS adapter reproduces it via step.parameters.coat (default 0.1) so both sides produce the same solid, not just the same outline."
   }
 }

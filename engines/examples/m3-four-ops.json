@@ -36,7 +36,7 @@
       "mechanism": "fill",
       "duration": 0.0,
       "parameters": {
-        "material": "Mask",
+        "material": "PMMA",
         "offset": 0.05
       }
     },
@@ -49,8 +49,8 @@
         "layer": 15,
         "thickness": 0.05,
         "polarity": "negative",
-        "material": "Mask",
-        "layer_name": "M1"
+        "material": "PMMA",
+        "layer_name": "CS"
       }
     },
     {
@@ -74,7 +74,7 @@
       "duration": 0.0,
       "parameters": {
         "materials": [
-          "Mask"
+          "PMMA"
         ]
       }
     }

@@ -345,12 +345,26 @@ OASIS 单元 a，六层 9/11/15/17/19/21，extent 0×0 → 0.624×0.740 µm
 | StepIR | ViennaPS 侧实现 | SPX 侧 | 等级 | 实测 |
 |---|---|---|---|---|
 | `kind=strip, mechanism=strip` | `domain.removeMaterial` | `etch_strip(MaterialFilter)` | exact | 一致率 1.00 |
-| `kind=deposit, mechanism=fill` | `Box` LS 减去所有已有实体 → `insertNextLevelSetAsMaterial` | `depo_fill(Offset, ReferenceMaterialsFilter)` | approximate | 1.00（两层栈 + 20 nm 盖层） |
-| `kind=etch, mechanism=ellipsoidal` | `DirectionalProcess([0,0,1], {mat:(vertical, lateral)})` | `etch_ellipsoidal(filter, vertical, lateral)` | approximate | 0.80 |
-| `kind=mask, mechanism=litho` | 读同一份 GDS 层 → 逐**轴对齐矩形** `makeBoxStencil` 切/加 | `litho_patterning(LayerNames=[name])` | approximate | 0.80 |
+| `kind=deposit, mechanism=fill` | `Box` LS 减去所有已有实体 → `insertNextLevelSetAsMaterial` | `depo_fill(Offset, ReferenceMaterialsFilter)` | exact | **1.00** |
+| `kind=etch, mechanism=ellipsoidal` | `DirectionalProcess([0,0,1], {mat:(vertical, lateral)})` | `etch_ellipsoidal(filter, vertical, lateral)` | approximate（模型不同，本例 1.00） | **1.00** |
+| `kind=mask, mechanism=litho` | 同一份 GDS 层 → 逐**轴对齐矩形** `makeBoxStencil` 切/加 + 0.1 µm 涂层 | `litho_patterning(LayerNames=[name])` | approximate（三条件成立时 1.00） | **1.00** |
 
 `engines/examples/m3-four-ops.json` 是这条验收用例（Memory1 窗口 0.624×0.74 µm = 0.46 µm²，
-在 1.0 µm² 安全限内）：**5 步全部对齐**，ViennaPS 4.6 s / SPX 29 s。
+在 1.0 µm² 安全限内）：**5 步全部对齐，逐步一致率 100%，截面偏差 4e-6 µm**，
+ViennaPS 6.1 s / SPX 28 s。
+
+对拍过程中定死了三件事（这才是 100% 的原因）：
+
+1. **层名↔层号映射**（六个名字全部 144/144 逐点吻合）：
+   `M1=9, PLG=11, CS=15, BC=17, PC=19, M2=21`。方法：先各向异性刻蚀掉未被胶保护的
+   SiO₂ 50 nm，再在 z=0.09 µm 打 12×12 probe 网格，得到"每个 name 的开口图"，
+   与该层多边形覆盖率的取反逐点比对；极性同时确认为 **negative（有图形处去胶）**。
+   注意 BC/17 证据较弱：它的 16 个接触孔小于探测栅距，两侧在网格上都没看到覆盖。
+2. **涂层厚度 0.1 µm**：SPX 的 `litho_patterning` 是完整光刻（coat+expose+develop），
+   会在现有胶上再加一层（实测胶顶 0.15 → 0.25）。ViennaPS 用 `parameters.coat`
+   （默认 0.1）复现，两边因此是**同一个实体**，不只是同一个轮廓。
+3. **材料名**：工作台 `PMMA` == SPX `Photoresist`；写成 `Mask` 会让同一块胶标签不同，
+   白掉 20% 的一致率。
 
 三个实测限制（都写进代码注释）：
 
@@ -361,9 +375,7 @@ OASIS 单元 a，六层 9/11/15/17/19/21，extent 0×0 → 0.624×0.740 µm
    做布尔会 **segfault**（实测两例），所以走工作台同款 `GeometryFactory.makeBoxStencil`。
    Memory1 的 15/17/21 层正好是矩形（30/16/16 个），9/11/19 层是多边形（5/6/8、52/100 顶点），
    目前会计入 "skipped polygon" 而不近似。
-3. **层号↔层名映射未定**：ViennaPS 用层号（15），SPX 用名字（`M1`）；本次把 `layer_name`
-   传成 `M1` 只是占位，所以 litho 的一致率是 0.80 而不是 1.00。要定死就得做一次
-   逐层对拍（六个名字 × 六个层号），用现有探针/截面就能做，不需要新机制。
+3. **层号↔层名映射：已定**（144/144，见上方表格）。
 
 **`etch_ellipsoidal` 的参数形状**（踩过）：每个材料项是
 `(filter, vertical_rate, lateral_rate)` **三个位置参数**，不是嵌套的两元组；

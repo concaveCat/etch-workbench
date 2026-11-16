@@ -275,6 +275,30 @@ class CapabilityStepTests(unittest.TestCase):
         self.assertIsNone(_as_rectangle(octagon))
 
 
+class LithoContractTests(unittest.TestCase):
+    def test_recorded_layer_mapping_is_consistent_with_the_example(self):
+        import json
+        from pathlib import Path
+        table = json.loads((Path(__file__).resolve().parents[1] / "engines" / "normalize.json").read_text())
+        layers = table["layouts"]["memory1"]["layersByName"]
+        self.assertEqual(layers, {"M1": 9, "PLG": 11, "CS": 15, "BC": 17, "PC": 19, "M2": 21})
+        job = json.loads((Path(__file__).resolve().parents[1] / "engines" / "examples"
+                          / "m3-four-ops.json").read_text())
+        litho = next(step for step in job["steps"] if step["step_id"] == "s2_litho")
+        self.assertEqual(layers[litho["parameters"]["layer_name"]], litho["parameters"]["layer"])
+        self.assertEqual(table["litho"]["coatUm"], 0.1)
+
+    def test_resist_is_named_like_the_workbench_catalogue(self):
+        import json
+        from pathlib import Path
+        table = json.loads((Path(__file__).resolve().parents[1] / "engines" / "normalize.json").read_text())
+        self.assertEqual(table["materials"]["PMMA"]["spx"], "Photoresist")
+        job = json.loads((Path(__file__).resolve().parents[1] / "engines" / "examples"
+                          / "m3-four-ops.json").read_text())
+        litho = next(step for step in job["steps"] if step["step_id"] == "s2_litho")
+        self.assertEqual(litho["parameters"]["material"], "PMMA")
+
+
 class NormalizeTests(unittest.TestCase):
     def test_spx_names_map_to_the_workbench_catalogue(self):
         self.assertEqual(normalize.canonical("Silicon", "spx"), "Si")

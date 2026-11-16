@@ -248,8 +248,26 @@ class ViennapsSession:
         layer = int(step.parameters["layer"])
         polarity = str(step.parameters.get("polarity", "negative")).lower()
         thickness = float(step.parameters["thickness"])
+        # SPX's litho_patterning is a full litho step: it coats a fresh resist layer
+        # on top (measured 0.1 um on a 0.05 um resist stack) and then clears the
+        # openings. ``coat`` reproduces the coat so the two patterns are the same
+        # solid, not just the same outline.
+        coat = float(step.parameters.get("coat", 0.1))
         z_top = self._surface_top()
-        z_center = z_top - thickness / 2.0
+        material = str(step.parameters.get("material", "Mask"))
+        if polarity == "negative" and coat > 0:
+            slab = ps.LevelSet(self.domain.getGrid())
+            margin = float(self.job.domain.grid_delta)
+            ps.MakeGeometry(slab, ps.Box(
+                [-margin, -margin, z_top],
+                [float(self.job.domain.width) + margin,
+                 float(self.job.domain.depth) + margin, z_top + coat])).apply()
+            self.domain.insertNextLevelSetAsMaterial(slab, _material_handle(ps, material))
+            self._register(material)
+            if material not in self.stack:
+                self.stack.append(material)
+            z_top += coat
+        z_center = z_top - (thickness + coat) / 2.0
         margin = float(self.job.domain.grid_delta)
         factory = ps.GeometryFactory(self.domain.getSetup(),
                                      f"compare_litho_{step.step_id}")
@@ -273,7 +291,7 @@ class ViennapsSession:
             else:
                 stencil = factory.makeBoxStencil(
                     [(x0 + x1) / 2.0, (y0 + y1) / 2.0, z_center],
-                    width, thickness + 2 * margin, 0.0, depth)
+                    width, thickness + coat + 2 * margin, 0.0, depth)
                 self.domain.applyBooleanOperation(
                     stencil, ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT, False)
             cut += 1

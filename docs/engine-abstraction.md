@@ -147,12 +147,25 @@ SPX 能导出结构，但都不好用：`meas_save_3D` 的 `Format` 实测只能
 | s0_init | 4e-6 µm | 1e-6 µm |
 | s1_etch | 4e-6 µm | 8.3e-5 µm（0.083 nm） |
 
-**相机**：`meas_screenshot(View=…)` 实测只接受
-`{ free, iso, iso90, iso180, iso270, xy, xz, yx, yz, zx, zy }`，其它值直接报错；
-除 `free` 外的显式相机参数（azimuth/elevation/zoom）在无 GUI 环境没有出口
-（`control_screenshot*` 只暴露 `Show Axes`，`sp.show(Children=['Snapshot'])` 为空）。
-所以做法是**流程里选一个 View 预设**，左侧网格按同一方位投影（`cameraForView`），
-左右共用预设而不是任意相机。
+**相机**：`meas_screenshot(View=…)` 只接受
+`{ free, iso, iso90, iso180, iso270, xy, xz, yx, yz, zx, zy }`。
+
+`free` 就是**自由相机**，且能无 GUI 用——实测要点（`engines/camera.py`）：
+
+| 事实 | 说明 |
+|---|---|
+| 参数形状 | `CameraFocalPosition` / `CameraPosition` 必须是 `([x, y, z], unit)` 的 quantity；裸 `[x,y,z]` 报 `Object of type 'float' is not an instance of 'sequence'` |
+| 正交投影 | `OrthographicProjection=True` 可用，正好对上盘面/网格的正交视图 |
+| 退化情形 | 相机位置正好在焦点正上方（仰角 90°）→ `Boost QVM error`，所以 `abs(elevation) > 85` 时退回预设 |
+| 有效性 | 换 `CameraPosition` 渲染结果字节不同（同 `focal` 下 (1,1,1) 与 (1,0,0) 哈希不同），说明方向真的生效 |
+
+映射：焦点 = 结构 bbox 中心（含 origin 偏移），位置 = 焦点 + 方向 × `4·extent/zoom`，
+`extent = max(width, depth, z_high − z_low)`。UI 里"自由相机 / 预设"二选一，
+左侧网格用同一方位投影（`cameraForView`），改视角需要重新运行。
+
+`viewsnapshot` 命令确实存在（路由级节点），但它只暴露光照/背景/`OrthographicProjection`/
+`CameraViewAngle` 等渲染设置，**没有** azimuth/elevation/position；`meas_screenshot(View=…)`
+也不接受快照名。所以自由相机只能走上面这条 `free` + 两个 quantity 的路。
 
 ## 6. 怎么跑
 
@@ -198,8 +211,9 @@ connect 会永久挂住）。
    而 SPX 渲染的是被 clip 出来的柱体（带人工侧壁）。这是表示差异，不是数值差异。
    等 phase B 接上掩膜/沟槽，两侧都有真实侧壁，对比才有意义。
 2. **相机**：SPX 截图目前不能传相机，所以右侧固定；左侧 mesh 用共享的
-   方位/仰角/缩放（同一 bbox）。M1.5 起改为**共用视角预设**：右侧 `View=iso|xz|...`，
-  左侧 `cameraForView` 按同一方位投影；任意相机参数在无 GUI 环境下没有出口。
+   方位/仰角/缩放（同一 bbox）。M1.5 起：预设（`View=iso|xz|…`）或**自由相机**
+  （`View=free` + focal/position），左侧 `cameraForView` 按同一方位投影；
+  仰角 >85° 的正上方退回预设（SPX 的 up 向量退化）。
 3. **SPX 只用 1 个 licence seat**（`spx_all`），并发对比运行会排队。
 
 ## 9. 下一步

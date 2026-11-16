@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 import time
 import traceback
@@ -72,6 +73,11 @@ SPX_COLOR = {
     "Copper": "#b87333", "Photoresist": "#fff59d", "SiN": "#55aaff",
     "SiGe": "#00bfa5",
 }
+
+
+def qupy_unit(name: str):
+    import qupy
+    return qupy.Unit(name)
 
 
 def _um(value: float):
@@ -263,6 +269,36 @@ class SpxSession:
                 labels.append("void")
         return labels
 
+    def _camera_args(self, camera: dict[str, Any]) -> dict[str, Any]:
+        """Map an orbit camera onto SPX's free camera, or fall back to a preset."""
+        render = self.job.get("render") or {}
+        view = str(render.get("view") or "iso")
+        if view not in SPX_VIEWS:
+            view = "iso"
+        try:
+            orbit = OrbitCamera(float(camera.get("azimuth")),
+                                float(camera.get("elevation")),
+                                float(camera.get("zoom") or 1.0))
+        except (TypeError, ValueError):
+            return {"View": view}
+        domain = self.job["domain"]
+        initial = self.job["initial"]
+        z_low = -float(initial["substrate_thickness"])
+        z_high = sum(float(film["thickness"]) for film in initial.get("films", [])) or 0.0
+        centre = (self.origin[0] + float(domain["width"]) / 2.0,
+                  self.origin[1] + float(domain["depth"]) / 2.0,
+                  (z_low + z_high) / 2.0)
+        extent = max(float(domain["width"]), float(domain["depth"]), z_high - z_low)
+        free = orbit_to_free(centre, extent, orbit)
+        if free is None:
+            return {"View": view}
+        return {
+            "View": "free",
+            "CameraFocalPosition": ([float(v) for v in free.focal], qupy_unit("um")),
+            "CameraPosition": ([float(v) for v in free.position], qupy_unit("um")),
+            "OrthographicProjection": True,
+        }
+
     def section(self, location: dict[str, str], spec: dict[str, Any]) -> dict[str, list[float | None]]:
         """Interface height per material per column, by binary search on probes.
 
@@ -334,11 +370,13 @@ class SpxSession:
         view = str(render.get("view") or "iso")
         if view not in SPX_VIEWS:
             view = "iso"
+        camera_args = self._camera_args(render.get("camera") or {})
         width = int(render.get("width", 900))
         height = int(render.get("height", 700))
         started = time.perf_counter()
         out = self.sp.measure(Location=location, Type="meas_screenshot",
-                              ImageWidth=width, ImageHeight=height, View=view)
+                              ImageWidth=width, ImageHeight=height,
+                              **camera_args)
         image = Image.frombytes("RGBA", (width, height), bytes(out["Output"]))
         frames = self.out / "frames"
         frames.mkdir(parents=True, exist_ok=True)

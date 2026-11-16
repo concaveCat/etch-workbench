@@ -21,7 +21,17 @@ const STATUS_COLOR: Record<string, string> = {
 export function ComparePage({ run, runId, history, onSelectRun }: Props) {
   const [camera, setCamera] = useState<Camera>(DEFAULT_CAMERA);
   const runView = run?.compare?.view;
-  useEffect(() => { setCamera(cameraForView(runView)); }, [runView]);
+  const runCamera = run?.compare?.camera;
+  useEffect(() => {
+    const azimuth = Number(runCamera?.azimuth);
+    const elevation = Number(runCamera?.elevation);
+    const zoom = Number(runCamera?.zoom);
+    if (Number.isFinite(azimuth) && Number.isFinite(elevation)) {
+      setCamera({ azimuth, elevation, zoom: Number.isFinite(zoom) && zoom > 0 ? zoom : 1 });
+    } else {
+      setCamera(cameraForView(runView));
+    }
+  }, [runView, runCamera?.azimuth, runCamera?.elevation, runCamera?.zoom]);
   const [stepIndex, setStepIndex] = useState(0);
   const [mesh, setMesh] = useState<MeshFrame | null>(null);
   const [meshError, setMeshError] = useState<string | null>(null);
@@ -97,7 +107,7 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
         <div className="cmp-pane">
           <figcaption>
             <strong>SPX（几何模拟）</strong>
-            <span className="cmp-note">相机由 SPX 固定；同 bbox、同视角预设</span>
+            <span className="cmp-note">SPX 侧固定在运行时的相机（自由相机或预设）</span>
           </figcaption>
           {spxFrame && runId
             ? <img src={frameUrl(runId, spxFrame.path)} width={520} height={380} alt="SPX frame"

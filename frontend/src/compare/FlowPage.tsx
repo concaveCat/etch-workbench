@@ -127,16 +127,45 @@ export function FlowPage({ draft, onChange, engines, onToggleEngine, onRun, busy
 
         <h3>渲染视角（左右共用）</h3>
         <p className="cmp-hint">
-          SPX 的 <code>meas_screenshot(View=…)</code> 接受 iso/iso90/iso180/iso270 与 xy/xz/yz 等；
-          左侧网格按同一方位投影。每次改视角都需要重新运行。
+          自由相机走 SPX 的 <code>View=free</code>：焦点=bcc 中心、位置=焦点+方向×距离、
+          正交投影；仰角 &gt;85° 时退回预设（正上方会触发 SPX 的退化 up 向量）。
+          改视角需要重新运行。
         </p>
         <div className="cmp-row">
-          <select value={draft.view} onChange={(event) => onChange({ ...draft, view: event.target.value as Draft['view'] })}>
-            {['iso', 'iso90', 'iso180', 'iso270', 'xz', 'yz', 'xy'].map((view) => (
-              <option key={view} value={view}>{view}</option>
-            ))}
-          </select>
+          <label className="cmp-check">
+            <input type="radio" checked={draft.cameraMode === 'free'}
+                   onChange={() => onChange({ ...draft, cameraMode: 'free' })} />
+            自由相机
+          </label>
+          <label className="cmp-check">
+            <input type="radio" checked={draft.cameraMode === 'preset'}
+                   onChange={() => onChange({ ...draft, cameraMode: 'preset' })} />
+            预设
+          </label>
+          {draft.cameraMode === 'preset'
+            ? <select value={draft.view} onChange={(event) => onChange({ ...draft, view: event.target.value as Draft['view'] })}>
+                {['iso', 'iso90', 'iso180', 'iso270', 'xz', 'yz', 'xy'].map((view) => (
+                  <option key={view} value={view}>{view}</option>
+                ))}
+              </select>
+            : null}
         </div>
+        {draft.cameraMode === 'free' ? (
+          <div className="cmp-grid">
+            <label>方位 {draft.camera.azimuth}°
+              <input type="range" min="0" max="360" value={draft.camera.azimuth}
+                     onChange={(event) => onChange({ ...draft, camera: { ...draft.camera, azimuth: Number(event.target.value) } })} />
+            </label>
+            <label>仰角 {draft.camera.elevation}°
+              <input type="range" min="-85" max="85" value={draft.camera.elevation}
+                     onChange={(event) => onChange({ ...draft, camera: { ...draft.camera, elevation: Number(event.target.value) } })} />
+            </label>
+            <label>缩放 {draft.camera.zoom.toFixed(2)}
+              <input type="range" min="0.4" max="3" step="0.05" value={draft.camera.zoom}
+                     onChange={(event) => onChange({ ...draft, camera: { ...draft.camera, zoom: Number(event.target.value) } })} />
+            </label>
+          </div>
+        ) : null}
 
         <h3>运行</h3>
         <div className="cmp-row">

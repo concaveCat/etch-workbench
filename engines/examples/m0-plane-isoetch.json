@@ -48,7 +48,12 @@
   "render": {
     "width": 700,
     "height": 560,
-    "view": "iso"
+    "view": "iso",
+    "camera": {
+      "azimuth": 45,
+      "elevation": 30,
+      "zoom": 1.0
+    }
   },
   "layout": {
     "path": "/root/SPX/spx/V-2024.03/linux64/examples/Logic1_Layout.oasis",

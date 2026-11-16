@@ -5,6 +5,8 @@ import type { Comparability, DomainSpec, InitialStructure, JobSpec, StepIR } fro
 export type Draft = {
   caseId: string;
   view: 'iso' | 'iso90' | 'iso180' | 'iso270' | 'xz' | 'yz' | 'xy';
+  cameraMode: 'preset' | 'free';
+  camera: { azimuth: number; elevation: number; zoom: number };
   domain: DomainSpec;
   initial: InitialStructure;
   steps: StepIR[];
@@ -32,6 +34,8 @@ export function defaultDraft(): Draft {
   return {
     caseId: 'plane-iso-etch',
     view: 'iso',
+    cameraMode: 'free',
+    camera: { azimuth: 45, elevation: 30, zoom: 1 },
     domain: { width: 0.14, depth: 0.288, height: 0.4, grid_delta: 0.002, dimensions: 3 },
     initial: {
       kind: 'plane',
@@ -62,7 +66,9 @@ export function toJob(draft: Draft): JobSpec {
     domain: draft.domain,
     initial: draft.initial,
     steps: draft.steps.map((step) => ({ ...step, comparability: gradeOf(step) })),
-    render: { width: 700, height: 560, view: draft.view },
+    render: draft.cameraMode === 'free'
+      ? { width: 700, height: 560, view: draft.view, camera: draft.camera }
+      : { width: 700, height: 560, view: draft.view },
   };
 }
 

@@ -10,7 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from engines import normalize, probe, section  # noqa: E402
+from engines import camera, normalize, probe, section  # noqa: E402
 
 
 class LatticeTests(unittest.TestCase):
@@ -124,6 +124,42 @@ class SectionMetricTests(unittest.TestCase):
         left = {"Si": [0.0, 0.0, 0.0]}
         metrics = section.section_metrics(self.COLUMNS, ["Si"], left, left)
         self.assertEqual(metrics["heights"]["viennaps"]["Si"], [0.0, 0.0, 0.0])
+
+
+class OrbitCameraTests(unittest.TestCase):
+    CENTRE = (0.07, 0.144, -0.125)
+
+    def test_camera_sits_on_a_sphere_around_the_centre(self):
+        free = camera.orbit_to_free(self.CENTRE, 0.35, camera.OrbitCamera(45, 30, 1.0))
+        self.assertIsNotNone(free)
+        distance = sum((free.position[i] - free.focal[i]) ** 2 for i in range(3)) ** 0.5
+        self.assertAlmostEqual(distance, 0.35 * 4.0, places=6)
+        self.assertEqual(free.focal, self.CENTRE)
+
+    def test_zoom_only_changes_the_distance(self):
+        near = camera.orbit_to_free(self.CENTRE, 0.35, camera.OrbitCamera(45, 30, 0.5))
+        far = camera.orbit_to_free(self.CENTRE, 0.35, camera.OrbitCamera(45, 30, 2.0))
+        near_distance = sum((near.position[i] - near.focal[i]) ** 2 for i in range(3)) ** 0.5
+        far_distance = sum((far.position[i] - far.focal[i]) ** 2 for i in range(3)) ** 0.5
+        # distance = extent * 4 / zoom, so zoom 0.5 vs 2.0 is a 4x ratio.
+        self.assertAlmostEqual(near_distance, far_distance * 4.0, places=6)
+
+    def test_azimuth_and_elevation_move_the_camera(self):
+        east = camera.orbit_to_free(self.CENTRE, 0.35, camera.OrbitCamera(90, 0, 1.0))
+        north = camera.orbit_to_free(self.CENTRE, 0.35, camera.OrbitCamera(0, 0, 1.0))
+        self.assertGreater(east.position[0] - self.CENTRE[0], 1.0)
+        self.assertAlmostEqual(east.position[2], self.CENTRE[2], places=6)
+        self.assertGreater(north.position[1] - self.CENTRE[1], 1.0)
+
+    def test_steep_elevation_has_no_free_camera(self):
+        self.assertIsNone(camera.orbit_to_free(self.CENTRE, 0.35, camera.OrbitCamera(0, 90, 1.0)))
+        self.assertIsNone(camera.orbit_to_free(self.CENTRE, 0.35, camera.OrbitCamera(0, -86, 1.0)))
+        self.assertIsNotNone(camera.orbit_to_free(self.CENTRE, 0.35, camera.OrbitCamera(0, 85, 1.0)))
+
+    def test_zero_zoom_is_treated_as_one(self):
+        free = camera.orbit_to_free(self.CENTRE, 0.35, camera.OrbitCamera(0, 0, 0.0))
+        distance = sum((free.position[i] - free.focal[i]) ** 2 for i in range(3)) ** 0.5
+        self.assertAlmostEqual(distance, 1.4, places=6)
 
 
 class NormalizeTests(unittest.TestCase):

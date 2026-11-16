@@ -176,9 +176,16 @@ class SectionSpec:
 
 @dataclass(frozen=True)
 class RenderSpec:
+    """Render request.
+
+    ``view`` is an SPX preset (``iso``/``xz``/...). ``camera`` is an explicit
+    orbit camera ``{azimuth, elevation, zoom}`` in degrees; when present the SPX
+    adapter uses its free camera (focal point + position) instead of a preset.
+    """
+
     width: int = 900
     height: int = 700
-    view: str = "3d"
+    view: str = "iso"
     camera: dict[str, Any] = field(default_factory=dict)
 
 

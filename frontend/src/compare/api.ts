@@ -41,7 +41,12 @@ export type JobSpec = {
   domain: DomainSpec;
   initial: InitialStructure;
   steps: StepIR[];
-  render: { width: number; height: number; view: string };
+  render: {
+    width: number;
+    height: number;
+    view: string;
+    camera?: { azimuth: number; elevation: number; zoom: number };
+  };
 };
 
 export type MeshFrame = {
@@ -116,6 +121,7 @@ export type ComparePayload = {
   caseId: string;
   jobDigest: string;
   view?: string;
+  camera?: { azimuth?: number; elevation?: number; zoom?: number } | null;
   domain?: { width: number; depth: number; height: number; origin: number[] | null };
   probePoints?: number;
   probeShape?: number[] | null;

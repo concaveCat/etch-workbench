@@ -19,7 +19,8 @@
       "deposit/isotropic": "exact",
       "etch/anisotropic": "exact",
       "deposit/anisotropic": "exact",
-      "planarize/cmp": "exact"
+      "planarize/cmp": "exact",
+      "mask/gds_mask": "no_counterpart"
     },
     "spx|mine": {
       "initial": "exact",
@@ -27,12 +28,14 @@
       "deposit/isotropic": "exact",
       "etch/anisotropic": "approximate",
       "deposit/anisotropic": "approximate",
-      "planarize/cmp": "no_counterpart"
+      "planarize/cmp": "no_counterpart",
+      "mask/gds_mask": "no_counterpart"
     }
   },
   "notes": {
     "etch/anisotropic": "ViennaPS splits the rate into directional+isotropic parts; SPX takes a sidewall Angle. Geometric, not physical.",
     "deposit/anisotropic": "SPX depo_anisotropic has no exponent/angle and takes one material filter per call.",
-    "planarize/cmp": "SPX etch_cmp removes to a stop-material boundary, not to an absolute height; measured stop=Oxide/Offset=0 removed a whole 0.1 um oxide layer. ViennaPS Planarize(height) has no mapped equivalent yet."
+    "planarize/cmp": "SPX etch_cmp removes to a stop-material boundary, not to an absolute height; measured stop=Oxide/Offset=0 removed a whole 0.1 um oxide layer. ViennaPS Planarize(height) has no mapped equivalent yet.",
+    "mask/gds_mask": "SPX can extrude a layout layer into a material (layout_extrude_structure(LayerName, MaterialFilter, Thickness, Polarity='Negative'|'Positive')), but the ViennaPS side needs the workbench GDS pipeline (backend/gds.py + worker/gds_mask.py, which take a full project dict) adapted to StepIR, and the clip layout does not drive patterning in the headless runs measured so far. Not shipped as comparable until both sides read the same layer."
   }
 }

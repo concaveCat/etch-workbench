@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CompareRun, MeshFrame } from './api';
 import { fetchMesh, frameUrl } from './api';
-import { DEFAULT_CAMERA, MeshView, cameraForView, type Camera } from './MeshView';
+import { DEFAULT_CAMERA, MeshPane, cameraForView, type Camera } from './MeshPane';
 import { SectionView } from './SectionView';
 
 type Props = {
@@ -102,7 +102,7 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
       </header>
 
       <div className="cmp-panes">
-        <MeshView frame={mesh} camera={camera} width={520} height={380} title="ViennaPS（水平集参考）"
+        <MeshPane frame={mesh} camera={camera} height={380} title="ViennaPS（水平集参考 · vtk.js）"
                   note={meshError ?? (viennapsFrame ? `${viennapsFrame.kind} · ${step?.engines.viennaps.status}` : '无帧')} />
         <div className="cmp-pane">
           <figcaption>

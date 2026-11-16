@@ -2,7 +2,7 @@
 
 > 状态：M0 + M1 + M1.5 + M2 已落地——协议、调度器、两个适配器、公共探针格、截面指标、
 > 各向异性、CMP 判定、成本守卫、checkpoint、对比 API、三页前端、测试。
-> 本文只描述已经能跑的东西，以及明确**还没做**的东西（M3：掩膜/GDS、vtk.js 视图）。
+> 本文只描述已经能跑的东西，以及明确**还没做**的东西（掩膜/GDS，见 §5.6）。
 
 ## 1. 目标与边界
 
@@ -229,6 +229,44 @@ UI 与后续成本模型直接读它。
 - SPX：没有 checkpoint（route 状态不可序列化到我们的格式），保持不声明该能力。
   跨引擎热换仍是一个"要重新播放几何"的问题，不在本轮范围。
 
+## 5.6 掩膜 / GDS（M3：机制已验证，通路未打通，仍判 `no_counterpart`）
+
+**SPX 侧的机制是活的**，实测链路：
+
+```python
+sp.layout_create_layer(Location=step_k, LayerName='seed',
+                       MaterialFilter=[["Photoresist"]], Offset=(0, um))     # 产生 in_layout_state
+sp.layout_extrude_structure(Location=step_k1, LayerName=<layer>,
+                            MaterialFilter=[["Photoresist"]],
+                            Thickness=(0.05, um), Polarity='Negative')        # 消费上一步的 layout state
+```
+
+- 两个命令必须**相邻**：直接调 `layout_extrude_structure` 会报
+  `Value 'in_layout_state' does not exist in directory '<step>'`（已复现）。
+- `Polarity` 大小写敏感（`'Negative'`/`'Positive'`），Python 侧参数名是 `LayerName`
+  （写成 `Layer Name` 报 `unexpected keyword argument`）。
+- 实测 Positive 挤出会真的长出几何（渲染出 0.05 µm 的胶块），Negative 在我们这份
+  layout 上与"不挤出"逐字节相同（该层为空）。
+
+**卡在哪**：`layout_extrude_structure` 要的是 **layout 文件里的层名**，而层名在
+headless 下拿不到：
+
+| 尝试 | 结果 |
+|---|---|
+| `LayerName='H1'`（clip 名） | `Layer 'H1' does not exist in layout` |
+| `'1' / '2' / '3' / '0'` | 同上 |
+| `'1/0' / '0/0' / '2/0' / '10/0'`（GDS layer/datatype） | 同上 |
+| `show(Location={'Layout': path}, Children=['Layer'])` | 报 `__nodes/__materials/__nodes/IS/__nodes/layout` 无效——Layout 节点在内部 `__layouts` 命名空间，公开 API 取不到 |
+
+**ViennaPS 侧**：掩膜来自 GDS（`backend/gds.py` + `worker/gds_mask.py`，用
+`GeometryFactory` 打孔），入口吃完整 project dict，要接成
+`StepIR(kind='mask', mechanism='gds_mask')` 还需要一层适配。
+
+结论：不是参数没对上，是**两边都缺"同一份 layout → 同一套掩膜"的通路**——
+SPX 缺层名发现，ViennaPS 缺 GDS→StepIR 适配。在两者都通之前
+`comparability.json` 保持 `mask/gds_mask = no_counterpart`，不拿"会跑但没图案"的
+步骤当可比结果。
+
 ## 6. 怎么跑
 
 ```bash
@@ -261,6 +299,7 @@ connect 会永久挂住）。
 | **M1 公共探针格 3000 点：两步一致率 100%、Si/SiO2 IoU 1.0** | ✅ |
 | **M1.5 截面 33 列：Si 4e-6 µm、SiO₂ 8.3e-5 µm 平均界面偏差** | ✅ |
 | **M2 各向异性（a=0.8）：逐点一致率 100%，截面 6e-6 µm** | ✅ |
+| **M3 mesh 视图换成 vtk.js（复用 WorkflowViewer3D，共享相机方位/仰角）** | ✅ |
 | M2 域守卫：2500Δx 位移 → 两引擎 `out_of_domain`，后续步骤不再推进 | ✅ |
 | M2 checkpoint/restore：从 `s1_aniso.vpsd` 恢复后顶高 0.05 µm，再 CMP 到 0.02 µm | ✅ |
 | M1.5 视角预设：SPX `View=iso/xz/...`，左侧同方位投影 | ✅ |
@@ -290,5 +329,6 @@ connect 会永久挂住）。
   只报截面（z 方向）偏差，不编 3D 距离。
 - **M2**：各向异性 / CMP / 掩膜接线；`checkpoint()/restore()` 热换引擎；
   成本模型 `estimate()` 与越界守卫（`out_of_domain`，不静默回退）。
-- **M3**：掩膜 / GDS mask 接线（两侧都还没有）；mesh 侧换回 vtk.js（现在用 canvas
-  正交投影）；SPX `etch_cmp` 语义摸清后可把 CMP 从 `no_counterpart` 升回 `approximate`。
+- **M3 完成**：mesh 视图接回 vtk.js（复用 `WorkflowViewer3D`，`SnapshotDoc` 适配层在
+  `frontend/src/compare/MeshPane.tsx`）。
+- **仍未完成**：掩膜 / GDS mask（§5.6）；SPX `etch_cmp` 语义（CMP 仍 `no_counterpart`）。

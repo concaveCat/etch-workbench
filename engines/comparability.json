@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "comment": "Comparability of a StepIR mechanism for an engine pair. Grades: exact = pointwise comparable, approximate = same quantity, different physical model, no_counterpart = one side has no equivalent mechanism. Editing this file is the only place a grade may change.",
+  "pairs": {
+    "viennaps|spx": {
+      "initial": "exact",
+      "isotropic_etch": "exact",
+      "isotropic_deposit": "exact",
+      "anisotropic_etch": "exact",
+      "anisotropic_deposit": "exact",
+      "cmp": "approximate",
+      "gds_mask": "exact",
+      "crystal_etch": "approximate",
+      "epi": "approximate"
+    },
+    "mine|spx": {
+      "initial": "exact",
+      "isotropic_etch": "exact",
+      "isotropic_deposit": "exact",
+      "anisotropic_etch": "exact",
+      "anisotropic_deposit": "exact",
+      "cmp": "approximate",
+      "gds_mask": "exact",
+      "crystal_etch": "approximate",
+      "epi": "approximate"
+    },
+    "mine|viennaps": {
+      "initial": "exact",
+      "isotropic_etch": "exact",
+      "isotropic_deposit": "exact",
+      "anisotropic_etch": "exact",
+      "anisotropic_deposit": "exact",
+      "cmp": "approximate",
+      "gds_mask": "exact",
+      "crystal_etch": "approximate",
+      "epi": "approximate"
+    }
+  }
+}

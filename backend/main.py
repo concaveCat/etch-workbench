@@ -26,6 +26,7 @@ from . import settings as settings_store
 from . import preflight as artifact_preflight
 from . import materials as material_registry
 from .api.deps import supervisor as _supervisor, version as _version
+from .api.compare import router as compare_router
 from .api.runs import (continuation_project_get, flux_result_get, flux_run_create,
                        intermediate_output_get, native_artifact_download,
                        replay_project_get, router as runs_router, run_cancel, run_create,
@@ -649,6 +650,9 @@ async def continuation_package_import(request: Request) -> dict[str, Any]:
 
 
 app.include_router(runs_tail_router)
+
+# Engine comparison runs: one compiled StepIR flow on several engines.
+app.include_router(compare_router)
 
 
 if FRONTEND_DIST.is_dir() and (FRONTEND_DIST / "index.html").is_file():

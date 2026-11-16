@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "lengthUnit": "um",
+  "timeUnit": "min",
+  "zUp": true,
+  "origin": "substrate_top_center",
+  "signConvention": "removal negative, deposition positive",
+  "halfCellOffset": 0.0,
+  "materials": {
+    "Si":        {"spx": "Silicon",     "color": "#78909C"},
+    "SiO2":      {"spx": "Oxide",       "color": "#00e5ff"},
+    "Si3N4":     {"spx": "Nitride",     "color": "#dce775"},
+    "PolySi":    {"spx": "PolySilicon", "color": "#ff3d00"},
+    "SiGe":      {"spx": "SiGe",        "color": "#00bfa5"},
+    "Al2O3":     {"spx": "AlO",         "color": "#72abab"},
+    "HfO2":      {"spx": "HfO2",        "color": "#ff1744"},
+    "TiN":       {"spx": "TiN",         "color": "#9e9e9e"},
+    "W":         {"spx": "Tungsten",    "color": "#607d8b"},
+    "Cu":        {"spx": "Copper",      "color": "#b87333"},
+    "PMMA":      {"spx": "Photoresist", "color": "#fff59d"},
+    "Mask":      {"spx": "Photoresist", "color": "#fff59d"},
+    "SiN":       {"spx": "SiN",         "color": "#55aaff"},
+    "Metal":     {"spx": "TiN",         "color": "#9e9e9e"},
+    "Dielectric":{"spx": "Oxide",       "color": "#00e5ff"}
+  }
+}

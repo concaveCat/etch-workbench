@@ -1,0 +1,114 @@
+/* Engine comparison surface (three pages). Scoped under .cmp-app so it cannot
+   affect the existing Workbench styles. */
+
+.cmp-app {
+  min-height: 100vh;
+  background: #07111d;
+  color: #d8e6f2;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.cmp-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 18px;
+  border-bottom: 1px solid #16324a;
+  background: #0a1a29;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.cmp-top nav { display: flex; gap: 6px; }
+.cmp-top button {
+  background: transparent; color: #9fc2dc; border: 1px solid #16324a;
+  border-radius: 7px; padding: 6px 12px; cursor: pointer;
+}
+.cmp-top button.active { color: #07111d; background: #35d6c2; border-color: #35d6c2; }
+.cmp-spacer { flex: 1; }
+
+.cmp-page {
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) minmax(360px, 1fr);
+  gap: 20px;
+  padding: 18px;
+  align-items: start;
+}
+.cmp-page-compare { display: flex; flex-direction: column; }
+.cmp-empty { display: block; padding: 40px; color: #9fc2dc; }
+
+.cmp-form h2, .cmp-preview h3 { margin: 0 0 8px; color: #bff3ea; }
+.cmp-form h3 { margin: 18px 0 6px; color: #9fc2dc; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
+.cmp-hint { color: #7f9bb2; font-size: 12px; line-height: 1.5; margin: 6px 0 12px; }
+.cmp-error { color: #ff8f8f; font-size: 12px; white-space: pre-wrap; }
+
+.cmp-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #9fc2dc; margin-bottom: 10px; }
+.cmp-form input, .cmp-form select {
+  background: #0b1b2a; color: #d8e6f2; border: 1px solid #16324a; border-radius: 6px; padding: 6px 8px;
+}
+.cmp-form button {
+  background: #10314a; color: #bff3ea; border: 1px solid #1d4a6b; border-radius: 6px;
+  padding: 6px 12px; cursor: pointer;
+}
+.cmp-form button:disabled { opacity: .5; cursor: not-allowed; }
+
+.cmp-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+.cmp-grid { display: grid; grid-template-columns: repeat(2, minmax(140px, 1fr)); gap: 8px; }
+.cmp-check { flex-direction: row !important; align-items: center; gap: 6px; }
+
+.cmp-step { border: 1px solid #16324a; border-radius: 8px; padding: 10px; margin-bottom: 10px; background: #0a1a29; }
+.cmp-step-initial { display: flex; gap: 10px; align-items: center; color: #9fc2dc; }
+.cmp-step-bad { border-color: #7a2b2b; }
+.cmp-step-head { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+
+.cmp-badge { font-size: 11px; padding: 1px 6px; border-radius: 99px; border: 1px solid #2b4c69; color: #9fc2dc; }
+.cmp-badge.exact { color: #35d6c2; border-color: #35d6c2; }
+.cmp-badge.approximate { color: #e0a030; border-color: #e0a030; }
+.cmp-badge.no_counterpart { color: #ff5c5c; border-color: #ff5c5c; }
+
+.cmp-rates { width: 100%; border-collapse: collapse; font-size: 12px; }
+.cmp-rates th { text-align: left; color: #7f9bb2; font-weight: 500; padding-bottom: 4px; }
+.cmp-rates td { padding: 2px 0; }
+.cmp-rates input { width: 100%; }
+
+.cmp-preview { position: sticky; top: 70px; }
+.cmp-json {
+  background: #0a1a29; border: 1px solid #16324a; border-radius: 8px; padding: 12px;
+  font-family: ui-monospace, monospace; font-size: 11px; line-height: 1.45;
+  max-height: 60vh; overflow: auto; color: #a9c8dd;
+}
+.cmp-stack { width: 100%; max-width: 320px; background: #0a1a29; border: 1px solid #16324a; border-radius: 8px; }
+
+.cmp-compare-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.cmp-compare-head h2 { margin: 0; color: #bff3ea; }
+.cmp-compare-head select { background: #0b1b2a; color: #d8e6f2; border: 1px solid #16324a; border-radius: 6px; padding: 5px 8px; }
+.cmp-compare-head input[type="range"] { width: 90px; }
+
+.cmp-panes { display: flex; gap: 16px; margin: 14px 0; flex-wrap: wrap; }
+.cmp-pane { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.cmp-pane figcaption { display: flex; gap: 10px; align-items: baseline; font-size: 13px; color: #bff3ea; }
+.cmp-note { color: #7f9bb2; font-size: 11px; }
+.cmp-missing {
+  width: 520px; height: 380px; display: flex; align-items: center; justify-content: center;
+  border: 1px dashed #2b4c69; border-radius: 8px; color: #7f9bb2; font-size: 12px;
+}
+
+.cmp-timeline { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0; }
+.cmp-tl-step {
+  display: flex; flex-direction: column; gap: 4px; min-width: 150px; text-align: left;
+  background: #0a1a29; color: #d8e6f2; border: 1px solid #16324a; border-radius: 8px;
+  padding: 8px; cursor: pointer; font-size: 11px;
+}
+.cmp-tl-step.active { border-color: #35d6c2; }
+.cmp-tl-step.unaligned { opacity: .6; }
+.cmp-bar-wrap { display: block; width: 100%; height: 6px; background: #0f2637; border-radius: 3px; }
+.cmp-bar { display: block; height: 6px; border-radius: 3px; }
+
+.cmp-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+.cmp-table th { text-align: left; color: #7f9bb2; font-weight: 500; border-bottom: 1px solid #16324a; padding: 6px; }
+.cmp-table td { padding: 6px; border-bottom: 1px solid #0f2637; }
+.cmp-table tr.unaligned td { color: #7f9bb2; }
+.cmp-status { margin-right: 8px; }

@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "case_id": "m0-plane-isoetch",
+  "engine": "viennaps",
+  "domain": {
+    "width": 0.14,
+    "depth": 0.288,
+    "height": 0.4,
+    "grid_delta": 0.002,
+    "dimensions": 3
+  },
+  "initial": {
+    "kind": "plane",
+    "substrate": "Si",
+    "substrate_thickness": 0.3,
+    "films": [
+      {
+        "material": "SiO2",
+        "thickness": 0.1
+      }
+    ]
+  },
+  "steps": [
+    {
+      "step_id": "s0_init",
+      "kind": "initial",
+      "mechanism": "initial",
+      "duration": 0.0,
+      "rates": {},
+      "comparability": "exact"
+    },
+    {
+      "step_id": "s1_etch",
+      "kind": "etch",
+      "mechanism": "isotropic",
+      "duration": 0.05,
+      "rates": {
+        "SiO2": -1.0,
+        "Si": -0.02
+      },
+      "comparability": "exact"
+    }
+  ],
+  "render": {
+    "width": 700,
+    "height": 560,
+    "view": "3d"
+  },
+  "layout": {
+    "path": "/root/SPX/spx/V-2024.03/linux64/examples/Logic1_Layout.oasis",
+    "window": [
+      0.035,
+      0.0,
+      0.175,
+      0.288
+    ]
+  }
+}

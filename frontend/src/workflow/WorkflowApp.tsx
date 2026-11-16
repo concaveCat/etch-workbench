@@ -2083,7 +2083,7 @@ function materialColor(materials: MaterialRow[], name: string): string {
   return isHexColor(row?.color ?? '') ? String(row?.color) : '#9aa3ab';
 }
 
-export default function WorkflowApp({ onOpenLegacy }: { onOpenLegacy?: () => void }) {
+export default function WorkflowApp({ onOpenLegacy, onOpenCompare }: { onOpenLegacy?: () => void; onOpenCompare?: () => void }) {
   const [health, setHealth] = useState<Health | null>(null);
   const [stoppingRun, setStoppingRun] = useState(false);
   const [runNotice, setRunNotice] = useState('');
@@ -7299,6 +7299,7 @@ export default function WorkflowApp({ onOpenLegacy }: { onOpenLegacy?: () => voi
               </>}
               {id === 'view' && <>
                 {ZONES.map(item => <button key={item.id} role="menuitem" onClick={() => { setOpenMenu(null); navigateZone(item.id); }}>{item.num} {item.label} — {item.title}</button>)}
+                {onOpenCompare && <button role="menuitem" onClick={() => { setOpenMenu(null); onOpenCompare(); }}>引擎对比</button>}
                 {onOpenLegacy && <button role="menuitem" onClick={() => { setOpenMenu(null); onOpenLegacy(); }}>传统工作区</button>}
               </>}
               {id === 'project' && <>

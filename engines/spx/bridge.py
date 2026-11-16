@@ -62,6 +62,9 @@ DEFAULT_LAYOUT = "/root/SPX/spx/V-2024.03/linux64/examples/Logic1_Layout.oasis"
 # outside that extent makes spx.run() fail with an empty message. Phase A reuses
 # this window; a parametric layout generator arrives with the GDS mask step.
 DEFAULT_WINDOW = (0.035, 0.0, 0.175, 0.288)
+# Measured: meas_screenshot validates View against this enum; anything else is an
+# error, so the adapter maps unknown values to the isometric default.
+SPX_VIEWS = {"free", "iso", "iso90", "iso180", "iso270", "xy", "xz", "yx", "yz", "zx", "zy"}
 SPX_COLOR = {
     "Silicon": "#78909C", "Oxide": "#00e5ff", "Nitride": "#dce775",
     "PolySilicon": "#ff3d00", "Silicon": "#78909C", "AlO": "#72abab",
@@ -260,17 +263,82 @@ class SpxSession:
                 labels.append("void")
         return labels
 
+    def section(self, location: dict[str, str], spec: dict[str, Any]) -> dict[str, list[float | None]]:
+        """Interface height per material per column, by binary search on probes.
+
+        ``meas_probe`` returns a material label; for a z-monotone stack the label
+        is monotone in z for a fixed column, so ~12 probes localise each interface
+        to z_range / 2**12. Probes cost ~1.3 ms, so a 33-column, 3-material section
+        is ~1.3 s -- far cheaper than anything that needs the HDF5 export.
+        """
+        materials = [str(name) for name in spec["materials"]]
+        z_min, z_max = float(spec["z_min"]), float(spec["z_max"])
+        heights: dict[str, list[float | None]] = {name: [] for name in materials}
+        for x, y in spec["columns"]:
+            for material in materials:
+                heights[material].append(
+                    self._top_of(location, float(x), float(y), material, z_min, z_max))
+        return heights
+
+    def _top_of(self, location: dict[str, str], x: float, y: float, material: str,
+                z_min: float, z_max: float) -> float | None:
+        """Highest z in (z_min, z_max] whose label is ``material``.
+
+        A coarse ladder finds a bracket first: probing exactly on the bottom face
+        returns nothing (measured), so the search starts one epsilon inside and
+        walks up until the material appears, then bisects against the next sample.
+        """
+        spx_material = SPX_MATERIAL.get(material, material)
+        span = z_max - z_min
+        low_z = z_min + span * 1e-6
+        ladder = [low_z + span * (k + 1) / 25.0 for k in range(25)]
+        bracket_low = None
+        bracket_high = None
+        for z in ladder:
+            if self._probe_is(location, x, y, z, spx_material):
+                bracket_low = z
+            elif bracket_low is not None:
+                bracket_high = z
+                break
+        if bracket_low is None:
+            return None
+        if bracket_high is None:
+            return round(z_max, 6)
+        low, high = bracket_low, bracket_high
+        for _ in range(12):
+            middle = (low + high) / 2.0
+            if self._probe_is(location, x, y, middle, spx_material):
+                low = middle
+            else:
+                high = middle
+        return round(low, 6)
+
+    def _probe_is(self, location: dict[str, str], x: float, y: float, z: float,
+                  spx_material: str) -> bool:
+        try:
+            out = self.sp.measure(Type="meas_probe", Height=_um(z), Location=location,
+                                  PointName=["", "", [x + self.origin[0], y + self.origin[1]]],
+                                  GroupBy="region")
+            raw = out.get("Output")
+            name = raw[1] if isinstance(raw, tuple) and len(raw) > 1 else raw
+            return str(name) == spx_material
+        except Exception:  # outside the structure is simply "not this material"
+            return False
+
     def frame(self, step_id: str, location: dict[str, str]) -> dict[str, Any]:
         from io import BytesIO
 
         from PIL import Image
 
         render = self.job.get("render") or {}
+        view = str(render.get("view") or "iso")
+        if view not in SPX_VIEWS:
+            view = "iso"
         width = int(render.get("width", 900))
         height = int(render.get("height", 700))
         started = time.perf_counter()
         out = self.sp.measure(Location=location, Type="meas_screenshot",
-                              ImageWidth=width, ImageHeight=height)
+                              ImageWidth=width, ImageHeight=height, View=view)
         image = Image.frombytes("RGBA", (width, height), bytes(out["Output"]))
         frames = self.out / "frames"
         frames.mkdir(parents=True, exist_ok=True)
@@ -302,6 +370,7 @@ def run_job(job: dict[str, Any], out_dir: Path) -> dict[str, Any]:
     run_stats = session.run()
 
     probe_points = list((job.get("probe") or {}).get("points") or [])
+    section_spec = job.get("section")
     outcomes = []
     print(json.dumps({"event": "run_started", **run_stats}), flush=True)
     for index, step in enumerate(job_spec.steps):
@@ -311,6 +380,8 @@ def run_job(job: dict[str, Any], out_dir: Path) -> dict[str, Any]:
             payload = session.frame(step.step_id, location)
             probe_started = time.perf_counter()
             labels = session.probe(location, probe_points) if probe_points else None
+            section_started = time.perf_counter()
+            section = session.section(location, section_spec) if section_spec else None
             outcomes.append({
                 "step_id": step.step_id, "status": "ok",
                 "wall_ms": payload["frameMs"],
@@ -321,6 +392,9 @@ def run_job(job: dict[str, Any], out_dir: Path) -> dict[str, Any]:
                             "probePoints": len(probe_points)},
                 "reason": None,
                 "probe": labels,
+                "section": section,
+                "sectionMs": (time.perf_counter() - section_started) * 1000.0
+                             if section_spec else 0.0,
             })
             print(json.dumps({"event": "step_done", "stepId": step.step_id}), flush=True)
         except Exception as exc:  # a missing clip state must not kill the run

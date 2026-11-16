@@ -125,6 +125,19 @@ export function FlowPage({ draft, onChange, engines, onToggleEngine, onRun, busy
           </button>
         </div>
 
+        <h3>渲染视角（左右共用）</h3>
+        <p className="cmp-hint">
+          SPX 的 <code>meas_screenshot(View=…)</code> 接受 iso/iso90/iso180/iso270 与 xy/xz/yz 等；
+          左侧网格按同一方位投影。每次改视角都需要重新运行。
+        </p>
+        <div className="cmp-row">
+          <select value={draft.view} onChange={(event) => onChange({ ...draft, view: event.target.value as Draft['view'] })}>
+            {['iso', 'iso90', 'iso180', 'iso270', 'xz', 'yz', 'xy'].map((view) => (
+              <option key={view} value={view}>{view}</option>
+            ))}
+          </select>
+        </div>
+
         <h3>运行</h3>
         <div className="cmp-row">
           {['viennaps', 'spx'].map((engineId) => (

@@ -151,6 +151,17 @@ class ViennapsSession:
             labels.append(owner)
         return labels
 
+    def section(self, spec: Any) -> dict[str, list[float | None]]:
+        """Interface height per material per column, straight from the mesh."""
+        columns = self._height_columns()
+        heights: dict[str, list[float | None]] = {name: [] for name in spec.materials}
+        for x, y in spec.columns:
+            key = (int(float(x) // self.column), int(float(y) // self.column))
+            tops = columns.get(key) or {}
+            for name in spec.materials:
+                heights[name].append(tops.get(name))
+        return heights
+
     def _height_columns(self) -> dict[tuple[int, int], dict[str, float]]:
         """Per-column material tops, cached for the current step."""
         if self._columns is not None:
@@ -244,6 +255,7 @@ def run_job(job: JobSpec, out_dir: Path) -> dict[str, Any]:
     session = ViennapsSession(job, out_dir)
     session.open()
     probe_points = list(job.probe.points) if job.probe is not None else []
+    section_spec = job.section
     outcomes: list[StepOutcome] = []
     for index, step in enumerate(job.steps):
         if index == 0:
@@ -259,13 +271,14 @@ def run_job(job: JobSpec, out_dir: Path) -> dict[str, Any]:
             frame = session.frame(step.step_id)
             probe_started = time.perf_counter()
             labels = session.probe(probe_points) if probe_points else None
+            section = session.section(section_spec) if section_spec is not None else None
             out = StepOutcome(step_id=step.step_id, status=out.status,
                               wall_ms=out.wall_ms,
                               frame=frame, checkpoint=None,
                               metrics={"frame_ms": (time.perf_counter() - started) * 1000.0,
                                        "probe_ms": (time.perf_counter() - probe_started) * 1000.0,
                                        "probe_points": len(probe_points)},
-                              reason=out.reason, probe=labels)
+                              reason=out.reason, probe=labels, section=section)
         except Exception as exc:  # noqa: BLE001
             out = StepOutcome(step_id=step.step_id, status="failed",
                               wall_ms=out.wall_ms, reason=f"{type(exc).__name__}: {exc}")

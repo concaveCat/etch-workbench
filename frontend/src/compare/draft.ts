@@ -4,6 +4,7 @@ import type { Comparability, DomainSpec, InitialStructure, JobSpec, StepIR } fro
 
 export type Draft = {
   caseId: string;
+  view: 'iso' | 'iso90' | 'iso180' | 'iso270' | 'xz' | 'yz' | 'xy';
   domain: DomainSpec;
   initial: InitialStructure;
   steps: StepIR[];
@@ -30,6 +31,7 @@ const SPIKE_LAYOUT = { path: '/root/SPX/spx/V-2024.03/linux64/examples/Logic1_La
 export function defaultDraft(): Draft {
   return {
     caseId: 'plane-iso-etch',
+    view: 'iso',
     domain: { width: 0.14, depth: 0.288, height: 0.4, grid_delta: 0.002, dimensions: 3 },
     initial: {
       kind: 'plane',
@@ -60,7 +62,7 @@ export function toJob(draft: Draft): JobSpec {
     domain: draft.domain,
     initial: draft.initial,
     steps: draft.steps.map((step) => ({ ...step, comparability: gradeOf(step) })),
-    render: { width: 700, height: 560, view: '3d' },
+    render: { width: 700, height: 560, view: draft.view },
   };
 }
 

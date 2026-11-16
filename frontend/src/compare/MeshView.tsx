@@ -12,7 +12,20 @@ import type { MeshFrame } from './api';
 
 export type Camera = { azimuth: number; elevation: number; zoom: number };
 
-export const DEFAULT_CAMERA: Camera = { azimuth: 35, elevation: 22, zoom: 1 };
+export const DEFAULT_CAMERA: Camera = { azimuth: 45, elevation: 30, zoom: 1 };
+
+/** Map SPX's view presets onto the mesh projection so both panes look the same. */
+export function cameraForView(view: string | undefined): Camera {
+  switch (view) {
+    case 'iso90': return { azimuth: 135, elevation: 30, zoom: 1 };
+    case 'iso180': return { azimuth: 225, elevation: 30, zoom: 1 };
+    case 'iso270': return { azimuth: 315, elevation: 30, zoom: 1 };
+    case 'xz': return { azimuth: 0, elevation: 0, zoom: 1 };
+    case 'yz': return { azimuth: 90, elevation: 0, zoom: 1 };
+    case 'xy': return { azimuth: 0, elevation: 89, zoom: 1 };
+    default: return DEFAULT_CAMERA;
+  }
+}
 
 type Props = {
   frame: MeshFrame | null;

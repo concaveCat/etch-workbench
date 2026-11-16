@@ -79,6 +79,25 @@ export type ProbeMetrics = {
   reason?: string;
 };
 
+export type SectionMaterial = {
+  status: 'measured' | 'not_resolved' | 'length_mismatch';
+  columns?: number;
+  resolved?: number;
+  missingColumns?: number;
+  meanAbsUm?: number;
+  maxAbsUm?: number;
+  l2Um?: number;
+};
+
+export type SectionMetrics = {
+  status: 'measured' | 'not_resolved' | 'incomplete' | 'disabled' | 'single_engine' | 'empty';
+  columns?: number;
+  worstAbsUm?: number;
+  materials?: Record<string, SectionMaterial>;
+  heights?: Record<string, Record<string, (number | null)[]>>;
+  reason?: string;
+};
+
 export type CompareStep = {
   stepId: string;
   kind: StepKind;
@@ -89,15 +108,20 @@ export type CompareStep = {
   aligned: boolean;
   engines: Record<string, EngineRow>;
   probe?: ProbeMetrics;
+  section?: SectionMetrics;
 };
 
 export type ComparePayload = {
   schemaVersion: number;
   caseId: string;
   jobDigest: string;
+  view?: string;
+  domain?: { width: number; depth: number; height: number; origin: number[] | null };
   probePoints?: number;
   probeShape?: number[] | null;
   probeMethod?: Record<string, string>;
+  sectionColumns?: number[][];
+  sectionZ?: number[] | null;
   engines: Record<string, { version: string | null; processWallMs: number; returncode: number; error: string | null }>;
   steps: CompareStep[];
   summary: {

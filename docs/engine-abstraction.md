@@ -1,7 +1,7 @@
-# 引擎抽象与双引擎对比（Phase A / M0）
+# 引擎抽象与双引擎对比（Phase A：M0 / M1 / M1.5）
 
-> 状态：M0 + M1 已落地——协议、调度器、两个适配器、公共探针格、对比 API、三页前端、测试。
-> 本文只描述已经能跑的东西，以及明确**还没做**的东西（M1.5/M2/M3）。
+> 状态：M0 + M1 + M1.5 已落地——协议、调度器、两个适配器、公共探针格、截面指标、
+> 对比 API、三页前端、测试。本文只描述已经能跑的东西，以及明确**还没做**的东西（M2/M3）。
 
 ## 1. 目标与边界
 
@@ -123,6 +123,37 @@ ViennaPS 的域从 0 开始。协议里 `domain.origin_xy` 声明窗口的全局
 `engines/normalize.py`（表在 `normalize.json`），void 别名收成一个 `void`。
 没有这层时两边的"一致率"是 0，而两个引擎都是对的。
 
+## 5.2 截面指标（M1.5）
+
+SPX 能导出结构，但都不好用：`meas_save_3D` 的 `Format` 实测只能是
+`{ gcns, native, stl_3dprint, tdr }`，其中 `native`/`tdr` 写出来是 **HDF5**
+（`\x89HDF` 头），`gcns` 只有 227 字节（结构块引用），`stl_3dprint` 还要额外的
+`Representation` 参数。workbench 虚拟环境没有 HDF5 读取器，为一个指标引入二进制
+依赖不划算。
+
+所以截面指标改成"问高度"而不是"读结构文件"：
+
+- 调度器给定 33 个列（`y = depth/2`，x 均布）与材料清单；
+- **ViennaPS** 直接由表面网格的每列材料顶高回答（精确）；
+- **SPX** 用 `meas_probe` 二分：25 点粗梯找区间，再 12 次二分，
+  分辨率 `span/2^12 ≈ 0.17 nm`；实测每 probe ~1.3 ms，33 列 × 2 材料 ≈ 5 s；
+- 指标：每材料 `meanAbsUm` / `maxAbsUm` / `L2`；未解析的列计入 `missingColumns`，
+  不当 0。
+
+实测（平面 Si + 100 nm SiO₂，各向同性刻蚀 0.05 min）：
+
+| 步 | Si 平均 \|Δz\| | SiO₂ 平均 \|Δz\| |
+|---|---|---|
+| s0_init | 4e-6 µm | 1e-6 µm |
+| s1_etch | 4e-6 µm | 8.3e-5 µm（0.083 nm） |
+
+**相机**：`meas_screenshot(View=…)` 实测只接受
+`{ free, iso, iso90, iso180, iso270, xy, xz, yx, yz, zx, zy }`，其它值直接报错；
+除 `free` 外的显式相机参数（azimuth/elevation/zoom）在无 GUI 环境没有出口
+（`control_screenshot*` 只暴露 `Show Axes`，`sp.show(Children=['Snapshot'])` 为空）。
+所以做法是**流程里选一个 View 预设**，左侧网格按同一方位投影（`cameraForView`），
+左右共用预设而不是任意相机。
+
 ## 6. 怎么跑
 
 ```bash
@@ -153,9 +184,11 @@ connect 会永久挂住）。
 | 全流程 wall：ViennaPS ~1.3 s / SPX ~5.7 s（SPX 含 1.4 s 进程启动 + layout 载入） | ✅ |
 | 三页前端可用（几何 / 流程图 / 左右对比 + 时间轴 + 表） | ✅ |
 | **M1 公共探针格 3000 点：两步一致率 100%、Si/SiO2 IoU 1.0** | ✅ |
+| **M1.5 截面 33 列：Si 4e-6 µm、SiO₂ 8.3e-5 µm 平均界面偏差** | ✅ |
+| M1.5 视角预设：SPX `View=iso/xz/...`，左侧同方位投影 | ✅ |
 | M1 每材料顶高两边完全一致（刻蚀前 SiO2 0.0809 µm，刻蚀后 0.0397 µm，格点分辨率内） | ✅ |
 | `tests/test_engines.py`（协议/调度/对齐/幂等 11 项） | ✅ |
-| `tests/test_engine_probe.py`（格点/占用指标/材料归一化 12 项） | ✅ |
+| `tests/test_engine_probe.py`（格点/占用指标/截面指标/材料归一化 18 项） | ✅ |
 | `tests/test_compare_api.py`（4 项，含 422/404/路径穿越） | ✅ |
 | 前端 `npm run typecheck` / build | ✅ |
 
@@ -165,15 +198,17 @@ connect 会永久挂住）。
    而 SPX 渲染的是被 clip 出来的柱体（带人工侧壁）。这是表示差异，不是数值差异。
    等 phase B 接上掩膜/沟槽，两侧都有真实侧壁，对比才有意义。
 2. **相机**：SPX 截图目前不能传相机，所以右侧固定；左侧 mesh 用共享的
-   方位/仰角/缩放（同一 bbox）。真正同机位需要 SPX 侧相机参数支持，列在 M1.5。
+   方位/仰角/缩放（同一 bbox）。M1.5 起改为**共用视角预设**：右侧 `View=iso|xz|...`，
+  左侧 `cameraForView` 按同一方位投影；任意相机参数在无 GUI 环境下没有出口。
 3. **SPX 只用 1 个 licence seat**（`spx_all`），并发对比运行会排队。
 
 ## 9. 下一步
 
-- **M1 已完成**：公共探针格 + 一致率 / IoU / 顶高误差。M1 未做的两项：
-  SPX 相机参数化（截图仍固定视角）、界面距离（需要结构导出，见下）。
-- **M1.5**：SPX 结构导出（`control_save_3D` → TDR）→ 用于界面单向 Hausdorff
-  与截面轮廓 L2；在此之前不编造距离指标。
+- **M1 / M1.5 已完成**：公共探针格（一致率 / IoU / 顶高）、截面接口高度
+  （mean/max/L2）、视角预设。
+- **仍缺**：3D 界面单向 Hausdorff / 轮廓 L2 需要结构导出；`native`/`tdr` 是 HDF5，
+  要么给引擎层引入 HDF5 读取依赖，要么等 SPX 提供可解析的非 HDF5 导出。在那之前
+  只报截面（z 方向）偏差，不编 3D 距离。
 - **M2**：各向异性 / CMP / 掩膜接线；`checkpoint()/restore()` 热换引擎；
   成本模型 `estimate()` 与越界守卫（`out_of_domain`，不静默回退）。
 - **M3**：mesh 侧换回 vtk.js（现在用 canvas 正交投影），raster 侧接入同一相机参数。

@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CompareRun, MeshFrame } from './api';
 import { fetchMesh, frameUrl } from './api';
-import { DEFAULT_CAMERA, MeshView, type Camera } from './MeshView';
+import { DEFAULT_CAMERA, MeshView, cameraForView, type Camera } from './MeshView';
+import { SectionView } from './SectionView';
 
 type Props = {
   run: CompareRun | null;
@@ -19,6 +20,8 @@ const STATUS_COLOR: Record<string, string> = {
 
 export function ComparePage({ run, runId, history, onSelectRun }: Props) {
   const [camera, setCamera] = useState<Camera>(DEFAULT_CAMERA);
+  const runView = run?.compare?.view;
+  useEffect(() => { setCamera(cameraForView(runView)); }, [runView]);
   const [stepIndex, setStepIndex] = useState(0);
   const [mesh, setMesh] = useState<MeshFrame | null>(null);
   const [meshError, setMeshError] = useState<string | null>(null);
@@ -102,6 +105,15 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
             : <div className="cmp-missing">无帧：{step?.engines.spx.status ?? 'missing'}</div>}
         </div>
       </div>
+
+      <SectionView
+        section={step?.section}
+        width={700}
+        height={280}
+        zRange={run.compare?.sectionZ}
+        engines={Object.keys(step?.engines ?? {})}
+        domainWidth={run.compare?.domain?.width ?? 1}
+      />
 
       <div className="cmp-timeline">
         {steps.map((row, index) => (

@@ -48,7 +48,7 @@
   "render": {
     "width": 700,
     "height": 560,
-    "view": "3d"
+    "view": "iso"
   },
   "layout": {
     "path": "/root/SPX/spx/V-2024.03/linux64/examples/Logic1_Layout.oasis",

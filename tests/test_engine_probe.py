@@ -10,7 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from engines import normalize, probe  # noqa: E402
+from engines import normalize, probe, section  # noqa: E402
 
 
 class LatticeTests(unittest.TestCase):
@@ -79,6 +79,51 @@ class OccupancyMetricTests(unittest.TestCase):
         metrics = probe.occupancy_metrics(self.POINTS, left, right)
         self.assertEqual(metrics["topHeightUm"]["viennaps"]["SiO2"], 0.05)
         self.assertEqual(metrics["topHeightUm"]["spx"]["SiO2"], None)
+
+
+class SectionMetricTests(unittest.TestCase):
+    COLUMNS = [[0.01, 0.1], [0.02, 0.1], [0.03, 0.1]]
+
+    def test_identical_sections_have_zero_error(self):
+        left = {"Si": [0.0, 0.0, 0.0], "SiO2": [0.1, 0.1, 0.1]}
+        metrics = section.section_metrics(self.COLUMNS, ["Si", "SiO2"], left, left)
+        self.assertEqual(metrics["status"], "measured")
+        self.assertEqual(metrics["materials"]["SiO2"]["meanAbsUm"], 0.0)
+        self.assertEqual(metrics["materials"]["SiO2"]["maxAbsUm"], 0.0)
+        self.assertEqual(metrics["worstAbsUm"], 0.0)
+
+    def test_known_offset_is_reported_as_mean_max_and_l2(self):
+        left = {"SiO2": [0.1, 0.1, 0.1]}
+        right = {"SiO2": [0.09, 0.11, 0.1]}
+        metrics = section.section_metrics(self.COLUMNS, ["SiO2"], left, right)
+        row = metrics["materials"]["SiO2"]
+        self.assertAlmostEqual(row["meanAbsUm"], 0.006667, places=6)
+        self.assertAlmostEqual(row["maxAbsUm"], 0.01, places=6)
+        self.assertAlmostEqual(row["l2Um"], 0.008165, places=6)
+
+    def test_unresolved_column_is_counted_not_zero(self):
+        left = {"Si": [0.0, None, 0.0]}
+        right = {"Si": [0.0, 0.0, 0.0]}
+        metrics = section.section_metrics(self.COLUMNS, ["Si"], left, right)
+        row = metrics["materials"]["Si"]
+        self.assertEqual(row["resolved"], 2)
+        self.assertEqual(row["missingColumns"], 1)
+        self.assertEqual(row["meanAbsUm"], 0.0)
+
+    def test_material_missing_on_both_sides_is_not_resolved(self):
+        metrics = section.section_metrics(self.COLUMNS, ["SiO2"], {"SiO2": [None, None, None]},
+                                          {"SiO2": [None, None, None]})
+        self.assertEqual(metrics["status"], "not_resolved")
+        self.assertEqual(metrics["materials"]["SiO2"]["status"], "not_resolved")
+
+    def test_length_mismatch_is_reported(self):
+        metrics = section.section_metrics(self.COLUMNS, ["Si"], {"Si": [0.0]}, {"Si": [0.0, 0.0]})
+        self.assertEqual(metrics["materials"]["Si"]["status"], "length_mismatch")
+
+    def test_heights_are_kept_for_the_ui(self):
+        left = {"Si": [0.0, 0.0, 0.0]}
+        metrics = section.section_metrics(self.COLUMNS, ["Si"], left, left)
+        self.assertEqual(metrics["heights"]["viennaps"]["Si"], [0.0, 0.0, 0.0])
 
 
 class NormalizeTests(unittest.TestCase):

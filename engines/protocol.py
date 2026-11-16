@@ -150,6 +150,31 @@ class ProbeSpec:
 
 
 @dataclass(frozen=True)
+class SectionSpec:
+    """A cross-section every engine must report interface heights on.
+
+    SPX exposes no structure export we can parse without a new dependency, so the
+    section is measured by asking each engine for the interface height of every
+    material along a fixed line of columns. Both answer in structure-local
+    coordinates; ``z`` is measured from the substrate top.
+    """
+
+    columns: list[list[float]]
+    materials: list[str]
+    z_min: float
+    z_max: float
+
+    def validate(self) -> None:
+        if not self.columns or not self.materials:
+            raise ProtocolError("section needs columns and materials")
+        if self.z_min >= self.z_max:
+            raise ProtocolError("section z_min must be below z_max")
+        for column in self.columns:
+            if len(column) != 2 or not all(isinstance(v, (int, float)) for v in column):
+                raise ProtocolError(f"section column {column!r} must be two numbers")
+
+
+@dataclass(frozen=True)
 class RenderSpec:
     width: int = 900
     height: int = 700
@@ -168,6 +193,7 @@ class JobSpec:
     steps: tuple[StepIR, ...]
     render: RenderSpec = field(default_factory=RenderSpec)
     probe: ProbeSpec | None = None
+    section: SectionSpec | None = None
     schema_version: int = SCHEMA_VERSION
 
     def validate(self) -> None:
@@ -182,6 +208,8 @@ class JobSpec:
             raise ProtocolError("job needs at least one step")
         if self.probe is not None:
             self.probe.validate()
+        if self.section is not None:
+            self.section.validate()
         seen: set[str] = set()
         for step in self.steps:
             step.validate()
@@ -222,6 +250,13 @@ class JobSpec:
                   probe=(ProbeSpec(points=[[float(v) for v in p]
                                            for p in payload["probe"]["points"]])
                          if payload.get("probe") else None),
+                  section=(SectionSpec(
+                      columns=[[float(v) for v in c]
+                               for c in payload["section"]["columns"]],
+                      materials=[str(m) for m in payload["section"]["materials"]],
+                      z_min=float(payload["section"]["z_min"]),
+                      z_max=float(payload["section"]["z_max"]))
+                      if payload.get("section") else None),
                   schema_version=int(payload.get("schema_version", SCHEMA_VERSION)))
         job.validate()
         return job
@@ -269,6 +304,7 @@ class StepOutcome:
     metrics: dict[str, Any] = field(default_factory=dict)
     reason: str | None = None
     probe: list[str] | None = None
+    section: dict[str, list[float | None]] | None = None
 
 
 @dataclass(frozen=True)

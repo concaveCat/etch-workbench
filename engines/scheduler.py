@@ -23,7 +23,9 @@ from typing import Any
 
 from engines.metrics import describe as describe_geometry
 from engines.probe import build_lattice, occupancy_metrics
-from engines.protocol import Frame, JobSpec, ProbeSpec, StepOutcome, write_json
+from engines.section import section_metrics
+from engines.protocol import (Frame, JobSpec, ProbeSpec, SectionSpec, StepOutcome,
+                              write_json)
 from engines.registry import EngineRegistration, registrations
 
 DEFAULT_TIMEOUT = 1800.0
@@ -81,6 +83,7 @@ def _outcomes(result: dict[str, Any]) -> dict[str, StepOutcome]:
             frame=frame, checkpoint=row.get("checkpoint"),
             metrics=row.get("metrics") or {}, reason=row.get("reason"),
             probe=row.get("probe"),
+            section=row.get("section"),
         )
         if outcome.frame is not None:
             outcome.frame.validate()
@@ -106,6 +109,16 @@ def compare(job: JobSpec, engine_ids: list[str], out_root: Path,
         probe_shape = list(measured.shape)
     else:
         probe_shape = None
+    section_columns = None
+    if job.section is None:
+        # One section through the middle of the column, used for interface heights.
+        stack = [job.initial.substrate, *[film.material for film in job.initial.films]]
+        count = 33
+        section_columns = [[job.domain.width * (i + 0.5) / count, job.domain.depth / 2]
+                           for i in range(count)]
+        job = replace(job, section=SectionSpec(
+            columns=section_columns, materials=stack,
+            z_min=-job.initial.substrate_thickness, z_max=job.domain.height))
     out_root = Path(out_root).resolve()
     out_root.mkdir(parents=True, exist_ok=True)
     job_path = out_root / "job.json"
@@ -155,12 +168,19 @@ def compare(job: JobSpec, engine_ids: list[str], out_root: Path,
         ok = [e for e in row["engines"].values() if e["status"] == "ok"]
         row["aligned"] = len(ok) == len(engine_ids)
         row["probe"] = _probe_row(job, per_engine, step.step_id, engine_ids)
+        row["section"] = _section_row(job, per_engine, step.step_id, engine_ids)
         steps.append(row)
 
     payload = {
         "schemaVersion": 1,
         "caseId": job.case_id,
+        "domain": {"width": job.domain.width, "depth": job.domain.depth,
+                   "height": job.domain.height,
+                   "origin": job.domain.origin_xy},
         "probeShape": probe_shape,
+        "sectionColumns": section_columns or (job.section.columns if job.section else []),
+        "view": job.render.view,
+        "sectionZ": ([job.section.z_min, job.section.z_max] if job.section else None),
         "probeMethod": {"viennaps": "height_column", "spx": "meas_probe"},
         "probePoints": len(job.probe.points) if job.probe else 0,
         "jobDigest": _digest(job),
@@ -179,6 +199,23 @@ def compare(job: JobSpec, engine_ids: list[str], out_root: Path,
     }
     write_json(out_root / "compare.json", payload)
     return payload
+
+
+def _section_row(job: JobSpec, per_engine: dict[str, dict[str, StepOutcome]],
+                 step_id: str, engine_ids: list[str]) -> dict[str, Any]:
+    if job.section is None:
+        return {"status": "disabled"}
+    outcomes = {engine_id: per_engine[engine_id].get(step_id) for engine_id in engine_ids}
+    missing = [engine_id for engine_id, outcome in outcomes.items()
+               if outcome is None or outcome.section is None]
+    if missing:
+        return {"status": "incomplete", "reason": f"no section result from {missing}"}
+    if len(engine_ids) != 2:
+        return {"status": "single_engine"}
+    left, right = engine_ids
+    return section_metrics(job.section.columns, job.section.materials,
+                           outcomes[left].section, outcomes[right].section,
+                           left_name=left, right_name=right)
 
 
 def _probe_row(job: JobSpec, per_engine: dict[str, dict[str, StepOutcome]],

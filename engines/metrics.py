@@ -56,7 +56,9 @@ def raster_descriptors(path: Path) -> dict[str, Any]:
         "status": "frame_only",
         "bytes": size,
         "geometry": NOT_EVALUATED,
-        "reason": "the SPX adapter returns a rendered frame; structure export is phase M1",
+        "reason": ("the SPX adapter returns a rendered frame; its geometry is "
+                   "measured through the shared probe lattice (compare.json steps[].probe), "
+                   "not from the image"),
     }
 
 

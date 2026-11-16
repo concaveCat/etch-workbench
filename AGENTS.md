@@ -32,7 +32,17 @@ ln -s /root/viennaps-workbench-cpu-gpu/runtime-patched runtime-patched
 ```
 
 `docs/*-evidence/` 同样不在 git 中。依赖这些证据的验收脚本在 worktree 里会缺文件，
-需要时从主工作区只读引用，不要复制后修改。
+需要时从主工作区引用，不要修改证据内容。
+
+引用方式分两种，别搞错：
+
+| 目录 | 在 worktree 里怎么做 | 原因 |
+|---|---|---|
+| `stage9-evidence`（约 2.9 GB） | 只读符号链接 | 只被读取，链接不会写穿 |
+| 其余 `*-evidence` | **复制**（`cp -a -n`） | `test_selectivity` / `test_materials_milestone` / `test_stage5` 等会把 reference / guard 文件**写回**证据目录；符号链接会把写入穿透到主工作区，违反“不修改证据” |
+
+曾经踩过：把全部证据目录都软链过去，worktree 跑一次全量测试就在主工作区
+`docs/*-evidence/` 里写了 387 个文件。
 
 ## 3. 运行时隔离
 

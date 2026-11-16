@@ -29,6 +29,8 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--out", type=Path, required=True)
     run.add_argument("--engines", default="viennaps,spx")
     run.add_argument("--timeout", type=float, default=1800.0)
+    run.add_argument("--probe-points", type=int, default=3000,
+                     help="shared probe lattice size (0 disables cross-engine metrics)")
 
     args = parser.parse_args(argv)
     if args.command == "engines":
@@ -37,7 +39,8 @@ def main(argv: list[str] | None = None) -> int:
 
     job = JobSpec.from_json(json.loads(args.job.read_text(encoding="utf-8")))
     engine_ids = [value.strip() for value in args.engines.split(",") if value.strip()]
-    payload = compare(job, engine_ids, args.out, timeout=args.timeout)
+    payload = compare(job, engine_ids, args.out, timeout=args.timeout,
+                      max_probe_points=args.probe_points)
     summary = payload["summary"]
     print(f"case         {payload['caseId']}  digest {payload['jobDigest']}")
     print(f"steps        {summary['stepCount']}  fully aligned {summary['fullyAlignedSteps']}")

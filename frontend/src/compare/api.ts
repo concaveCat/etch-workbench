@@ -69,6 +69,16 @@ export type EngineRow = {
   metrics: Record<string, unknown>;
 };
 
+export type ProbeMetrics = {
+  status: 'measured' | 'incomplete' | 'disabled' | 'single_engine' | 'invalid' | 'empty';
+  agreement?: number;
+  mismatchCount?: number;
+  iou?: Record<string, number>;
+  topHeightUm?: Record<string, Record<string, number | null>>;
+  mismatchExamples?: { point: number[]; [key: string]: unknown }[];
+  reason?: string;
+};
+
 export type CompareStep = {
   stepId: string;
   kind: StepKind;
@@ -78,12 +88,16 @@ export type CompareStep = {
   comparability: Comparability;
   aligned: boolean;
   engines: Record<string, EngineRow>;
+  probe?: ProbeMetrics;
 };
 
 export type ComparePayload = {
   schemaVersion: number;
   caseId: string;
   jobDigest: string;
+  probePoints?: number;
+  probeShape?: number[] | null;
+  probeMethod?: Record<string, string>;
   engines: Record<string, { version: string | null; processWallMs: number; returncode: number; error: string | null }>;
   steps: CompareStep[];
   summary: {

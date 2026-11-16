@@ -56,6 +56,12 @@ class ViennapsSession:
         ps.Time.setUnit("min")
         self.domain = None
         self.materials: dict[int, str] = {}
+        # Level-set order equals stack order (substrate first, films bottom-up):
+        # the first level set whose filling fraction at a point is <= 0 owns it.
+        self.stack: list[str] = []
+        self._mesh = None
+        self._columns: dict[tuple[int, int], dict[str, float]] | None = None
+        self.column = max(float(job.domain.grid_delta) * 2.0, 1e-4)
 
     def open(self) -> None:
         ps = self.ps
@@ -77,12 +83,14 @@ class ViennapsSession:
                      material=_material_handle(ps, initial.substrate),
                      addToExisting=False).apply()
         self._register(initial.substrate)
+        self.stack.append(initial.substrate)
         for film in initial.films:
             height += film.thickness
             ps.MakePlane(self.domain, height=height,
                          material=_material_handle(ps, film.material),
                          addToExisting=True).apply()
             self._register(film.material)
+            self.stack.append(film.material)
 
     def _register(self, name: str) -> None:
         from process_models.v2.engines.viennaps import material_handle
@@ -108,13 +116,80 @@ class ViennapsSession:
             return StepOutcome(step_id=step.step_id, status="failed",
                                wall_ms=(time.perf_counter() - started) * 1000.0,
                                reason=f"{type(exc).__name__}: {exc}")
+        self._mesh = None
+        self._columns = None
         return StepOutcome(step_id=step.step_id, status="ok",
                            wall_ms=(time.perf_counter() - started) * 1000.0)
 
+    def probe(self, points: list[list[float]]) -> list[str]:
+        """Material label per point from the per-column material height field.
+
+        ViennaLS exposes no point query on a level set, and a dense cell set at the
+        level-set resolution is not usable (measured: 14.8 M cells / 107 s for one
+        0.002 um domain), so the probe is derived from the surface mesh we already
+        extract:
+
+        * bin every triangle into a column by its centroid,
+        * keep ``max z`` per material per column,
+        * a point belongs to the material with the **lowest top above the point**.
+
+        Exact for a z-monotone stack (plane, iso etch/deposit, CMP) -- the only
+        class this adapter claims. Re-entrant shapes would need volumetric
+        sampling, which is why ``compare.json.probeMethod`` records the method.
+        """
+        columns = self._height_columns()
+        labels: list[str] = []
+        for x, y, z in points:
+            key = (int(float(x) // self.column), int(float(y) // self.column))
+            tops = columns.get(key) or {}
+            owner = "void"
+            best: float | None = None
+            for material, top in tops.items():
+                if z <= top and (best is None or top < best):
+                    best = top
+                    owner = material
+            labels.append(owner)
+        return labels
+
+    def _height_columns(self) -> dict[tuple[int, int], dict[str, float]]:
+        """Per-column material tops, cached for the current step."""
+        if self._columns is not None:
+            return self._columns
+        mesh = self._surface_mesh()
+        points = mesh.getNodes()
+        triangles = mesh.getTriangles()
+        data = mesh.getCellData()
+        ids = None
+        for index in range(data.getScalarDataSize()):
+            if str(data.getScalarDataLabel(index)) == "MaterialIds":
+                ids = list(data.getScalarData(index))
+        if ids is None:
+            raise RuntimeError("surface mesh has no MaterialIds")
+        columns: dict[tuple[int, int], dict[str, float]] = {}
+        for triangle, material_id in zip(triangles, ids):
+            name = self.materials.get(int(material_id))
+            if name is None:
+                raise RuntimeError(f"unknown material id {material_id}")
+            xs = [float(points[i][0]) for i in triangle]
+            ys = [float(points[i][1]) for i in triangle]
+            zs = [float(points[i][2]) for i in triangle]
+            key = (int((sum(xs) / 3) // self.column), int((sum(ys) / 3) // self.column))
+            bucket = columns.setdefault(key, {})
+            top = max(zs)
+            if name not in bucket or top > bucket[name]:
+                bucket[name] = top
+        self._columns = columns
+        return columns
+
+    def _surface_mesh(self):
+        if self._mesh is None:
+            self._mesh = self.domain.getSurfaceMesh(addInterfaces=True, sharpCorners=False,
+                                                    minNodeDistanceFactor=0.01)
+        return self._mesh
+
     def frame(self, step_id: str) -> Frame:
         ps = self.ps
-        mesh = self.domain.getSurfaceMesh(addInterfaces=True, sharpCorners=False,
-                                          minNodeDistanceFactor=0.01)
+        mesh = self._surface_mesh()
         points = [[float(v) for v in p] for p in mesh.getNodes()]
         triangles = [[int(v) for v in t] for t in mesh.getTriangles()]
         data = mesh.getCellData()
@@ -168,6 +243,7 @@ def engine_info() -> dict[str, Any]:
 def run_job(job: JobSpec, out_dir: Path) -> dict[str, Any]:
     session = ViennapsSession(job, out_dir)
     session.open()
+    probe_points = list(job.probe.points) if job.probe is not None else []
     outcomes: list[StepOutcome] = []
     for index, step in enumerate(job.steps):
         if index == 0:
@@ -181,11 +257,15 @@ def run_job(job: JobSpec, out_dir: Path) -> dict[str, Any]:
         started = time.perf_counter()
         try:
             frame = session.frame(step.step_id)
+            probe_started = time.perf_counter()
+            labels = session.probe(probe_points) if probe_points else None
             out = StepOutcome(step_id=step.step_id, status=out.status,
                               wall_ms=out.wall_ms,
                               frame=frame, checkpoint=None,
-                              metrics={"frame_ms": (time.perf_counter() - started) * 1000.0},
-                              reason=out.reason)
+                              metrics={"frame_ms": (time.perf_counter() - started) * 1000.0,
+                                       "probe_ms": (time.perf_counter() - probe_started) * 1000.0,
+                                       "probe_points": len(probe_points)},
+                              reason=out.reason, probe=labels)
         except Exception as exc:  # noqa: BLE001
             out = StepOutcome(step_id=step.step_id, status="failed",
                               wall_ms=out.wall_ms, reason=f"{type(exc).__name__}: {exc}")

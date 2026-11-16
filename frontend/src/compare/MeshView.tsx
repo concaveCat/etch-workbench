@@ -23,6 +23,34 @@ type Props = {
   note?: string;
 };
 
+function boxCorners(bbox: number[]): number[][] {
+  const [x0, y0, z0, x1, y1, z1] = bbox;
+  return [
+    [x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0],
+    [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1],
+  ];
+}
+
+const BOX_EDGES = [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]];
+
+function drawBox(ctx: CanvasRenderingContext2D, corners: { x: number; y: number }[], width: number, _height: number) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(90,150,190,0.35)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 4]);
+  for (const [a, b] of BOX_EDGES) {
+    ctx.beginPath();
+    ctx.moveTo(corners[a].x, corners[a].y);
+    ctx.lineTo(corners[b].x, corners[b].y);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(140,190,220,0.55)';
+  ctx.font = '10px ui-monospace, monospace';
+  ctx.fillText(`域 ${width | 0}px · 虚线为计算域 bbox（ViennaPS 周期边界无侧壁）`, 8, 14);
+  ctx.restore();
+}
+
 function project(points: number[][], camera: Camera, bbox: number[], width: number, height: number) {
   const [x0, y0, z0, x1, y1, z1] = bbox;
   const cx = (x0 + x1) / 2;
@@ -62,6 +90,7 @@ export function MeshView({ frame, camera, width, height, title, note }: Props) {
     ctx.fillStyle = '#0b1620';
     ctx.fillRect(0, 0, width, height);
     if (!frame) return;
+    drawBox(ctx, project(boxCorners(frame.bbox), camera, frame.bbox, width, height), width, height);
     const colors = new Map(frame.materials.map((m) => [m.id, m.color]));
     const projected = project(frame.points, camera, frame.bbox, width, height);
     const faces = frame.triangles.map((tri, index) => {

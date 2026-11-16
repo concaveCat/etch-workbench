@@ -17,12 +17,13 @@ import json
 import subprocess
 import time
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
 from engines.metrics import describe as describe_geometry
-from engines.protocol import Frame, JobSpec, StepOutcome, write_json
+from engines.probe import build_lattice, occupancy_metrics
+from engines.protocol import Frame, JobSpec, ProbeSpec, StepOutcome, write_json
 from engines.registry import EngineRegistration, registrations
 
 DEFAULT_TIMEOUT = 1800.0
@@ -79,6 +80,7 @@ def _outcomes(result: dict[str, Any]) -> dict[str, StepOutcome]:
             step_id=row["step_id"], status=row["status"], wall_ms=float(row["wall_ms"]),
             frame=frame, checkpoint=row.get("checkpoint"),
             metrics=row.get("metrics") or {}, reason=row.get("reason"),
+            probe=row.get("probe"),
         )
         if outcome.frame is not None:
             outcome.frame.validate()
@@ -87,7 +89,7 @@ def _outcomes(result: dict[str, Any]) -> dict[str, StepOutcome]:
 
 
 def compare(job: JobSpec, engine_ids: list[str], out_root: Path,
-            timeout: float = DEFAULT_TIMEOUT) -> dict[str, Any]:
+            timeout: float = DEFAULT_TIMEOUT, max_probe_points: int = 3000) -> dict[str, Any]:
     """Run ``job`` on every engine and produce the aligned comparison record."""
     registry = registrations()
     unknown = [e for e in engine_ids if e not in registry]
@@ -95,6 +97,15 @@ def compare(job: JobSpec, engine_ids: list[str], out_root: Path,
         raise SystemExit(f"unknown engine(s) {unknown}; known: {sorted(registry)}")
 
     job.validate()
+    if job.probe is None and max_probe_points > 0:
+        # The scheduler owns the lattice: every engine must answer the same points.
+        measured = build_lattice(job.domain.width, job.domain.depth,
+                                 job.initial.substrate_thickness,
+                                 job.domain.height, max_probe_points)
+        job = replace(job, probe=ProbeSpec(points=measured.points))
+        probe_shape = list(measured.shape)
+    else:
+        probe_shape = None
     out_root = Path(out_root).resolve()
     out_root.mkdir(parents=True, exist_ok=True)
     job_path = out_root / "job.json"
@@ -143,11 +154,15 @@ def compare(job: JobSpec, engine_ids: list[str], out_root: Path,
             }
         ok = [e for e in row["engines"].values() if e["status"] == "ok"]
         row["aligned"] = len(ok) == len(engine_ids)
+        row["probe"] = _probe_row(job, per_engine, step.step_id, engine_ids)
         steps.append(row)
 
     payload = {
         "schemaVersion": 1,
         "caseId": job.case_id,
+        "probeShape": probe_shape,
+        "probeMethod": {"viennaps": "height_column", "spx": "meas_probe"},
+        "probePoints": len(job.probe.points) if job.probe else 0,
         "jobDigest": _digest(job),
         "engines": {engine_id: {"version": run.result.get("engine", {}).get("version"),
                                 "processWallMs": run.wall_ms,
@@ -164,6 +179,24 @@ def compare(job: JobSpec, engine_ids: list[str], out_root: Path,
     }
     write_json(out_root / "compare.json", payload)
     return payload
+
+
+def _probe_row(job: JobSpec, per_engine: dict[str, dict[str, StepOutcome]],
+               step_id: str, engine_ids: list[str]) -> dict[str, Any]:
+    """Cross-engine occupancy metrics for one step, or the reason there are none."""
+    if job.probe is None:
+        return {"status": "disabled", "reason": "no probe lattice in the job"}
+    labels = {engine_id: per_engine[engine_id].get(step_id) for engine_id in engine_ids}
+    missing = [engine_id for engine_id, outcome in labels.items()
+               if outcome is None or outcome.probe is None]
+    if missing:
+        return {"status": "incomplete",
+                "reason": f"no probe result from {missing}"}
+    if len(engine_ids) != 2:
+        return {"status": "single_engine", "reason": "occupancy needs two engines"}
+    left, right = engine_ids
+    return occupancy_metrics(job.probe.points, labels[left].probe, labels[right].probe,
+                             left_name=left, right_name=right)
 
 
 def _digest(job: JobSpec) -> str:

@@ -1,7 +1,7 @@
 # 引擎抽象与双引擎对比（Phase A / M0）
 
-> 状态：M0 已落地——协议、调度器、两个适配器、对比 API、三页前端、测试。
-> 本文只描述已经能跑的东西，以及明确**还没做**的东西（M1/M2/M3）。
+> 状态：M0 + M1 已落地——协议、调度器、两个适配器、公共探针格、对比 API、三页前端、测试。
+> 本文只描述已经能跑的东西，以及明确**还没做**的东西（M1.5/M2/M3）。
 
 ## 1. 目标与边界
 
@@ -86,17 +86,42 @@ job.json ──► engines/<adapter> ──► <out_dir>/result.json + frames/*
 6. `substrate.ColumnSizeX/Y` 是周期单元，不是绘制范围；结构范围由 clip 决定
    （用 `spxwebapi.utils._get_bounding_box` 实测确认）。
 
-## 5. 指标：说清楚什么是没测的
+## 5. 逐点比对：公共探针格（M1）
 
-`engines/metrics.py`：
+两个引擎的几何表示不同（ViennaPS 是水平集+网格，SPX 是布局上的 CSG），
+所以"逐点"只能在**同一组采样点**上比材料占用标签。
 
-- mesh 帧 → 每材料**顶高**（相对 z=0）与三角形数（M0 实测 SiO2 顶高 0.05 µm，
-  即 0.1 µm 沉积层被 1.0 µm/min × 0.05 min 刻掉一半）；
-- raster 帧 → 只有帧大小，几何记 `not_evaluated`，理由写进 JSON。
+**调度器负责造格**（`engines/probe.py`），写进 `job.probe`，两个引擎回答同一批点：
 
-**没有**跨引擎逐点距离。因为现在 SPX 只回渲染帧、不回结构，任何 mesh-vs-raster
-距离都是编的。M1 要做的是：从 SPX 导出结构（`control_save_3D` / TDR）→
-公共探针格（同一 Δx、材料占用标签）→ 每材料 IoU / 界面单向 Hausdorff / 轮廓 L2。
+- 默认 3000 点（`--probe-points` 可调，0 = 关闭），格点取半格偏移，
+  避免正好落在界面上（两侧对"界面上的点"定义不同）；
+- 覆盖 `x∈[0,width]`、`y∈[0,depth]`、`z∈[-substrate_thickness, height]`。
+
+**两端的采样方式（写进 `compare.json.probeMethod`）**
+
+| 引擎 | 方法 | 说明 |
+|---|---|---|
+| SPX | `meas_probe` | `measure(Type='meas_probe', Height=(z,um), PointName=['','',[x,y]], GroupBy='region')` → 材料名；实测 ~1.6 ms/点，**不支持批量**（PointName 只吃一个 3 元组） |
+| ViennaPS | `height_column` | 从表面网格按列取每材料最高 z，点属于"高于该点且最低的那个 top" |
+
+ViennaPS 侧为什么不用 `DenseCellSet`：在 0.002 µm 的域上它需要 **1481 万个格子、107 秒**，
+不可用。`height_column` 对 z 单调的层栈（平面、各向同性刻蚀/沉积、CMP）是精确的，
+对凹形结构不成立——所以方法名写进结果，不用一个数字假装通用。
+
+**指标**（`engines/probe.py`）：`agreement`（同标签点占比）、每材料 `iou`、
+`mismatchCount` + 前 5 个不一致点、两边的每材料 `topHeightUm`。
+长度不一致、缺一方结果都显式报 `invalid` / `incomplete`，不会返回 0。
+
+## 5.1 坐标归一化（不做这个，逐点比全是噪声）
+
+SPX 的结构画在 layout 的窗口上（例如 `[0.035, 0, 0.175, 0.288] µm`），
+ViennaPS 的域从 0 开始。协议里 `domain.origin_xy` 声明窗口的全局左下角：
+`StepIR` 坐标始终是**结构局部**坐标，SPX 适配器在探测时加这个偏移。
+第一次跑出来 86% 一致率就是因为没做这一步（所有 `x<0.035` 的点在 SPX 侧都是空的）。
+
+材料名同理：SPX 叫 `Silicon`/`Oxide`，空处报 `Gas`/`None`；统一映射在
+`engines/normalize.py`（表在 `normalize.json`），void 别名收成一个 `void`。
+没有这层时两边的"一致率"是 0，而两个引擎都是对的。
 
 ## 6. 怎么跑
 
@@ -118,7 +143,7 @@ SPX 适配器需要 license 与 `SNPSLMD_LICENSE_FILE`（默认 `27000@localhost
 并自动带 `LD_PRELOAD=/opt/eda-patches/libfastrefuse.so`（WSL2 mirrored 下无监听端口的
 connect 会永久挂住）。
 
-## 7. M0 验收（已测）
+## 7. 验收（已测）
 
 | 项 | 结果 |
 |---|---|
@@ -127,7 +152,10 @@ connect 会永久挂住）。
 | 每步耗时：ViennaPS ~0.6–2 s / SPX ~0.3 s（含 0.5 s 取帧） | ✅ |
 | 全流程 wall：ViennaPS ~1.3 s / SPX ~5.7 s（SPX 含 1.4 s 进程启动 + layout 载入） | ✅ |
 | 三页前端可用（几何 / 流程图 / 左右对比 + 时间轴 + 表） | ✅ |
+| **M1 公共探针格 3000 点：两步一致率 100%、Si/SiO2 IoU 1.0** | ✅ |
+| M1 每材料顶高两边完全一致（刻蚀前 SiO2 0.0809 µm，刻蚀后 0.0397 µm，格点分辨率内） | ✅ |
 | `tests/test_engines.py`（协议/调度/对齐/幂等 11 项） | ✅ |
+| `tests/test_engine_probe.py`（格点/占用指标/材料归一化 12 项） | ✅ |
 | `tests/test_compare_api.py`（4 项，含 422/404/路径穿越） | ✅ |
 | 前端 `npm run typecheck` / build | ✅ |
 
@@ -137,13 +165,15 @@ connect 会永久挂住）。
    而 SPX 渲染的是被 clip 出来的柱体（带人工侧壁）。这是表示差异，不是数值差异。
    等 phase B 接上掩膜/沟槽，两侧都有真实侧壁，对比才有意义。
 2. **相机**：SPX 截图目前不能传相机，所以右侧固定；左侧 mesh 用共享的
-   方位/仰角/缩放（同一 bbox）。真正同机位需要 SPX 侧相机参数支持，列在 M1。
+   方位/仰角/缩放（同一 bbox）。真正同机位需要 SPX 侧相机参数支持，列在 M1.5。
 3. **SPX 只用 1 个 licence seat**（`spx_all`），并发对比运行会排队。
 
 ## 9. 下一步
 
-- **M1**：SPX 结构导出 + 公共探针格 + 跨引擎指标（IoU、界面距离、顶高误差）；
-  SPX 相机参数化。
+- **M1 已完成**：公共探针格 + 一致率 / IoU / 顶高误差。M1 未做的两项：
+  SPX 相机参数化（截图仍固定视角）、界面距离（需要结构导出，见下）。
+- **M1.5**：SPX 结构导出（`control_save_3D` → TDR）→ 用于界面单向 Hausdorff
+  与截面轮廓 L2；在此之前不编造距离指标。
 - **M2**：各向异性 / CMP / 掩膜接线；`checkpoint()/restore()` 热换引擎；
   成本模型 `estimate()` 与越界守卫（`out_of_domain`，不静默回退）。
 - **M3**：mesh 侧换回 vtk.js（现在用 canvas 正交投影），raster 侧接入同一相机参数。

@@ -103,6 +103,11 @@ class SpxSession:
         self.flow = "F"
         self.module = "M0"
         self.materials: list[dict[str, Any]] = []
+        self.origin = (0.0, 0.0)
+        # The job's first step is the initial structure, but SPX needs one step
+        # per deposited film. Frames/probes for that job step must use the last
+        # of those, otherwise the oxide is missing from the "initial" picture.
+        self.initial_location: str | None = None
 
     # -- materials ---------------------------------------------------------
     def _ensure_material(self, name: str) -> str:
@@ -113,6 +118,9 @@ class SpxSession:
         self.sp.material(Material=spx_name, Color=color)
         self.materials.append({"name": name, "spx": spx_name, "color": color})
         return spx_name
+
+    def step_location(self, step_id: str, initial: bool) -> dict[str, str]:
+        return self._loc(self.initial_location if initial and self.initial_location else step_id)
 
     def _loc(self, step_id: str) -> dict[str, str]:
         return {"Route": self.route, "Flow": self.flow, "Module": self.module, "Step": step_id}
@@ -135,7 +143,14 @@ class SpxSession:
         # GDS mask step.
         layout = self.job.get("layout") or {}
         layout_path = layout.get("path") or DEFAULT_LAYOUT
-        window = layout.get("window") or DEFAULT_WINDOW
+        origin = domain.get("origin_xy")
+        if origin:
+            window = [float(origin[0]), float(origin[1]),
+                      float(origin[0]) + float(domain["width"]),
+                      float(origin[1]) + float(domain["depth"])]
+        else:
+            window = layout.get("window") or DEFAULT_WINDOW
+        self.origin = (float(window[0]), float(window[1]))
         sp.layout(Layout="layout", Path=layout_path)
         sp.clip(Location={"Route": self.route, "Clip": "C0"},
                 Coords=[float(v) for v in window],
@@ -150,6 +165,7 @@ class SpxSession:
         # ColumnSizeX/Y is the periodic unit cell, not the drawn window: SPX
         # derives the structure extent from the clip (measured with
         # spxwebapi.utils._get_bounding_box). Keep it at the example's 1 nm cell.
+        self.initial_location = first["step_id"]
         sp.substrate(Location=self._loc(first["step_id"]),
                      ColumnSizeX=_um(0.001),
                      ColumnSizeY=_um(0.001),
@@ -159,6 +175,7 @@ class SpxSession:
         for index, film in enumerate(initial.get("films", [])):
             spx_name = self._ensure_material(film["material"])
             step_id = f"{first['step_id']}_film{index}"
+            self.initial_location = step_id
             sp.depo_isotropic(Location=self._loc(step_id),
                               MaterialFilter=_material_filter(spx_name),
                               Rate=_rate(1.0),
@@ -226,7 +243,24 @@ class SpxSession:
         self.sp.run(Route=self.route, Start={}, Stop={})
         return {"runMs": (time.perf_counter() - start) * 1000.0}
 
-    def frame(self, step_id: str) -> dict[str, Any]:
+    def probe(self, location: dict[str, str], points: list[list[float]]) -> list[str]:
+        """Ask SPX which material occupies each point (``meas_probe``, ~1.6 ms)."""
+        labels: list[str] = []
+        for x, y, z in points:
+            try:
+                out = self.sp.measure(Type="meas_probe", Height=_um(z), Location=location,
+                                      PointName=["", "", [float(x) + self.origin[0],
+                                                          float(y) + self.origin[1]]],
+                                      GroupBy="region")
+                raw = out.get("Output")
+                name = raw[1] if isinstance(raw, tuple) and len(raw) > 1 else raw
+                from engines.normalize import canonical
+                labels.append(canonical(name, "spx"))
+            except Exception:  # a point outside the structure is void, not a crash
+                labels.append("void")
+        return labels
+
+    def frame(self, step_id: str, location: dict[str, str]) -> dict[str, Any]:
         from io import BytesIO
 
         from PIL import Image
@@ -235,7 +269,7 @@ class SpxSession:
         width = int(render.get("width", 900))
         height = int(render.get("height", 700))
         started = time.perf_counter()
-        out = self.sp.measure(Location=self._loc(step_id), Type="meas_screenshot",
+        out = self.sp.measure(Location=location, Type="meas_screenshot",
                               ImageWidth=width, ImageHeight=height)
         image = Image.frombytes("RGBA", (width, height), bytes(out["Output"]))
         frames = self.out / "frames"
@@ -267,19 +301,26 @@ def run_job(job: dict[str, Any], out_dir: Path) -> dict[str, Any]:
     session.build()
     run_stats = session.run()
 
+    probe_points = list((job.get("probe") or {}).get("points") or [])
     outcomes = []
     print(json.dumps({"event": "run_started", **run_stats}), flush=True)
     for index, step in enumerate(job_spec.steps):
         started = time.perf_counter()
         try:
-            payload = session.frame(step.step_id)
+            location = session.step_location(step.step_id, initial=index == 0)
+            payload = session.frame(step.step_id, location)
+            probe_started = time.perf_counter()
+            labels = session.probe(location, probe_points) if probe_points else None
             outcomes.append({
                 "step_id": step.step_id, "status": "ok",
                 "wall_ms": payload["frameMs"],
                 "frame": payload["frame"],
                 "checkpoint": None,
-                "metrics": {"frameMs": payload["frameMs"]},
+                "metrics": {"frameMs": payload["frameMs"],
+                            "probeMs": (time.perf_counter() - probe_started) * 1000.0,
+                            "probePoints": len(probe_points)},
                 "reason": None,
+                "probe": labels,
             })
             print(json.dumps({"event": "step_done", "stepId": step.step_id}), flush=True)
         except Exception as exc:  # a missing clip state must not kill the run

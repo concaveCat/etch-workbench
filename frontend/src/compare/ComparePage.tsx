@@ -110,6 +110,9 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
                   onClick={() => setStepIndex(index)}>
             <span>{row.stepId}</span>
             <span className={`cmp-badge ${row.comparability}`}>{row.comparability}</span>
+            {row.probe?.status === 'measured' && row.probe.agreement !== undefined
+              ? <span className="cmp-note">一致 {(row.probe.agreement * 100).toFixed(0)}%</span>
+              : null}
             {Object.entries(row.engines).map(([engineId, engine]) => (
               <span key={engineId} className="cmp-bar-wrap" title={`${engineId}: ${engine.wallMs ?? '—'} ms`}>
                 <span className="cmp-bar" style={{
@@ -126,7 +129,7 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
         <thead>
           <tr>
             <th>步骤</th><th>机制</th><th>可比性</th>
-            <th>ViennaPS ms</th><th>SPX ms</th><th>状态</th>
+            <th>ViennaPS ms</th><th>SPX ms</th><th>逐点一致率</th><th>状态</th>
           </tr>
         </thead>
         <tbody>
@@ -137,6 +140,9 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
               <td>{row.comparability}</td>
               <td>{row.engines.viennaps?.wallMs?.toFixed(1) ?? '—'}</td>
               <td>{row.engines.spx?.wallMs?.toFixed(1) ?? '—'}</td>
+              <td>{row.probe?.status === 'measured' && row.probe.agreement !== undefined
+                ? `${(row.probe.agreement * 100).toFixed(1)}%`
+                : (row.probe?.status ?? '—')}</td>
               <td>
                 {Object.entries(row.engines).map(([engineId, engine]) => (
                   <span key={engineId} className="cmp-status" style={{ color: STATUS_COLOR[engine.status] }}>
@@ -150,6 +156,7 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
       </table>
 
       <p className="cmp-hint">
+        探针 {run.compare?.probePoints ?? 0} 点 · 一致率按材料标签逐一比对 ·
         总耗时 ViennaPS {run.compare?.engines.viennaps?.processWallMs?.toFixed(0)} ms ·
         SPX {run.compare?.engines.spx?.processWallMs?.toFixed(0)} ms ·
         完全对齐 {run.compare?.summary.fullyAlignedSteps}/{run.compare?.summary.stepCount} 步 ·

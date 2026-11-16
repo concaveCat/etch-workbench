@@ -1,7 +1,8 @@
 # 引擎抽象与双引擎对比（Phase A：M0 / M1 / M1.5）
 
-> 状态：M0 + M1 + M1.5 已落地——协议、调度器、两个适配器、公共探针格、截面指标、
-> 对比 API、三页前端、测试。本文只描述已经能跑的东西，以及明确**还没做**的东西（M2/M3）。
+> 状态：M0 + M1 + M1.5 + M2 已落地——协议、调度器、两个适配器、公共探针格、截面指标、
+> 各向异性、CMP 判定、成本守卫、checkpoint、对比 API、三页前端、测试。
+> 本文只描述已经能跑的东西，以及明确**还没做**的东西（M3：掩膜/GDS、vtk.js 视图）。
 
 ## 1. 目标与边界
 
@@ -12,8 +13,8 @@
 |---|---|---|---|
 | 初始结构（平面 + 薄膜栈） | `MakePlane` | `substrate` + `depo_isotropic` | exact |
 | 各向同性刻蚀/沉积 | `IsotropicProcess` + `setMaterialRate` | `etch_isotropic` / `depo_isotropic` | exact |
-| 各向异性刻蚀/沉积 | `DirectionalProcess`（未接） | `etch_anisotropic` / `depo_anisotropic` | 已声明，未接线 |
-| 平坦化 | geometric planarize（未接） | `etch_cmp` | approximate，未接线 |
+| 各向异性刻蚀/沉积 | `DirectionalProcess` | `etch_anisotropic`（Angle）/ `depo_anisotropic` | approximate |
+| 平坦化 | `Planarize(height)` | `etch_cmp`（offset 语义未映射） | **no_counterpart** |
 
 明确**不做**：等离子体/射线追踪模型（sf6o2、singleParticle…）、ALD、oxidation、
 neutralTransport。它们在 SPX 侧没有对应方程；调度器把这类步骤标成
@@ -167,6 +168,67 @@ SPX 能导出结构，但都不好用：`meas_save_3D` 的 `Format` 实测只能
 `CameraViewAngle` 等渲染设置，**没有** azimuth/elevation/position；`meas_screenshot(View=…)`
 也不接受快照名。所以自由相机只能走上面这条 `free` + 两个 quantity 的路。
 
+## 5.3 各向异性与 CMP（M2）
+
+**各向异性**：两边都支持，但模型不同，所以等级是 `approximate`。
+
+| | 映射 |
+|---|---|
+| ViennaPS | `StepIR.anisotropy` 把每个速率拆成 `(directional, isotropic) = (r·a, r·(1−a))`，喂给 `DirectionalProcess(direction, {material: (dir, iso)}, 0, 0)` |
+| SPX | `etch_anisotropic(MaterialDependent=…, Angle=(90·a, deg), Time=…)`；`depo_anisotropic` 只有 `MaterialFilter`+`Rate`+`Time`，没有角度/指数 |
+
+实测（`engines/examples/m2-aniso-cmp.json`，a=0.8）：逐点一致率 100%，
+截面 Si 6e-6 µm。
+
+**CMP：判定为 `no_counterpart`，不是"差不多"。** 实测 SPX 的 `etch_cmp`：
+
+| 调用 | 结果 |
+|---|---|
+| `EtchstopMaterialsFilter=Oxide, Offset=0` | 0.1 µm 氧化层被**整层去掉**（顶部落到 z=0） |
+| 同上 `Offset=-0.03` | 结果不符合"相对停止面"的直觉 |
+| `EtchstopMaterialsFilter=[[]], Offset=0.02` | **无变化**（0.05 仍是 0.05） |
+
+也就是说 SPX 的 offset 不是"绝对高度"，也不是"从顶面往下磨多少"。
+没搞清之前不假装可比：SPX 适配器对该步显式返回
+`unsupported`（"SPX etch_cmp offset semantics are not mapped to an absolute cutoff"），
+`comparability.json` 里 `planarize/cmp` 记 `no_counterpart`。ViennaPS 侧
+`Planarize(domain, cutoff)` 正常执行。
+
+## 5.4 成本估算与域守卫（M2）
+
+`engines/limits.py` 对每个步骤给两个数（纯计算，不碰几何）：
+
+```
+activePoints = (width/Δx)·(depth/Δx)
+ratio        = max|rate|·duration / Δx        # 位移折合格点数
+```
+
+每个引擎在 `registry.py` 里声明 `limits`（viennaps：5e6 点 / 200Δx；spx：1e7 / 2000Δx）。
+超限的引擎对该步报 `out_of_domain`，**并且不再推进**：后续步骤一律
+`out_of_domain`（"skipped: an earlier step … left this engine's domain"），
+绝不在"少执行了一步"的几何上继续出帧。
+
+实测（`engines/examples/m2-out-of-domain.json`，5.0 µm 位移 = 2500Δx）：
+
+```
+s1_deep   viennaps: out_of_domain  "displacement 5.0 um is 2500.0 grid cells, above the viennaps limit 200.0"
+          spx:      out_of_domain  "… above the spx limit 2000.0"
+s2_after  viennaps: out_of_domain  "skipped: an earlier step (s1_deep) left this engine's domain"
+```
+
+`compare.json` 的每一步都带 `estimate`（`activePoints` / `displacementUm` / `ratio`），
+UI 与后续成本模型直接读它。
+
+## 5.5 checkpoint / restore（M2）
+
+- ViennaPS：每步写 `out/state/<step>.vpsd`（`ps.Writer`），`StepOutcome.checkpoint`
+  记录相对路径；`JobSpec.restore` 指定一个 checkpoint 时，引擎先建同样的 domain，
+  再用 `ps.Reader` 载入并跳过初始结构构建。
+- 实测：从 `s1_aniso.vpsd` 恢复后 SiO₂ 顶高 0.05 µm（与原始 aniso 步一致），
+  再执行 CMP 得到 0.02 µm。
+- SPX：没有 checkpoint（route 状态不可序列化到我们的格式），保持不声明该能力。
+  跨引擎热换仍是一个"要重新播放几何"的问题，不在本轮范围。
+
 ## 6. 怎么跑
 
 ```bash
@@ -198,10 +260,13 @@ connect 会永久挂住）。
 | 三页前端可用（几何 / 流程图 / 左右对比 + 时间轴 + 表） | ✅ |
 | **M1 公共探针格 3000 点：两步一致率 100%、Si/SiO2 IoU 1.0** | ✅ |
 | **M1.5 截面 33 列：Si 4e-6 µm、SiO₂ 8.3e-5 µm 平均界面偏差** | ✅ |
+| **M2 各向异性（a=0.8）：逐点一致率 100%，截面 6e-6 µm** | ✅ |
+| M2 域守卫：2500Δx 位移 → 两引擎 `out_of_domain`，后续步骤不再推进 | ✅ |
+| M2 checkpoint/restore：从 `s1_aniso.vpsd` 恢复后顶高 0.05 µm，再 CMP 到 0.02 µm | ✅ |
 | M1.5 视角预设：SPX `View=iso/xz/...`，左侧同方位投影 | ✅ |
 | M1 每材料顶高两边完全一致（刻蚀前 SiO2 0.0809 µm，刻蚀后 0.0397 µm，格点分辨率内） | ✅ |
 | `tests/test_engines.py`（协议/调度/对齐/幂等 11 项） | ✅ |
-| `tests/test_engine_probe.py`（格点/占用指标/截面指标/材料归一化 18 项） | ✅ |
+| `tests/test_engine_probe.py`（格点/占用/截面/相机/守卫/归一化 28 项） | ✅ |
 | `tests/test_compare_api.py`（4 项，含 422/404/路径穿越） | ✅ |
 | 前端 `npm run typecheck` / build | ✅ |
 
@@ -218,11 +283,12 @@ connect 会永久挂住）。
 
 ## 9. 下一步
 
-- **M1 / M1.5 已完成**：公共探针格（一致率 / IoU / 顶高）、截面接口高度
-  （mean/max/L2）、视角预设。
+- **M1 / M1.5 / M2 已完成**：公共探针格、截面接口高度、视角预设（含自由相机）、
+  各向异性、CMP 判定、成本守卫、checkpoint/restore。
 - **仍缺**：3D 界面单向 Hausdorff / 轮廓 L2 需要结构导出；`native`/`tdr` 是 HDF5，
   要么给引擎层引入 HDF5 读取依赖，要么等 SPX 提供可解析的非 HDF5 导出。在那之前
   只报截面（z 方向）偏差，不编 3D 距离。
 - **M2**：各向异性 / CMP / 掩膜接线；`checkpoint()/restore()` 热换引擎；
   成本模型 `estimate()` 与越界守卫（`out_of_domain`，不静默回退）。
-- **M3**：mesh 侧换回 vtk.js（现在用 canvas 正交投影），raster 侧接入同一相机参数。
+- **M3**：掩膜 / GDS mask 接线（两侧都还没有）；mesh 侧换回 vtk.js（现在用 canvas
+  正交投影）；SPX `etch_cmp` 语义摸清后可把 CMP 从 `no_counterpart` 升回 `approximate`。

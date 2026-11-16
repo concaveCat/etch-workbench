@@ -23,9 +23,9 @@ const GRADES: Record<string, Comparability> = {
   initial: 'exact',
   'etch/isotropic': 'exact',
   'deposit/isotropic': 'exact',
-  'etch/anisotropic': 'exact',
-  'deposit/anisotropic': 'exact',
-  'planarize/cmp': 'approximate',
+  'etch/anisotropic': 'approximate',
+  'deposit/anisotropic': 'approximate',
+  'planarize/cmp': 'no_counterpart',
 };
 
 const SPIKE_LAYOUT = { path: '/root/SPX/spx/V-2024.03/linux64/examples/Logic1_Layout.oasis', window: [0.035, 0.0, 0.175, 0.288] };

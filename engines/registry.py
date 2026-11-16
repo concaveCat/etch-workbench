@@ -28,6 +28,7 @@ class EngineRegistration:
     frame_kinds: tuple[str, ...]
     env: dict[str, str] = field(default_factory=dict)
     rationale: str = ""
+    limits: dict[str, float] = field(default_factory=dict)
 
     def launch(self, job_path: Path, out_dir: Path) -> list[str]:
         return [*self.command, str(job_path), str(out_dir)]
@@ -57,6 +58,7 @@ def registrations() -> dict[str, EngineRegistration]:
             mechanisms=("initial", "isotropic"),
             frame_kinds=("mesh",),
             rationale="level-set reference; full-grid solve, seconds per step",
+            limits={"max_active_points": 5.0e6, "max_ratio": 200.0},
         ),
         "spx": EngineRegistration(
             engine_id="spx", label="Sentaurus Process Explorer (fast)",
@@ -66,6 +68,7 @@ def registrations() -> dict[str, EngineRegistration]:
             frame_kinds=("raster",),
             env=spx_env(),
             rationale="geometric/empirical emulation; one session licence (spx_all) per run",
+            limits={"max_active_points": 1.0e7, "max_ratio": 2000.0},
         ),
     }
 

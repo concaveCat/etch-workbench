@@ -29,6 +29,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from engines import limits as engine_limits  # noqa: E402
 from engines.protocol import Frame, JobSpec, StepIR, StepOutcome, write_json  # noqa: E402
 
 MATERIAL_COLORS = {
@@ -74,6 +75,16 @@ class ViennapsSession:
              ps.BoundaryType.INFINITE_BOUNDARY],
             d.grid_delta,
         )
+        if self.job.restore:
+            # Resume from a native checkpoint written by checkpoint(): the domain
+            # geometry (bounds, delta) must match the one the state was written
+            # with, which is why the bounds are rebuilt first.
+            ps.Reader(self.domain, str(self.job.restore)).apply()
+            for name in [self.job.initial.substrate,
+                         *[film.material for film in self.job.initial.films]]:
+                self._register(name)
+                self.stack.append(name)
+            return
         initial = self.job.initial
         if initial.kind != "plane":
             raise NotImplementedError(
@@ -97,17 +108,44 @@ class ViennapsSession:
         material = material_handle(self.ps, name)
         self.materials[int(material)] = name
 
+    def checkpoint(self, step_id: str) -> str | None:
+        """Write the native level-set state; ``None`` when the binding has no writer."""
+        target = self.out / "state" / f"{step_id}.vpsd"
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            self.ps.Writer(self.domain, str(target)).apply()
+            return str(target.relative_to(self.out))
+        except Exception:  # noqa: BLE001 - a missing writer is not a failed step
+            return None
+
     def apply(self, step: StepIR) -> StepOutcome:
         ps = self.ps
         started = time.perf_counter()
         try:
-            if step.mechanism not in ("isotropic",):
+            if step.mechanism == "isotropic" and step.kind in ("etch", "deposit"):
+                model = ps.IsotropicProcess(rate=0.0, maskMaterials=[])
+                for material, rate in step.rates.items():
+                    model.setMaterialRate(_material_handle(ps, material), float(rate))
+                ps.Process(self.domain, model, float(step.duration)).apply()
+            elif step.mechanism == "anisotropic" and step.kind in ("etch", "deposit"):
+                # StepIR.anisotropy splits each rate into a directional and an
+                # isotropic part; 1.0 is a perfectly directional process.
+                split = min(max(float(step.anisotropy), 0.0), 1.0)
+                rates = {_material_handle(ps, material):
+                         (float(rate) * split, float(rate) * (1.0 - split))
+                         for material, rate in step.rates.items()}
+                if not rates:
+                    raise NotImplementedError("anisotropic step has no rates")
+                direction = [float(v) for v in (step.parameters.get("direction")
+                                                or [0.0, 0.0, 1.0])]
+                model = ps.DirectionalProcess(direction, rates, 0.0, 0.0)
+                ps.Process(self.domain, model, float(step.duration)).apply()
+            elif step.mechanism == "cmp":
+                cutoff = float(step.parameters.get("cutoff"))
+                ps.Planarize(self.domain, cutoff).apply()
+            else:
                 raise NotImplementedError(
                     f"{step.kind}/{step.mechanism} has no ViennaPS lowering yet")
-            model = ps.IsotropicProcess(rate=0.0, maskMaterials=[])
-            for material, rate in step.rates.items():
-                model.setMaterialRate(_material_handle(ps, material), float(rate))
-            ps.Process(self.domain, model, float(step.duration)).apply()
         except NotImplementedError as exc:
             return StepOutcome(step_id=step.step_id, status="unsupported",
                                wall_ms=(time.perf_counter() - started) * 1000.0,
@@ -255,9 +293,26 @@ def run_job(job: JobSpec, out_dir: Path) -> dict[str, Any]:
     session = ViennapsSession(job, out_dir)
     session.open()
     probe_points = list(job.probe.points) if job.probe is not None else []
+    blocked: str | None = None
     section_spec = job.section
     outcomes: list[StepOutcome] = []
     for index, step in enumerate(job.steps):
+        if blocked is not None:
+            outcomes.append(StepOutcome(step_id=step.step_id, status="out_of_domain",
+                                        wall_ms=0.0,
+                                        reason=f"skipped: an earlier step ({blocked}) left "
+                                               f"this engine's domain"))
+            continue
+        if index != 0:
+            reason, estimate = engine_limits.check("viennaps", job, step)
+            if reason is not None:
+                blocked = step.step_id
+                outcomes.append(StepOutcome(step_id=step.step_id, status="out_of_domain",
+                                            wall_ms=0.0, metrics={"estimate": estimate},
+                                            reason=reason))
+                print(json.dumps({"event": "step_out_of_domain", "stepId": step.step_id}),
+                      flush=True)
+                continue
         if index == 0:
             out = StepOutcome(step_id=step.step_id, status="ok", wall_ms=0.0)
         else:
@@ -274,7 +329,7 @@ def run_job(job: JobSpec, out_dir: Path) -> dict[str, Any]:
             section = session.section(section_spec) if section_spec is not None else None
             out = StepOutcome(step_id=step.step_id, status=out.status,
                               wall_ms=out.wall_ms,
-                              frame=frame, checkpoint=None,
+                              frame=frame, checkpoint=session.checkpoint(step.step_id),
                               metrics={"frame_ms": (time.perf_counter() - started) * 1000.0,
                                        "probe_ms": (time.perf_counter() - probe_started) * 1000.0,
                                        "probe_points": len(probe_points)},

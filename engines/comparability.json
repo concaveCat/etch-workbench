@@ -1,39 +1,38 @@
 {
-  "schemaVersion": 1,
-  "comment": "Comparability of a StepIR mechanism for an engine pair. Grades: exact = pointwise comparable, approximate = same quantity, different physical model, no_counterpart = one side has no equivalent mechanism. Editing this file is the only place a grade may change.",
+  "schemaVersion": 2,
+  "comment": "Grade of a StepIR (key: 'kind/mechanism', 'initial' for the first step) for an engine pair. exact = pointwise comparable, approximate = same quantity but a different model, no_counterpart = one side has no equivalent. This file is the only place a grade may change.",
   "pairs": {
     "viennaps|spx": {
       "initial": "exact",
-      "isotropic_etch": "exact",
-      "isotropic_deposit": "exact",
-      "anisotropic_etch": "exact",
-      "anisotropic_deposit": "exact",
-      "cmp": "approximate",
-      "gds_mask": "exact",
-      "crystal_etch": "approximate",
-      "epi": "approximate"
+      "etch/isotropic": "exact",
+      "deposit/isotropic": "exact",
+      "etch/anisotropic": "approximate",
+      "deposit/anisotropic": "approximate",
+      "planarize/cmp": "no_counterpart",
+      "mask/gds_mask": "no_counterpart",
+      "etch/wet": "approximate",
+      "deposit/epi": "approximate"
     },
-    "mine|spx": {
+    "viennaps|mine": {
       "initial": "exact",
-      "isotropic_etch": "exact",
-      "isotropic_deposit": "exact",
-      "anisotropic_etch": "exact",
-      "anisotropic_deposit": "exact",
-      "cmp": "approximate",
-      "gds_mask": "exact",
-      "crystal_etch": "approximate",
-      "epi": "approximate"
+      "etch/isotropic": "exact",
+      "deposit/isotropic": "exact",
+      "etch/anisotropic": "exact",
+      "deposit/anisotropic": "exact",
+      "planarize/cmp": "exact"
     },
-    "mine|viennaps": {
+    "spx|mine": {
       "initial": "exact",
-      "isotropic_etch": "exact",
-      "isotropic_deposit": "exact",
-      "anisotropic_etch": "exact",
-      "anisotropic_deposit": "exact",
-      "cmp": "approximate",
-      "gds_mask": "exact",
-      "crystal_etch": "approximate",
-      "epi": "approximate"
+      "etch/isotropic": "exact",
+      "deposit/isotropic": "exact",
+      "etch/anisotropic": "approximate",
+      "deposit/anisotropic": "approximate",
+      "planarize/cmp": "no_counterpart"
     }
+  },
+  "notes": {
+    "etch/anisotropic": "ViennaPS splits the rate into directional+isotropic parts; SPX takes a sidewall Angle. Geometric, not physical.",
+    "deposit/anisotropic": "SPX depo_anisotropic has no exponent/angle and takes one material filter per call.",
+    "planarize/cmp": "SPX etch_cmp removes to a stop-material boundary, not to an absolute height; measured stop=Oxide/Offset=0 removed a whole 0.1 um oxide layer. ViennaPS Planarize(height) has no mapped equivalent yet."
   }
 }

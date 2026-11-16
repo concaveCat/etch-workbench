@@ -201,6 +201,9 @@ class JobSpec:
     render: RenderSpec = field(default_factory=RenderSpec)
     probe: ProbeSpec | None = None
     section: SectionSpec | None = None
+    # Absolute path of an engine-native checkpoint to resume from. Only engines
+    # that declare a reader may honour it; the others must report ``unsupported``.
+    restore: str | None = None
     schema_version: int = SCHEMA_VERSION
 
     def validate(self) -> None:
@@ -264,6 +267,7 @@ class JobSpec:
                       z_min=float(payload["section"]["z_min"]),
                       z_max=float(payload["section"]["z_max"]))
                       if payload.get("section") else None),
+                  restore=(str(payload["restore"]) if payload.get("restore") else None),
                   schema_version=int(payload.get("schema_version", SCHEMA_VERSION)))
         job.validate()
         return job

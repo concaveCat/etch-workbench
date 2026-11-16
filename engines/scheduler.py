@@ -21,6 +21,8 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
+from engines.comparability import grade as comparability_grade
+from engines.limits import estimate as step_estimate
 from engines.metrics import describe as describe_geometry
 from engines.probe import build_lattice, occupancy_metrics
 from engines.section import section_metrics
@@ -140,7 +142,9 @@ def compare(job: JobSpec, engine_ids: list[str], out_root: Path,
         row: dict[str, Any] = {
             "stepId": step.step_id, "kind": step.kind, "mechanism": step.mechanism,
             "duration": step.duration, "rates": step.rates,
-            "comparability": step.comparability, "engines": {},
+            "comparability": comparability_grade(engine_ids, step),
+            "declaredComparability": step.comparability,
+            "estimate": step_estimate(job, step), "engines": {},
         }
         for engine_id in engine_ids:
             outcome = per_engine[engine_id].get(step.step_id)

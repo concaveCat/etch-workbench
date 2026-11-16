@@ -10,7 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from engines import camera, normalize, probe, section  # noqa: E402
+from engines import camera, limits, normalize, probe, section  # noqa: E402
 
 
 class LatticeTests(unittest.TestCase):
@@ -160,6 +160,61 @@ class OrbitCameraTests(unittest.TestCase):
         free = camera.orbit_to_free(self.CENTRE, 0.35, camera.OrbitCamera(0, 0, 0.0))
         distance = sum((free.position[i] - free.focal[i]) ** 2 for i in range(3)) ** 0.5
         self.assertAlmostEqual(distance, 1.4, places=6)
+
+
+def _job(**overrides):
+    payload = {
+        "case_id": "limits", "engine": "viennaps",
+        "domain": {"width": 0.14, "depth": 0.288, "height": 0.4, "grid_delta": 0.002},
+        "initial": {"kind": "plane", "substrate": "Si", "substrate_thickness": 0.3,
+                    "films": [{"material": "SiO2", "thickness": 0.1}]},
+        "steps": [
+            {"step_id": "s0", "kind": "initial", "mechanism": "initial"},
+            {"step_id": "s1", "kind": "etch", "mechanism": "isotropic", "duration": 0.05,
+             "rates": {"SiO2": -1.0}},
+        ],
+    }
+    payload.update(overrides)
+    from engines.protocol import JobSpec
+    return JobSpec.from_json(payload)
+
+
+class LimitTests(unittest.TestCase):
+    def test_estimate_counts_active_points_and_displacement(self):
+        job = _job()
+        metrics = limits.estimate(job, job.steps[1])
+        self.assertEqual(metrics["activePoints"], int((0.14 / 0.002) * (0.288 / 0.002)))
+        self.assertAlmostEqual(metrics["displacementUm"], 0.05, places=6)
+        self.assertAlmostEqual(metrics["ratio"], 25.0, places=3)
+
+    def test_inside_domain_has_no_reason(self):
+        job = _job()
+        reason, metrics = limits.check("spx", job, job.steps[1])
+        self.assertIsNone(reason)
+        self.assertEqual(metrics["ratio"], 25.0)
+
+    def test_ratio_limit_is_reported_with_the_numbers(self):
+        job = _job(steps=[
+            {"step_id": "s0", "kind": "initial", "mechanism": "initial"},
+            {"step_id": "s1", "kind": "etch", "mechanism": "isotropic", "duration": 5.0,
+             "rates": {"SiO2": -1.0}},
+        ])
+        reason, metrics = limits.check("viennaps", job, job.steps[1])
+        self.assertIsNotNone(reason)
+        self.assertIn("2500.0", reason)
+        self.assertEqual(metrics["ratio"], 2500.0)
+
+    def test_active_point_limit_can_be_overridden(self):
+        job = _job()
+        reason, _ = limits.check("viennaps", job, job.steps[1],
+                                  limits={"max_active_points": 10.0})
+        self.assertIsNotNone(reason)
+        self.assertIn("active points", reason)
+
+    def test_unknown_engine_uses_no_default_limits(self):
+        job = _job()
+        reason, _ = limits.check("someone-else", job, job.steps[1])
+        self.assertIsNone(reason)
 
 
 class NormalizeTests(unittest.TestCase):

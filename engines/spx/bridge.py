@@ -37,6 +37,10 @@ from typing import Any
 # root is not on sys.path. Add it explicitly to import ``engines.protocol``.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from engines import limits as engine_limits  # noqa: E402
+from engines.camera import OrbitCamera, orbit_to_free  # noqa: E402
+from engines.normalize import canonical  # noqa: E402
+
 # Material names used by the SPX step templates differ from the workbench
 # catalogue. The table below is the single place that maps them; it is mirrored
 # in engines/normalize.json so the ViennaPS side and the comparability report use
@@ -117,6 +121,12 @@ class SpxSession:
         # per deposited film. Frames/probes for that job step must use the last
         # of those, otherwise the oxide is missing from the "initial" picture.
         self.initial_location: str | None = None
+        # step_id -> reason for steps this adapter cannot lower. Building stops at
+        # the first one: later frames would silently describe a different structure.
+        self.unsupported: dict[str, str] = {}
+        self.out_of_domain: dict[str, tuple[str, dict[str, Any]]] = {}
+        self.blocked_after: str | None = None
+        self.blocked_kind = "unsupported"
 
     # -- materials ---------------------------------------------------------
     def _ensure_material(self, name: str) -> str:
@@ -189,8 +199,27 @@ class SpxSession:
                               MaterialFilter=_material_filter(spx_name),
                               Rate=_rate(1.0),
                               Time=_minutes(float(film["thickness"])))
-        for step in job["steps"][1:]:
-            self._apply(step)
+        from engines.protocol import JobSpec, StepIR
+
+        spec = JobSpec.from_json(job)
+        for step, ir in zip(job["steps"][1:], spec.steps[1:]):
+            if self.blocked_after is not None:
+                self.unsupported[step["step_id"]] = (
+                    f"skipped: an earlier step ({self.blocked_after}) is "
+                    f"{self.blocked_kind}")
+                continue
+            reason, estimate = engine_limits.check("spx", spec, ir)
+            if reason is not None:
+                self.out_of_domain[step["step_id"]] = (reason, estimate)
+                self.blocked_after = step["step_id"]
+                self.blocked_kind = "out_of_domain"
+                continue
+            try:
+                self._apply(step)
+            except NotImplementedError as exc:
+                self.unsupported[step["step_id"]] = str(exc)
+                self.blocked_after = step["step_id"]
+                self.blocked_kind = "unsupported"
 
     def _apply(self, step: dict[str, Any]) -> None:
         sp = self.sp
@@ -204,14 +233,20 @@ class SpxSession:
             for material, rate in rates.items():
                 spx_name = self._ensure_material(material)
                 dependent.append((_material_filter(spx_name), _rate(abs(rate))))
+            split = min(max(float(step.get("anisotropy", 1.0)), 0.0), 1.0)
             if kind == "etch":
                 if mechanism == "isotropic":
                     sp.etch_isotropic(Location=self._loc(step["step_id"]),
                                       MaterialDependent=dependent,
                                       Time=_minutes(step["duration"]))
                 else:
+                    # SPX takes a sidewall angle: 90 deg is vertical (anisotropy 1),
+                    # smaller angles widen the profile. The mapping is geometric,
+                    # not physical -- comparability is 'approximate'.
+                    angle = min(max(90.0 * split, 1.0), 90.0)
                     sp.etch_anisotropic(Location=self._loc(step["step_id"]),
                                         MaterialDependent=dependent,
+                                        Angle=(float(angle), qupy_unit("deg")),
                                         Time=_minutes(step["duration"]))
             elif kind == "deposit":
                 # SPX depo takes one material filter per call, so a multi-rate
@@ -236,13 +271,15 @@ class SpxSession:
             else:
                 raise NotImplementedError(f"{kind}/{mechanism} is not a rate step")
         elif mechanism == "cmp":
-            params = step.get("parameters") or {}
-            stop = params.get("stop_material")
-            sp.etch_cmp(Location=self._loc(step["step_id"]),
-                        EtchstopMaterialsFilter=_material_filter(
-                            self._ensure_material(stop)) if stop else [[]],
-                        MaterialFilter=[[]],
-                        Offset=_um(float(params.get("offset", 0.0))))
+            # Measured (docs/engine-abstraction.md §5.3): SPX ``etch_cmp`` does not
+            # cut at an absolute height. With stop=Oxide and Offset=0 it removed a
+            # whole 0.1 um oxide layer, so the stop is not "the exposed top" and a
+            # negative offset appeared to add material. Until that model is mapped
+            # correctly, CMP stays a ViennaPS-only step instead of a silent
+            # mismatch.
+            raise NotImplementedError(
+                "SPX etch_cmp offset semantics are not mapped to an absolute cutoff; "
+                "run this step on viennaps or mark it no_counterpart")
         else:
             raise NotImplementedError(f"mechanism {mechanism!r} has no SPX lowering")
 
@@ -263,7 +300,6 @@ class SpxSession:
                                       GroupBy="region")
                 raw = out.get("Output")
                 name = raw[1] if isinstance(raw, tuple) and len(raw) > 1 else raw
-                from engines.normalize import canonical
                 labels.append(canonical(name, "spx"))
             except Exception:  # a point outside the structure is void, not a crash
                 labels.append("void")
@@ -413,6 +449,27 @@ def run_job(job: dict[str, Any], out_dir: Path) -> dict[str, Any]:
     print(json.dumps({"event": "run_started", **run_stats}), flush=True)
     for index, step in enumerate(job_spec.steps):
         started = time.perf_counter()
+        if step.step_id in session.out_of_domain:
+            reason, estimate = session.out_of_domain[step.step_id]
+            outcomes.append({
+                "step_id": step.step_id, "status": "out_of_domain",
+                "wall_ms": 0.0, "frame": None, "checkpoint": None,
+                "metrics": {"estimate": estimate}, "reason": reason,
+                "probe": None, "section": None,
+            })
+            print(json.dumps({"event": "step_out_of_domain", "stepId": step.step_id}),
+                  flush=True)
+            continue
+        if step.step_id in session.unsupported:
+            outcomes.append({
+                "step_id": step.step_id, "status": "unsupported",
+                "wall_ms": 0.0, "frame": None, "checkpoint": None,
+                "metrics": {}, "reason": session.unsupported[step.step_id],
+                "probe": None, "section": None,
+            })
+            print(json.dumps({"event": "step_unsupported", "stepId": step.step_id}),
+                  flush=True)
+            continue
         try:
             location = session.step_location(step.step_id, initial=index == 0)
             payload = session.frame(step.step_id, location)

@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "case_id": "memory1-plug-patterning",
+  "engine": "viennaps",
+  "domain": {
+    "width": 0.624,
+    "depth": 0.74,
+    "height": 0.6,
+    "grid_delta": 0.005,
+    "dimensions": 3,
+    "origin_xy": [
+      0.0,
+      0.0
+    ]
+  },
+  "initial": {
+    "kind": "plane",
+    "substrate": "Si",
+    "substrate_thickness": 0.3,
+    "films": []
+  },
+  "steps": [
+    {
+      "step_id": "s0_substrate",
+      "kind": "initial",
+      "mechanism": "initial",
+      "duration": 0.0
+    },
+    {
+      "step_id": "s1_buffer_oxide2_50",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "parameters": {
+        "material": "Oxide2",
+        "offset": 0.05
+      }
+    },
+    {
+      "step_id": "s2_on_nitride_35",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "parameters": {
+        "material": "Si3N4",
+        "offset": 0.035
+      }
+    },
+    {
+      "step_id": "s3_on_oxide_28",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "parameters": {
+        "material": "SiO2",
+        "offset": 0.028
+      }
+    },
+    {
+      "step_id": "s4_on_top_oxide_50",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "parameters": {
+        "material": "SiO2",
+        "offset": 0.05
+      }
+    },
+    {
+      "step_id": "s5_plug_sioc_100",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "parameters": {
+        "material": "SiOC",
+        "offset": 0.1
+      }
+    },
+    {
+      "step_id": "s6_plug_barc_50",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "parameters": {
+        "material": "BARC",
+        "offset": 0.05
+      }
+    },
+    {
+      "step_id": "s7_plug_mask",
+      "kind": "mask",
+      "mechanism": "litho",
+      "duration": 0.0,
+      "parameters": {
+        "layer": 11,
+        "layer_name": "PLG",
+        "thickness": 0.05,
+        "polarity": "negative",
+        "material": "PMMA"
+      }
+    },
+    {
+      "step_id": "s8_etch_barc_sioc",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 0.16,
+      "rates": {
+        "BARC": -1.0,
+        "SiOC": -1.0
+      },
+      "anisotropy": 1.0
+    },
+    {
+      "step_id": "s9_strip_resist",
+      "kind": "strip",
+      "mechanism": "strip",
+      "duration": 0.0,
+      "parameters": {
+        "materials": [
+          "PMMA",
+          "BARC"
+        ]
+      }
+    }
+  ],
+  "render": {
+    "width": 700,
+    "height": 560,
+    "view": "iso",
+    "camera": {
+      "azimuth": 45,
+      "elevation": 30,
+      "zoom": 1
+    }
+  },
+  "layout": {
+    "path": "/tmp/mem1_nm.gds"
+  }
+}

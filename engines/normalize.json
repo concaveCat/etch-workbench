@@ -66,6 +66,30 @@
     "Dielectric": {
       "spx": "Oxide",
       "color": "#00e5ff"
+    },
+    "Oxide2": {
+      "spx": "Oxide2",
+      "color": "#26c6da"
+    },
+    "SiOC": {
+      "spx": "SiOC",
+      "color": "#8d6e63"
+    },
+    "BARC": {
+      "spx": "BARC",
+      "color": "#e6e672"
+    },
+    "CESL": {
+      "spx": "CESL",
+      "color": "#55aaff"
+    },
+    "SiON": {
+      "spx": "SiON",
+      "color": "#4dd0e1"
+    },
+    "TaN": {
+      "spx": "TaN",
+      "color": "#b0bec5"
     }
   },
   "layouts": {

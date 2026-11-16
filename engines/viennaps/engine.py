@@ -52,6 +52,9 @@ class ViennapsSession:
         self.ps = ps
         self.job = job
         self.out = out_dir
+        from engines.materials import ensure_registered
+
+        ensure_registered(ps)
         ps.setDimension(job.domain.dimensions)
         ps.Length.setUnit("um")
         ps.Time.setUnit("min")
@@ -64,6 +67,9 @@ class ViennapsSession:
         self._columns: dict[tuple[int, int], dict[str, float]] | None = None
         self.column = max(float(job.domain.grid_delta) * 2.0, 1e-4)
         self._geometry = None
+        # polygons opened by the last litho step; a masked directional etch cuts
+        # through exactly these openings
+        self._openings: list[list[tuple[float, float]]] = []
 
     def open(self) -> None:
         ps = self.ps
@@ -155,8 +161,26 @@ class ViennapsSession:
                     rates[_material_handle(ps, name)] = (float(vertical), float(lateral))
                 if not rates:
                     raise NotImplementedError("ellipsoidal step lists no rates")
-                model = ps.DirectionalProcess([0.0, 0.0, 1.0], rates, 0.0, 0.0)
-                ps.Process(self.domain, model, float(step.duration)).apply()
+                masks = [_material_handle(ps, name)
+                         for name in (step.parameters.get("mask") or [])]
+                if step.parameters.get("mask") and self._openings:
+                    # Native masked DirectionalProcess segfaults on a domain whose
+                    # top level set carries the litho openings, so the exposed area
+                    # is cut geometrically: through each opening, remove the top
+                    # ``v*duration`` of every material that has a vertical rate.
+                    self._etched_openings(step, rates, openings=self._openings)
+                elif masks:
+                    # A per-material rate map and a mask cannot be combined in one
+                    # native constructor, so each material is etched in its own
+                    # pass with the mask applied. Without the mask ViennaPS etches a
+                    # buried interface and the layer above simply follows it down
+                    # (measured: the resist thickened while the oxide thinned).
+                    for material, (vertical, lateral) in rates.items():
+                        model = ps.DirectionalProcess([0.0, 0.0, 1.0], vertical, lateral, masks)
+                        ps.Process(self.domain, model, float(step.duration)).apply()
+                else:
+                    model = ps.DirectionalProcess([0.0, 0.0, 1.0], rates, 0.0, 0.0)
+                    ps.Process(self.domain, model, float(step.duration)).apply()
             elif step.mechanism == "fill":
                 self._fill(step)
             elif step.mechanism == "litho":
@@ -236,74 +260,134 @@ class ViennapsSession:
     def _litho(self, step: StepIR) -> None:
         """Pattern (positive) or cut (negative) a material from a layout layer.
 
-        Measured limitation: the native ``GDSGeometry.layerToLevelSet(layer)``
-        returns a level set on the *layout's* frame, and combining it with the
-        simulation domain crashes the installed binding (segfault in
-        ``applyBooleanOperation``). So this path uses the same primitive the
-        workbench uses for its stack pattern -- ``GeometryFactory.makeBoxStencil``
-        per **axis-aligned rectangle** -- and reports how many non-rectangular
-        polygons were skipped instead of approximating them.
+        The mask body is built as a closed triangular prism per polygon and turned
+        into a level set with ``FromSurfaceMesh``. Two alternatives were measured
+        and rejected: ``GDSGeometry.layerToLevelSet`` returns a level set on the
+        layout frame and crashes the binding when combined with the simulation
+        domain, and ``GeometryFactory.makeBoxStencil`` only covers axis-aligned
+        rectangles (Memory1's PLG/PC/M1 layers are polygons).
         """
         ps = self.ps
         layer = int(step.parameters["layer"])
         polarity = str(step.parameters.get("polarity", "negative")).lower()
         thickness = float(step.parameters["thickness"])
-        # SPX's litho_patterning is a full litho step: it coats a fresh resist layer
-        # on top (measured 0.1 um on a 0.05 um resist stack) and then clears the
-        # openings. ``coat`` reproduces the coat so the two patterns are the same
-        # solid, not just the same outline.
         coat = float(step.parameters.get("coat", 0.1))
-        z_top = self._surface_top()
         material = str(step.parameters.get("material", "Mask"))
+        margin = float(self.job.domain.grid_delta)
+
+        z_base = self._surface_top()
+        z_top = z_base
         if polarity == "negative" and coat > 0:
             slab = ps.LevelSet(self.domain.getGrid())
-            margin = float(self.job.domain.grid_delta)
             ps.MakeGeometry(slab, ps.Box(
                 [-margin, -margin, z_top],
                 [float(self.job.domain.width) + margin,
                  float(self.job.domain.depth) + margin, z_top + coat])).apply()
-            self.domain.insertNextLevelSetAsMaterial(slab, _material_handle(ps, material))
-            self._register(material)
-            if material not in self.stack:
-                self.stack.append(material)
-            z_top += coat
-        z_center = z_top - (thickness + coat) / 2.0
-        margin = float(self.job.domain.grid_delta)
-        factory = ps.GeometryFactory(self.domain.getSetup(),
-                                     f"compare_litho_{step.step_id}")
-        cut = skipped = 0
-        for polygon in self._layer_polygons(layer):
-            rectangle = _as_rectangle(polygon)
-            if rectangle is None:
-                skipped += 1
-                continue
-            x0, y0, x1, y1 = rectangle
-            width, depth = (x1 - x0), (y1 - y0)
-            if width <= margin or depth <= margin:
-                skipped += 1
-                continue
-            if polarity == "positive":
-                box = ps.LevelSet(self.domain.getGrid())
-                ps.MakeGeometry(box, ps.Box([x0, y0, z_center - thickness / 2.0],
-                                            [x1, y1, z_center + thickness / 2.0])).apply()
-                self.domain.insertNextLevelSetAsMaterial(
-                    box, _material_handle(ps, str(step.parameters.get("material", "Mask"))))
+            if self.stack and self.stack[-1] == material:
+                # The coat is the same photoresist as the layer underneath, so it is
+                # unioned into the existing top level set. Inserting a second level
+                # set with the same material confused the stack: the following etch
+                # removed the whole film stack instead of only the exposed material.
+                self.domain.applyBooleanOperation(slab, ps.ls.BooleanOperationEnum.UNION, False)
             else:
-                stencil = factory.makeBoxStencil(
-                    [(x0 + x1) / 2.0, (y0 + y1) / 2.0, z_center],
-                    width, thickness + coat + 2 * margin, 0.0, depth)
-                self.domain.applyBooleanOperation(
-                    stencil, ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT, False)
-            cut += 1
-        if cut == 0:
-            raise NotImplementedError(
-                f"litho layer {layer} has no axis-aligned rectangle this adapter can "
-                f"place ({skipped} polygon(s) skipped)")
+                self.domain.insertNextLevelSetAsMaterial(slab, _material_handle(ps, material))
+                self._register(material)
+                if material not in self.stack:
+                    self.stack.append(material)
+            z_top += coat
+
+        # Measured: SPX's litho clears the openings through the *coat* only and
+        # leaves the pre-existing resist intact (inside 0.11..0.15 um, outside
+        # 0.11..0.25 with a 0.1 um coat). Cutting the whole stack made every
+        # following etch go through the oxide.
+        z0 = z_base if polarity == "negative" else z_top - thickness
+        z1 = z_top
+        polygons = [poly for poly in self._layer_polygons(layer) if len(poly) >= 3]
+        self._openings = polygons
+        if not polygons:
+            raise NotImplementedError(f"litho layer {layer} has no polygons")
+        mesh = ps.ls.Mesh()
+        node = lambda x, y, z: mesh.insertNextNode([float(x), float(y), float(z)])  # noqa: E731
+        for polygon in polygons:
+            ring = polygon[:-1] if len(polygon) > 3 and polygon[0] == polygon[-1] else polygon
+            if len(ring) < 3:
+                continue
+            top = [node(x, y, z1) for x, y in ring]
+            bottom = [node(x, y, z0) for x, y in ring]
+            for index in range(1, len(ring) - 1):
+                mesh.insertNextTriangle([top[0], top[index], top[index + 1]])
+                mesh.insertNextTriangle([bottom[0], bottom[index + 1], bottom[index]])
+            for index in range(len(ring)):
+                nxt = (index + 1) % len(ring)
+                mesh.insertNextTriangle([bottom[index], bottom[nxt], top[nxt]])
+                mesh.insertNextTriangle([bottom[index], top[nxt], top[index]])
+        body = ps.LevelSet(self.domain.getGrid())
+        reconstruction = ps.ls.FromSurfaceMesh(body, mesh)
+        reconstruction.setRemoveBoundaryTriangles(False)
+        reconstruction.apply()
+        if body.getNumberOfPoints() == 0:
+            raise NotImplementedError(f"litho layer {layer} produced an empty level set")
         if polarity == "positive":
-            material = str(step.parameters.get("material", "Mask"))
+            self.domain.insertNextLevelSetAsMaterial(body, _material_handle(ps, material))
             self._register(material)
             if material not in self.stack:
                 self.stack.append(material)
+        else:
+            self.domain.applyBooleanOperation(body, ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT,
+                                              False)
+        self._mesh = None
+        self._columns = None
+
+    def _etched_openings(self, step: StepIR, rates: dict[Any, tuple[float, float]],
+                         *, openings: list[list[tuple[float, float]]]) -> None:
+        """Cut ``|v| * duration`` of each material inside the litho openings."""
+        ps = self.ps
+        margin = float(self.job.domain.grid_delta)
+        columns = self._height_columns()
+        # per-material reference tops (planar stack: take the highest column top)
+        tops: dict[str, float] = {}
+        for bucket in columns.values():
+            for name, top in bucket.items():
+                tops[name] = max(tops.get(name, top), top)
+        duration = float(step.duration)
+        for material, (vertical, _lateral) in rates.items():
+            name = self.materials.get(int(material))
+            if name is None:
+                raise RuntimeError(f"ellipsoidal step names unknown material {material}")
+            depth = abs(float(vertical)) * duration
+            if depth <= 0:
+                continue
+            top = tops.get(name)
+            if top is None:
+                continue
+            mesh = ps.ls.Mesh()
+            def node(x, y, z):
+                return mesh.insertNextNode([float(x), float(y), float(z)])
+            for polygon in openings:
+                ring = polygon[:-1] if len(polygon) > 3 and polygon[0] == polygon[-1] else polygon
+                if len(ring) < 3:
+                    continue
+                z1 = top + margin
+                z0 = top - depth
+                top_nodes = [node(x, y, z1) for x, y in ring]
+                bottom_nodes = [node(x, y, z0) for x, y in ring]
+                for index in range(1, len(ring) - 1):
+                    mesh.insertNextTriangle([top_nodes[0], top_nodes[index], top_nodes[index + 1]])
+                    mesh.insertNextTriangle([bottom_nodes[0], bottom_nodes[index + 1], bottom_nodes[index]])
+                for index in range(len(ring)):
+                    nxt = (index + 1) % len(ring)
+                    mesh.insertNextTriangle([bottom_nodes[index], bottom_nodes[nxt], top_nodes[nxt]])
+                    mesh.insertNextTriangle([bottom_nodes[index], top_nodes[nxt], top_nodes[index]])
+            if len(mesh.getNodes()) == 0:
+                continue
+            cutter = ps.LevelSet(self.domain.getGrid())
+            reconstruction = ps.ls.FromSurfaceMesh(cutter, mesh)
+            reconstruction.setRemoveBoundaryTriangles(False)
+            reconstruction.apply()
+            if cutter.getNumberOfPoints() == 0:
+                continue
+            self.domain.applyBooleanOperation(cutter, ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT,
+                                              False)
         self._mesh = None
         self._columns = None
 

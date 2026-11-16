@@ -381,6 +381,48 @@ ViennaPS 6.1 s / SPX 28 s。
 `(filter, vertical_rate, lateral_rate)` **三个位置参数**，不是嵌套的两元组；
 写错时 SPX 报 `Cannot convert '(1.0, qup.Unit('um min^-1'))' to double`。
 
+## 5.10 Memory1 分步对拍（进行中）
+
+Memory1 的 88 步被拆成模块逐个搬进来，每步都跑双引擎逐点对拍。
+
+**已完成：前 7 步（Wafer Start → ON_Stack_Top → Plug_Patterning 的沉积）**
+
+`engines/examples/memory1-prefix.json`，7 步全部对齐，**逐步一致率 100%、截面偏差 2e-6 µm**：
+
+```
+substrate(Si 0.3) → depo_fill Oxide2 50nm → depo_fill Nitride 35nm
+→ depo_fill Oxide 28nm → depo_fill Oxide 50nm → depo_fill SiOC 100nm
+→ depo_fill BARC 50nm
+```
+
+为此新增 `engines/materials.py`：把 Memory1 用到但 4.7.0 没有的材料
+（`Oxide2 SiOC BARC CESL；SiON/TaN 本来就有`）注册成工作台材料（自定义 id 从 177 起），
+避免把多个 SPX 材料并到同一个工作台材料上导致层被合并。
+
+**已跑通但尚未对齐：Plug_Patterning 的掩膜与刻蚀**
+
+`engines/examples/memory1-plug.json`（同样的 7 步 + `litho PLG(层 11)` + `etch BARC/SiOC` + strip）：
+
+| 步 | 一致率 | 说明 |
+|---|---|---|
+| s7 `litho PLG` | 0.87 | 非矩形多边形已能生成（棱柱 → FromSurfaceMesh），差异在开口边缘 |
+| s8 `etch BARC/SiOC` | 0.20 | **暴露了表示层的硬限制**（见下） |
+| s9 strip | 0.33 | 继承上一步 |
+
+**硬限制**：ViennaPS 的多级水平集是"**层栈**"——材料 i 占据 LS_i 与 LS_{i−1} 之间的区域。
+刻蚀一个**被覆盖的**材料时，上面的材料会跟着界面一起下沉，而不是留下空腔；
+所以"图案化后刻蚀下层"这一步在层栈里没有真解。SPX 是 CSG/自由体模型，天然可以。
+
+现在已经有的两条绕过方案：
+
+1. `_etched_openings`（几何切法）：知道开口多边形时，直接在开口内切掉指定深度，
+   避开原生 masked `DirectionalProcess`（它在"顶层 LS 带洞"的域上会 segfault，已复现两例）。
+   在 `engines/examples/mask-etch.json` 上验证：litho 0.98 / 刻蚀 0.96 / strip 1.00。
+2. `PMMA` 命名与 0.1 µm 涂层（见 §5.9）——否则同一块胶在两边标签/厚度都不同。
+
+下一步（未做）：把所有"图案化后刻蚀"的步骤都改走 `_etched_openings` 的几何切法，
+并支持多材料/刻到掩膜底 的语义，然后把 Plug_Patterning 剩余步与后续模块逐个接上。
+
 ## 6. 怎么跑
 
 ```bash

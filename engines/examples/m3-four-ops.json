@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "case_id": "m3-four-ops",
+  "engine": "viennaps",
+  "domain": {
+    "width": 0.624,
+    "depth": 0.74,
+    "height": 0.4,
+    "grid_delta": 0.005,
+    "dimensions": 3,
+    "origin_xy": [
+      0.0,
+      0.0
+    ]
+  },
+  "initial": {
+    "kind": "plane",
+    "substrate": "Si",
+    "substrate_thickness": 0.3,
+    "films": [
+      {
+        "material": "SiO2",
+        "thickness": 0.1
+      }
+    ]
+  },
+  "steps": [
+    {
+      "step_id": "s0_init",
+      "kind": "initial",
+      "mechanism": "initial"
+    },
+    {
+      "step_id": "s1_resist",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "parameters": {
+        "material": "Mask",
+        "offset": 0.05
+      }
+    },
+    {
+      "step_id": "s2_litho",
+      "kind": "mask",
+      "mechanism": "litho",
+      "duration": 0.0,
+      "parameters": {
+        "layer": 15,
+        "thickness": 0.05,
+        "polarity": "negative",
+        "material": "Mask",
+        "layer_name": "M1"
+      }
+    },
+    {
+      "step_id": "s3_ellip",
+      "kind": "etch",
+      "mechanism": "ellipsoidal",
+      "duration": 0.05,
+      "parameters": {
+        "rates": {
+          "SiO2": [
+            1.0,
+            0.2
+          ]
+        }
+      }
+    },
+    {
+      "step_id": "s4_strip",
+      "kind": "strip",
+      "mechanism": "strip",
+      "duration": 0.0,
+      "parameters": {
+        "materials": [
+          "Mask"
+        ]
+      }
+    }
+  ],
+  "render": {
+    "width": 700,
+    "height": 560,
+    "view": "iso",
+    "camera": {
+      "azimuth": 45,
+      "elevation": 30,
+      "zoom": 1
+    }
+  },
+  "layout": {
+    "path": "/tmp/mem1_nm.gds"
+  }
+}

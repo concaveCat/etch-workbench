@@ -338,6 +338,37 @@ OASIS 单元 a，六层 9/11/15/17/19/21，extent 0×0 → 0.624×0.740 µm
 **没有真的开孔**。Memory1 里的顺序是 `depo_fill BARC/SiOC → litho → etch_aniso → strip`，
 极性/厚度契约得从能跑的模块里读，不能靠猜。
 
+## 5.9 四个"SPX 独有"能力已补齐（M3）
+
+上一版列的四个缺口现在两边都能跑，同一个 `StepIR` 序列、同一次对比运行：
+
+| StepIR | ViennaPS 侧实现 | SPX 侧 | 等级 | 实测 |
+|---|---|---|---|---|
+| `kind=strip, mechanism=strip` | `domain.removeMaterial` | `etch_strip(MaterialFilter)` | exact | 一致率 1.00 |
+| `kind=deposit, mechanism=fill` | `Box` LS 减去所有已有实体 → `insertNextLevelSetAsMaterial` | `depo_fill(Offset, ReferenceMaterialsFilter)` | approximate | 1.00（两层栈 + 20 nm 盖层） |
+| `kind=etch, mechanism=ellipsoidal` | `DirectionalProcess([0,0,1], {mat:(vertical, lateral)})` | `etch_ellipsoidal(filter, vertical, lateral)` | approximate | 0.80 |
+| `kind=mask, mechanism=litho` | 读同一份 GDS 层 → 逐**轴对齐矩形** `makeBoxStencil` 切/加 | `litho_patterning(LayerNames=[name])` | approximate | 0.80 |
+
+`engines/examples/m3-four-ops.json` 是这条验收用例（Memory1 窗口 0.624×0.74 µm = 0.46 µm²，
+在 1.0 µm² 安全限内）：**5 步全部对齐**，ViennaPS 4.6 s / SPX 29 s。
+
+三个实测限制（都写进代码注释）：
+
+1. **`fill` 的构造**：`ps.Box` 覆盖整个窗口 → 与每个已有实体做 `RELATIVE_COMPLEMENT`
+   → 作为新材料插入。实测 0.08 µm 沟槽会被填到底并留盖层，与 SPX `depo_fill` 的形状一致。
+   注意 `MakePlane(addToExisting=True)` **不能**用来做 fill（实测只在顶面加一层，沟槽原样保留）。
+2. **`litho` 只能放轴对齐矩形**：`GDSGeometry.layerToLevelSet()` 返回的 LS 与仿真域
+   做布尔会 **segfault**（实测两例），所以走工作台同款 `GeometryFactory.makeBoxStencil`。
+   Memory1 的 15/17/21 层正好是矩形（30/16/16 个），9/11/19 层是多边形（5/6/8、52/100 顶点），
+   目前会计入 "skipped polygon" 而不近似。
+3. **层号↔层名映射未定**：ViennaPS 用层号（15），SPX 用名字（`M1`）；本次把 `layer_name`
+   传成 `M1` 只是占位，所以 litho 的一致率是 0.80 而不是 1.00。要定死就得做一次
+   逐层对拍（六个名字 × 六个层号），用现有探针/截面就能做，不需要新机制。
+
+**`etch_ellipsoidal` 的参数形状**（踩过）：每个材料项是
+`(filter, vertical_rate, lateral_rate)` **三个位置参数**，不是嵌套的两元组；
+写错时 SPX 报 `Cannot convert '(1.0, qup.Unit('um min^-1'))' to double`。
+
 ## 6. 怎么跑
 
 ```bash

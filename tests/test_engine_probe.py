@@ -237,6 +237,44 @@ class LimitTests(unittest.TestCase):
         self.assertIsNone(reason)
 
 
+class CapabilityStepTests(unittest.TestCase):
+    def _step(self, **overrides):
+        from engines.protocol import StepIR
+        payload = {"step_id": "s", "kind": "etch", "mechanism": "isotropic",
+                   "duration": 0.01, "rates": {"Si": -1.0}}
+        payload.update(overrides)
+        return StepIR(**payload)
+
+    def test_strip_needs_materials(self):
+        with self.assertRaises(Exception):
+            self._step(kind="strip", mechanism="strip", duration=0.0).validate()
+        self._step(kind="strip", mechanism="strip", duration=0.0,
+                   parameters={"materials": ["Mask"]}).validate()
+
+    def test_fill_needs_material(self):
+        with self.assertRaises(Exception):
+            self._step(kind="deposit", mechanism="fill", duration=0.0).validate()
+        self._step(kind="deposit", mechanism="fill", duration=0.0,
+                   parameters={"material": "PolySi"}).validate()
+
+    def test_litho_needs_layer_and_thickness(self):
+        with self.assertRaises(Exception):
+            self._step(kind="mask", mechanism="litho", duration=0.0,
+                       parameters={"layer": 15}).validate()
+        self._step(kind="mask", mechanism="litho", duration=0.0,
+                   parameters={"layer": 15, "thickness": 0.05}).validate()
+
+    def test_rectangles_are_recognised_and_others_rejected(self):
+        from engines.viennaps.engine import _as_rectangle
+        closed = [(0.0, 0.0), (0.1, 0.0), (0.1, 0.2), (0.0, 0.2), (0.0, 0.0)]
+        self.assertEqual(_as_rectangle(closed), (0.0, 0.0, 0.1, 0.2))
+        triangle = [(0.0, 0.0), (0.1, 0.0), (0.0, 0.1), (0.0, 0.0)]
+        self.assertIsNone(_as_rectangle(triangle))
+        octagon = [(0.0, 0.1), (0.05, 0.0), (0.15, 0.0), (0.2, 0.1), (0.15, 0.2),
+                   (0.05, 0.2), (0.0, 0.1)]
+        self.assertIsNone(_as_rectangle(octagon))
+
+
 class NormalizeTests(unittest.TestCase):
     def test_spx_names_map_to_the_workbench_catalogue(self):
         self.assertEqual(normalize.canonical("Silicon", "spx"), "Si")

@@ -270,6 +270,39 @@ class SpxSession:
                                             Time=_minutes(step["duration"]))
             else:
                 raise NotImplementedError(f"{kind}/{mechanism} is not a rate step")
+        elif mechanism == "strip":
+            materials = [str(name) for name in (step.get("parameters") or {}).get("materials") or []]
+            if not materials:
+                raise NotImplementedError("strip step lists no materials")
+            sp.etch_strip(Location=self._loc(step["step_id"]),
+                          MaterialFilter=[_material_filter(self._ensure_material(name))[0]
+                                          for name in materials])
+        elif mechanism == "fill":
+            params = step.get("parameters") or {}
+            material = self._ensure_material(str(params["material"]))
+            sp.depo_fill(Location=self._loc(step["step_id"]),
+                         MaterialFilter=_material_filter(material),
+                         Offset=_um(float(params.get("offset", 0.0))),
+                         ReferenceMaterialsFilter=[[]])
+        elif mechanism == "ellipsoidal":
+            params = step.get("parameters") or {}
+            dependent = []
+            for name, pair in (params.get("rates") or {}).items():
+                vertical, lateral = pair
+                # Measured: each entry is (filter, vertical_rate, lateral_rate) as three
+                # separate positional values, not a nested pair.
+                dependent.append((_material_filter(self._ensure_material(str(name))),
+                                  _rate(abs(float(vertical))),
+                                  _rate(abs(float(lateral)))))
+            if not dependent:
+                raise NotImplementedError("ellipsoidal step lists no rates")
+            sp.etch_ellipsoidal(Location=self._loc(step["step_id"]),
+                                MaterialDependent=dependent,
+                                Time=_minutes(step["duration"]))
+        elif mechanism == "litho":
+            params = step.get("parameters") or {}
+            layer_name = str(params.get("layer_name") or params.get("layer"))
+            sp.litho_patterning(Location=self._loc(step["step_id"]), LayerNames=[layer_name])
         elif mechanism == "cmp":
             # Measured (docs/engine-abstraction.md §5.3): SPX ``etch_cmp`` does not
             # cut at an absolute height. With stop=Oxide and Offset=0 it removed a

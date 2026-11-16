@@ -63,6 +63,7 @@ class ViennapsSession:
         self._mesh = None
         self._columns: dict[tuple[int, int], dict[str, float]] | None = None
         self.column = max(float(job.domain.grid_delta) * 2.0, 1e-4)
+        self._geometry = None
 
     def open(self) -> None:
         ps = self.ps
@@ -140,6 +141,26 @@ class ViennapsSession:
                                                 or [0.0, 0.0, 1.0])]
                 model = ps.DirectionalProcess(direction, rates, 0.0, 0.0)
                 ps.Process(self.domain, model, float(step.duration)).apply()
+            elif step.mechanism == "strip":
+                names = [str(name) for name in step.parameters.get("materials") or []]
+                if not names:
+                    raise NotImplementedError("strip step lists no materials")
+                for name in names:
+                    self.domain.removeMaterial(_material_handle(ps, name))
+                    self.stack = [entry for entry in self.stack if entry != name] or self.stack
+            elif step.mechanism == "ellipsoidal":
+                rates = {}
+                for name, pair in (step.parameters.get("rates") or {}).items():
+                    vertical, lateral = pair
+                    rates[_material_handle(ps, name)] = (float(vertical), float(lateral))
+                if not rates:
+                    raise NotImplementedError("ellipsoidal step lists no rates")
+                model = ps.DirectionalProcess([0.0, 0.0, 1.0], rates, 0.0, 0.0)
+                ps.Process(self.domain, model, float(step.duration)).apply()
+            elif step.mechanism == "fill":
+                self._fill(step)
+            elif step.mechanism == "litho":
+                self._litho(step)
             elif step.mechanism == "cmp":
                 cutoff = float(step.parameters.get("cutoff"))
                 ps.Planarize(self.domain, cutoff).apply()
@@ -158,6 +179,124 @@ class ViennapsSession:
         self._columns = None
         return StepOutcome(step_id=step.step_id, status="ok",
                            wall_ms=(time.perf_counter() - started) * 1000.0)
+
+    # -- SPX-parity geometry operations ------------------------------------
+    def _surface_top(self) -> float:
+        mesh = self._surface_mesh()
+        return max(float(point[2]) for point in mesh.getNodes())
+
+    def _surface_bottom(self) -> float:
+        mesh = self._surface_mesh()
+        return min(float(point[2]) for point in mesh.getNodes())
+
+    def _fill(self, step: StepIR) -> None:
+        """Fill the void below ``z_top + offset`` with a new material.
+
+        Level-set construction: a box covering the window is intersected with the
+        complement of every existing solid, then inserted as the new material.
+        Measured on a 0.08 um trench: the fill reaches the trench bottom and leaves
+        a cap above the field, which is what SPX ``depo_fill`` produces.
+        """
+        ps = self.ps
+        material = str(step.parameters["material"])
+        offset = float(step.parameters.get("offset", 0.0))
+        z_top = self._surface_top() + offset
+        z_bottom = self._surface_bottom() - float(self.job.domain.grid_delta)
+        margin = float(self.job.domain.grid_delta)
+        box = ps.LevelSet(self.domain.getGrid())
+        ps.MakeGeometry(box, ps.Box(
+            [-margin, -margin, z_bottom],
+            [float(self.job.domain.width) + margin,
+             float(self.job.domain.depth) + margin, z_top])).apply()
+        for level_set in self.domain.getLevelSets():
+            ps.ls.BooleanOperation(box, level_set,
+                                   ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
+        self.domain.insertNextLevelSetAsMaterial(box, _material_handle(ps, material))
+        self._register(material)
+        if material not in self.stack:
+            self.stack.append(material)
+        self._mesh = None
+        self._columns = None
+
+    def _gds_geometry(self):
+        if self._geometry is not None:
+            return self._geometry
+        ps = self.ps
+        layout = (self.job.layout or {}).get("path")
+        if not layout:
+            raise NotImplementedError("litho needs job.layout.path pointing at a GDS layout")
+        geometry = ps.GDSGeometry(float(self.job.domain.grid_delta))
+        geometry.setBoundaryConditions([
+            ps.BoundaryType.REFLECTIVE_BOUNDARY, ps.BoundaryType.REFLECTIVE_BOUNDARY,
+            ps.BoundaryType.INFINITE_BOUNDARY])
+        ps.GDSReader(geometry, str(layout)).apply()
+        self._geometry = geometry
+        return geometry
+
+    def _litho(self, step: StepIR) -> None:
+        """Pattern (positive) or cut (negative) a material from a layout layer.
+
+        Measured limitation: the native ``GDSGeometry.layerToLevelSet(layer)``
+        returns a level set on the *layout's* frame, and combining it with the
+        simulation domain crashes the installed binding (segfault in
+        ``applyBooleanOperation``). So this path uses the same primitive the
+        workbench uses for its stack pattern -- ``GeometryFactory.makeBoxStencil``
+        per **axis-aligned rectangle** -- and reports how many non-rectangular
+        polygons were skipped instead of approximating them.
+        """
+        ps = self.ps
+        layer = int(step.parameters["layer"])
+        polarity = str(step.parameters.get("polarity", "negative")).lower()
+        thickness = float(step.parameters["thickness"])
+        z_top = self._surface_top()
+        z_center = z_top - thickness / 2.0
+        margin = float(self.job.domain.grid_delta)
+        factory = ps.GeometryFactory(self.domain.getSetup(),
+                                     f"compare_litho_{step.step_id}")
+        cut = skipped = 0
+        for polygon in self._layer_polygons(layer):
+            rectangle = _as_rectangle(polygon)
+            if rectangle is None:
+                skipped += 1
+                continue
+            x0, y0, x1, y1 = rectangle
+            width, depth = (x1 - x0), (y1 - y0)
+            if width <= margin or depth <= margin:
+                skipped += 1
+                continue
+            if polarity == "positive":
+                box = ps.LevelSet(self.domain.getGrid())
+                ps.MakeGeometry(box, ps.Box([x0, y0, z_center - thickness / 2.0],
+                                            [x1, y1, z_center + thickness / 2.0])).apply()
+                self.domain.insertNextLevelSetAsMaterial(
+                    box, _material_handle(ps, str(step.parameters.get("material", "Mask"))))
+            else:
+                stencil = factory.makeBoxStencil(
+                    [(x0 + x1) / 2.0, (y0 + y1) / 2.0, z_center],
+                    width, thickness + 2 * margin, 0.0, depth)
+                self.domain.applyBooleanOperation(
+                    stencil, ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT, False)
+            cut += 1
+        if cut == 0:
+            raise NotImplementedError(
+                f"litho layer {layer} has no axis-aligned rectangle this adapter can "
+                f"place ({skipped} polygon(s) skipped)")
+        if polarity == "positive":
+            material = str(step.parameters.get("material", "Mask"))
+            self._register(material)
+            if material not in self.stack:
+                self.stack.append(material)
+        self._mesh = None
+        self._columns = None
+
+    def _layer_polygons(self, layer: int) -> list[list[tuple[float, float]]]:
+        path = (self.job.layout or {}).get("path")
+        if not path:
+            raise NotImplementedError("litho needs job.layout.path")
+        from engines.layout import read_gds_polygons
+
+        _, _, polygons = read_gds_polygons(Path(path))
+        return [points for poly_layer, _datatype, points in polygons if poly_layer == layer]
 
     def probe(self, points: list[list[float]]) -> list[str]:
         """Material label per point from the per-column material height field.
@@ -271,6 +410,16 @@ class ViennapsSession:
             name = self.materials.get(value)
             if name is None:
                 raise RuntimeError(f"surface mesh reports unregistered material id {value}")
+
+
+def _as_rectangle(points: list[tuple[float, float]]) -> tuple[float, float, float, float] | None:
+    """Axis-aligned rectangle -> (x0, y0, x1, y1); anything else -> None."""
+    xs = sorted({round(x, 9) for x, _ in points})
+    ys = sorted({round(y, 9) for _, y in points})
+    cleaned = points[:-1] if len(points) > 1 and points[0] == points[-1] else list(points)
+    if len(xs) != 2 or len(ys) != 2 or len(cleaned) != 4:
+        return None
+    return xs[0], ys[0], xs[1], ys[1]
 
 
 def _material_handle(ps: Any, name: str) -> Any:

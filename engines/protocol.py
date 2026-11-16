@@ -29,8 +29,9 @@ SCHEMA_VERSION = 1
 LENGTH_UNIT = "um"
 TIME_UNIT = "min"
 
-StepKind = Literal["initial", "deposit", "etch", "planarize", "mask"]
-Mechanism = Literal["initial", "isotropic", "anisotropic", "cmp", "gds_mask"]
+StepKind = Literal["initial", "deposit", "etch", "planarize", "mask", "strip"]
+Mechanism = Literal["initial", "isotropic", "anisotropic", "cmp", "gds_mask",
+                    "strip", "fill", "ellipsoidal", "litho"]
 Comparability = Literal["exact", "approximate", "no_counterpart"]
 StepStatus = Literal["ok", "out_of_domain", "unsupported", "failed", "skipped"]
 FrameKind = Literal["mesh", "raster"]
@@ -119,13 +120,22 @@ class StepIR:
     def validate(self) -> None:
         if not self.step_id:
             raise ProtocolError("step_id is required")
-        if self.kind not in ("initial", "deposit", "etch", "planarize", "mask"):
+        if self.kind not in ("initial", "deposit", "etch", "planarize", "mask", "strip"):
             raise ProtocolError(f"unsupported step kind {self.kind!r}")
-        if self.mechanism not in ("initial", "isotropic", "anisotropic", "cmp", "gds_mask"):
+        if self.mechanism not in ("initial", "isotropic", "anisotropic", "cmp",
+                                  "gds_mask", "strip", "fill", "ellipsoidal", "litho"):
             raise ProtocolError(f"unsupported mechanism {self.mechanism!r}")
+        if self.mechanism == "strip" and not self.parameters.get("materials"):
+            raise ProtocolError(f"strip step {self.step_id!r} needs parameters.materials")
+        if self.mechanism == "fill" and not self.parameters.get("material"):
+            raise ProtocolError(f"fill step {self.step_id!r} needs parameters.material")
+        if self.mechanism == "litho":
+            for key in ("layer", "thickness"):
+                if key not in self.parameters:
+                    raise ProtocolError(f"litho step {self.step_id!r} needs parameters.{key}")
         if self.comparability not in ("exact", "approximate", "no_counterpart"):
             raise ProtocolError(f"unsupported comparability {self.comparability!r}")
-        if self.kind in ("deposit", "etch") and self.duration <= 0:
+        if self.kind in ("deposit", "etch") and self.mechanism not in ("fill", "strip") and self.duration <= 0:
             raise ProtocolError(f"step {self.step_id!r} needs a positive duration")
         for material, rate in self.rates.items():
             if not isinstance(rate, (int, float)):
@@ -201,6 +211,8 @@ class JobSpec:
     render: RenderSpec = field(default_factory=RenderSpec)
     probe: ProbeSpec | None = None
     section: SectionSpec | None = None
+    # Layout used by mask/litho steps: {"path": <gds|oasis>, "spxLayers": {"9": "PLG"}}
+    layout: dict[str, Any] | None = None
     # Absolute path of an engine-native checkpoint to resume from. Only engines
     # that declare a reader may honour it; the others must report ``unsupported``.
     restore: str | None = None
@@ -268,6 +280,7 @@ class JobSpec:
                       z_max=float(payload["section"]["z_max"]))
                       if payload.get("section") else None),
                   restore=(str(payload["restore"]) if payload.get("restore") else None),
+                  layout=(dict(payload["layout"]) if payload.get("layout") else None),
                   schema_version=int(payload.get("schema_version", SCHEMA_VERSION)))
         job.validate()
         return job

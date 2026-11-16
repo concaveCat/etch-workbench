@@ -229,43 +229,66 @@ UI 与后续成本模型直接读它。
 - SPX：没有 checkpoint（route 状态不可序列化到我们的格式），保持不声明该能力。
   跨引擎热换仍是一个"要重新播放几何"的问题，不在本轮范围。
 
-## 5.6 掩膜 / GDS（M3：机制已验证，通路未打通，仍判 `no_counterpart`）
+## 5.6 掩膜 / GDS 与复杂图形（M3：SPX 侧已可用，ViennaPS 侧待接）
 
-**SPX 侧的机制是活的**，实测链路：
+**先纠正上一版的结论**：`layout_extrude_structure` 不是 SPX 唯一的掩膜机制，而且
+真正用来做复杂图形的是另一个命令。
+
+### SPX 怎么做出 Memory1 这种结构
+
+Memory1 的每一步都能在 `spx.io.node_to_python` 导出的脚本里读到，图形来自两件事：
+
+1. **`litho_patterning(LayerNames=[…], Sigma=(σ,um))`** —— 布局驱动的光刻步，
+   把 layout 的某一层变成光刻胶图形。Memory1 用到 6 个层名：
+   `PLG`（插塞）、`CS`（缝）、`PC`（接触）、`M1`（位线 strap）、`BC`（位线接触）、`M2`（位线）。
+2. **几何步**：`depo_fill`（把凹陷填平）、`etch_anisotropic`、`etch_isotropic`、
+   `etch_ellipsoidal`（带侧向速率的锥形刻蚀）、`etch_strip`、`etch_cmp`。
+
+必需的前置（少一个就退化成平面柱体）：
 
 ```python
-sp.layout_create_layer(Location=step_k, LayerName='seed',
-                       MaterialFilter=[["Photoresist"]], Offset=(0, um))     # 产生 in_layout_state
-sp.layout_extrude_structure(Location=step_k1, LayerName=<layer>,
-                            MaterialFilter=[["Photoresist"]],
-                            Thickness=(0.05, um), Polarity='Negative')        # 消费上一步的 layout state
+sp.layout(Layout=<layout 路径>, Path=<layout 路径>)        # 打开 layout
+sp.route(File='t', Route='Memory1', MergeMaterials=sm.take_hosted_materials)  # 材料库
+su.update_clip_layout({'Route': 'Memory1'}, <layout 路径>)  # clip 指向该 layout
 ```
 
-- 两个命令必须**相邻**：直接调 `layout_extrude_structure` 会报
-  `Value 'in_layout_state' does not exist in directory '<step>'`（已复现）。
-- `Polarity` 大小写敏感（`'Negative'`/`'Positive'`），Python 侧参数名是 `LayerName`
-  （写成 `Layer Name` 报 `unexpected keyword argument`）。
-- 实测 Positive 挤出会真的长出几何（渲染出 0.05 µm 的胶块），Negative 在我们这份
-  layout 上与"不挤出"逐字节相同（该层为空）。
+实测：Memory1 全流程 **88 步、5.5 s**，渲染出带插塞/位线的真实三维结构
+（`/tmp/mem1_last.png`：分层 + 竖直线 + 顶部条状位线图形）。不加 layout 时是平面柱体 ——
+这就是上一版"无法做出图案"的真实原因，不是命令不可用。
 
-**卡在哪**：`layout_extrude_structure` 要的是 **layout 文件里的层名**，而层名在
-headless 下拿不到：
+### 本次额外验证
 
-| 尝试 | 结果 |
+| 实验 | 结果 |
 |---|---|
-| `LayerName='H1'`（clip 名） | `Layer 'H1' does not exist in layout` |
-| `'1' / '2' / '3' / '0'` | 同上 |
-| `'1/0' / '0/0' / '2/0' / '10/0'`（GDS layer/datatype） | 同上 |
-| `show(Location={'Layout': path}, Children=['Layer'])` | 报 `__nodes/__materials/__nodes/IS/__nodes/layout` 无效——Layout 节点在内部 `__layouts` 命名空间，公开 API 取不到 |
+| `litho_patterning(LayerNames=['PLG'])` 打在 Memory1 layout 上，再各向异性刻蚀 | **出来插塞阵列**（光刻胶上的孔阵列，刻穿到氧化层）——SPX 掩膜通路可用 |
+| 同上换 `M2` | 另一种图形（哈希不同） |
+| 用工作台自带的 `tests/fixtures/finfet22_workbench.gds` + `LayerNames=['1/0'|'2/0'|'1'|'0/0']` | 四者渲染完全相同，且都是**整片光刻胶**（无图形）——GDS 的层名没被校验/没匹配上，窗口 [0,0.5]² µm 也可能落在单个大多边形内部 |
+| `layout_extrude_structure` | 需要上一步的 `in_layout_state`，且层名在 headless 下取不到（见上一版记录） |
 
-**ViennaPS 侧**：掩膜来自 GDS（`backend/gds.py` + `worker/gds_mask.py`，用
-`GeometryFactory` 打孔），入口吃完整 project dict，要接成
-`StepIR(kind='mask', mechanism='gds_mask')` 还需要一层适配。
+### 为什么 Memory1 不能直接当"两边都做"的验收
 
-结论：不是参数没对上，是**两边都缺"同一份 layout → 同一套掩膜"的通路**——
-SPX 缺层名发现，ViennaPS 缺 GDS→StepIR 适配。在两者都通之前
-`comparability.json` 保持 `mask/gds_mask = no_counterpart`，不拿"会跑但没图案"的
-步骤当可比结果。
+| Memory1 用的 | ViennaPS 有吗 |
+|---|---|
+| `litho_patterning` | 没有；ViennaPS 的掩膜是"保护材料"（`maskMaterials`），图形必须由外部几何给出 |
+| `depo_fill` | 没有（只有保形沉积 + `Planarize`） |
+| `etch_ellipsoidal` | 没有（`DirectionalProcess` 是方向+各向同性两分量） |
+| `etch_strip` | 等价于"去掉某材料"，可以用几何步近似，但不是原生模型 |
+| layout 是 `.oasis` | `backend/gds.py` 只读 GDS |
+
+### 可行的验收路线（建议）
+
+共用几何基座 = **层栈 + 一层掩膜**，掩膜图形来自**同一个 layout 文件**：
+
+1. SPX 侧已经能做：`litho_patterning(LayerNames=[…])` + layout（实测出插塞阵列）。
+2. ViennaPS 侧要补：GDS 多边形 → 掩膜材料（工作台已有 2D GDS 掩膜实现
+   `backend/gds.py` + `worker/gds_mask.py`，缺的是 `StepIR(kind='mask')` 适配）。
+3. 两边读同一份 GDS：SPX 读 GDS 的层名规则待定（见上表），一次性把 `.oasis`
+   转成 `.gds`（外部工具，一次性，不进运行时依赖）比在 drift 中猜层名可靠。
+4. 验收用例建议取 Memory1 的 **Plug_Patterning 模块**（depo + litho + 各向异性刻蚀 + strip），
+   它只用到"层栈 + 一层掩膜 + 各向异性"，而不是整条 88 步流程；
+   `depo_fill`/`etch_strip`/`etch_ellipsoidal` 按实测分别标 `approximate` / `no_counterpart`。
+
+到目前为止 `mask/gds_mask` 仍记 `no_counterpart`（ViennaPS 没接），但 SPX 侧不再是未知数。
 
 ## 6. 怎么跑
 

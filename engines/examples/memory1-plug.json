@@ -108,7 +108,12 @@
         "BARC": -1.0,
         "SiOC": -1.0
       },
-      "anisotropy": 1.0
+      "anisotropy": 1.0,
+      "parameters": {
+        "mask": [
+          "PMMA"
+        ]
+      }
     },
     {
       "step_id": "s9_strip_resist",
@@ -119,6 +124,33 @@
         "materials": [
           "PMMA",
           "BARC"
+        ]
+      }
+    },
+    {
+      "step_id": "s10_etch_on",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 5.0,
+      "rates": {
+        "SiO2": -1.0,
+        "Si3N4": -1.0
+      },
+      "anisotropy": 1.0,
+      "parameters": {
+        "mask": [
+          "SiOC"
+        ]
+      }
+    },
+    {
+      "step_id": "s11_strip_sioc",
+      "kind": "strip",
+      "mechanism": "strip",
+      "duration": 0.0,
+      "parameters": {
+        "materials": [
+          "SiOC"
         ]
       }
     }

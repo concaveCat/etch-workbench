@@ -405,9 +405,19 @@ substrate(Si 0.3) → depo_fill Oxide2 50nm → depo_fill Nitride 35nm
 
 | 步 | 一致率 | 说明 |
 |---|---|---|
-| s7 `litho PLG` | 0.87 | 非矩形多边形已能生成（棱柱 → FromSurfaceMesh），差异在开口边缘 |
-| s8 `etch BARC/SiOC` | 0.20 | **暴露了表示层的硬限制**（见下） |
-| s9 strip | 0.33 | 继承上一步 |
+| s7 `litho PLG` | 0.87 | 非矩形多边形已能生成（棱柱 → FromSurfaceMesh），差异是**胶体本身**的涂层轮廓 |
+| s8 `etch BARC/SiOC` | 0.83 | 改为几何切法后从 0.20 升上来；仍差在 PMMA |
+| **s9 strip（模块结果）** | **1.00** | 去掉胶之后两边**完全一致** |
+| s10 `etch ON`（5 µm 过刻） | 0.83 | 掩膜把刻蚀挡在 ~0.4 µm，差在 SiOC/PMMA |
+| **s11 strip SiOC（模块结果）** | **1.00** | 一致 |
+
+规律很清楚：**每个模块"去掉胶之后"的状态都是 1.00**，差异集中在胶体本身
+（SPX 的 litho 涂层轮廓与我们的长方体涂层不同）。也就是说几何结果对得上，
+中间态的胶形是已知差异。
+
+顺带修了域守卫：`etch ON` 是 Memory1 的 5 µm 过刻步，原先被 `ratio` 守卫判成
+`out_of_domain`。掩膜刻蚀的位移不可能超过暴露的叠层，所以
+`limits.estimate` 对带 `mask` 的刻蚀步把位移夹到 `domain.height`。
 
 **硬限制**：ViennaPS 的多级水平集是"**层栈**"——材料 i 占据 LS_i 与 LS_{i−1} 之间的区域。
 刻蚀一个**被覆盖的**材料时，上面的材料会跟着界面一起下沉，而不是留下空腔；

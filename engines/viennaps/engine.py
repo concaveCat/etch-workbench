@@ -134,6 +134,15 @@ class ViennapsSession:
                 for material, rate in step.rates.items():
                     model.setMaterialRate(_material_handle(ps, material), float(rate))
                 ps.Process(self.domain, model, float(step.duration)).apply()
+            elif (step.mechanism == "anisotropic" and step.kind == "etch"
+                  and step.parameters.get("mask") and self._openings):
+                # Same representation limit as the ellipsoidal branch: a masked
+                # directional etch of a buried layer is cut geometrically through
+                # the openings instead of advecting the whole stack.
+                rates = {}
+                for name, rate in step.rates.items():
+                    rates[_material_handle(ps, name)] = (float(rate), 0.0)
+                self._etched_openings(step, rates, openings=self._openings)
             elif step.mechanism == "anisotropic" and step.kind in ("etch", "deposit"):
                 # StepIR.anisotropy splits each rate into a directional and an
                 # isotropic part; 1.0 is a perfectly directional process.

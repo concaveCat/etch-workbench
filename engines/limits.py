@@ -53,6 +53,10 @@ def estimate(job: JobSpec, step: StepIR) -> dict[str, Any]:
     active = (float(job.domain.width) / delta) * (float(job.domain.depth) / delta)
     rate = max((abs(float(value)) for value in step.rates.values()), default=0.0)
     displacement = rate * float(step.duration or 0.0)
+    if step.kind == "etch" and step.parameters.get("mask"):
+        # A masked etch cannot advance further than the exposed stack: Memory1
+        # carries 5 um "over-etch" steps whose resist stops them after ~0.4 um.
+        displacement = min(displacement, float(job.domain.height))
     ratio = displacement / delta
     return {
         "activePoints": int(active),

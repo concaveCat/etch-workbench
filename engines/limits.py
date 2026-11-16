@@ -20,10 +20,31 @@ from typing import Any
 from engines.protocol import JobSpec, StepIR
 
 # Defaults per engine id; a registration may override them.
+#
+# ``max_area_um2`` is a *safety* limit, not a performance one: SPX builds the whole
+# clipped structure in memory and has no guard of its own. A 700 x 700 um window
+# (one of our own mistaken probes) was enough to take the host down, so the window
+# area is capped before any engine starts.
 DEFAULT_LIMITS: dict[str, dict[str, float]] = {
-    "viennaps": {"max_active_points": 5.0e6, "max_ratio": 200.0},
-    "spx": {"max_active_points": 1.0e7, "max_ratio": 2000.0},
+    "viennaps": {"max_active_points": 5.0e6, "max_ratio": 200.0,
+                 "max_area_um2": 100.0},
+    "spx": {"max_active_points": 1.0e7, "max_ratio": 2000.0,
+            "max_area_um2": 1.0},
 }
+
+
+def window_verdict(engine_id: str, job: JobSpec,
+                   limits: dict[str, Any] | None = None) -> tuple[str | None, dict[str, Any]]:
+    """Job-level check before an engine is started at all."""
+    effective = {**DEFAULT_LIMITS.get(engine_id, {}), **(limits or {})}
+    area = float(job.domain.width) * float(job.domain.depth)
+    metrics = {"windowAreaUm2": round(area, 6)}
+    max_area = effective.get("max_area_um2")
+    if max_area is not None and area > float(max_area):
+        return (f"window {job.domain.width} x {job.domain.depth} um = {metrics['windowAreaUm2']} um2 "
+                f"exceeds the {engine_id} safety limit {float(max_area)} um2; SPX builds the whole "
+                f"clipped structure in memory and has no guard of its own", metrics)
+    return None, metrics
 
 
 def estimate(job: JobSpec, step: StepIR) -> dict[str, Any]:

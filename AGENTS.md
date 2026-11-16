@@ -98,6 +98,25 @@ git diff --check
 - 非平凡改动走分支 + PR，不要直接推 `main`。
 - 推送前确认 `git status` 里没有误加的运行时文件。
 
+## 4.1 引擎层的外部进程（踩过的坑）
+
+`engines/` 会拉起 ViennaPS 与 **SPX 私有 Python** 子进程。SPX **自己没有任何规模保护**：
+它把整个 clip 窗口的结构一次性建进内存，窗口面积一大就把整台 WSL 拖死。
+
+真实事故：为了验证 GDS 单位，手写脚本把 clip 窗口从 `0.624 x 0.740 µm` 改成
+`700 x 700 µm` 跑了一次 `litho_patterning`，WSL 直接重启（`uptime` 归零）。
+
+现在的护栏（别绕过）：
+
+| 位置 | 作用 |
+|---|---|
+| `engines/limits.py: window_verdict` | 窗口面积上限（spx 1.0 µm²、viennaps 100 µm²），超过就在**启动引擎之前**拒绝 |
+| `engines/scheduler.py: _address_space_guard` | 给 SPX 子进程设 `RLIMIT_AS`（默认 6144 MiB，`VIENNAPS_WORKBENCH_SPX_MEM_MIB` 可调），超了让子进程自己失败，不要拖垮宿主 |
+| `engines/spx/bridge.py` | 只做小窗口；手测脚本也必须走 bridge 或 cli，不要直接手调 `spx.procedural` |
+
+手测 SPX 时的经验值：窗口 `0.1 x 0.3 µm`（M0/M2 用例）跑几十步几秒；
+`0.6 x 0.7 µm`（Memory1 clip）88 步 5.5 s；再往上必须先算面积。
+
 ## 5. 不要做的事
 
 - 不要提交 `var/`、`.venv/`、`frontend/node_modules/`、`frontend/dist/`、

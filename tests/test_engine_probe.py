@@ -211,6 +211,26 @@ class LimitTests(unittest.TestCase):
         self.assertIsNotNone(reason)
         self.assertIn("active points", reason)
 
+    def test_window_area_guard_stops_an_oversized_spx_job(self):
+        job = _job(domain={"width": 700.0, "depth": 700.0, "height": 0.4,
+                           "grid_delta": 0.002})
+        reason, metrics = limits.window_verdict("spx", job)
+        self.assertIsNotNone(reason)
+        self.assertEqual(metrics["windowAreaUm2"], 490000.0)
+        self.assertIn("safety limit", reason)
+
+    def test_window_area_guard_allows_the_measured_cases(self):
+        from engines.protocol import JobSpec
+        job = JobSpec.from_json({
+            "case_id": "w", "engine": "spx",
+            "domain": {"width": 0.14, "depth": 0.288, "height": 0.4, "grid_delta": 0.002},
+            "initial": {"kind": "plane", "substrate": "Si", "substrate_thickness": 0.3},
+            "steps": [{"step_id": "s0", "kind": "initial", "mechanism": "initial"}],
+        })
+        reason, metrics = limits.window_verdict("spx", job)
+        self.assertIsNone(reason)
+        self.assertLess(metrics["windowAreaUm2"], 1.0)
+
     def test_unknown_engine_uses_no_default_limits(self):
         job = _job()
         reason, _ = limits.check("someone-else", job, job.steps[1])

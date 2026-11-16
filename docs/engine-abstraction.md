@@ -290,6 +290,22 @@ su.update_clip_layout({'Route': 'Memory1'}, <layout 路径>)  # clip 指向该 l
 
 到目前为止 `mask/gds_mask` 仍记 `no_counterpart`（ViennaPS 没接），但 SPX 侧不再是未知数。
 
+## 5.7 安全护栏（事故记录）
+
+SPX 没有任何规模保护：它把整个 clip 窗口的结构一次性建进内存。
+一次手测里把窗口从 `0.624 x 0.740 µm` 改成 **`700 x 700 µm`**（为了查 GDS 单位），
+WSL 直接重启。
+
+现在的三道护栏：
+
+| 位置 | 作用 |
+|---|---|
+| `limits.window_verdict` | 窗口面积上限（spx 1.0 µm² / viennaps 100 µm²），**启动引擎之前**拒绝 |
+| `scheduler._address_space_guard` | SPX 子进程 `RLIMIT_AS=6144 MiB`（`VIENNAPS_WORKBENCH_SPX_MEM_MIB` 可调） |
+| `engines/spx/bridge.py` | 只跑小窗口，手测也必须走 bridge / `engines.cli` |
+
+已知安全规模（实测）：`0.1 x 0.3 µm` 几秒；`0.624 x 0.740 µm`（Memory1 clip）88 步 5.5 s。
+
 ## 6. 怎么跑
 
 ```bash

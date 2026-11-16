@@ -23,6 +23,7 @@ from typing import Any
 
 from engines.comparability import grade as comparability_grade
 from engines.limits import estimate as step_estimate
+from engines.limits import window_verdict
 from engines.metrics import describe as describe_geometry
 from engines.probe import build_lattice, occupancy_metrics
 from engines.section import section_metrics
@@ -52,6 +53,7 @@ def _run_engine(reg: EngineRegistration, job_path: Path, out_dir: Path,
         reg.launch(job_path, out_dir), cwd=str(Path(job_path).parent),
         env={**__import__("os").environ, **reg.env},
         capture_output=True, text=True, timeout=timeout, check=False,
+        preexec_fn=_address_space_guard(reg.engine_id),
     )
     wall_ms = (time.perf_counter() - started) * 1000.0
     result_path = out_dir / "result.json"
@@ -93,6 +95,30 @@ def _outcomes(result: dict[str, Any]) -> dict[str, StepOutcome]:
     return by_id
 
 
+def _address_space_guard(engine_id: str):
+    """Cap the child's address space so a runaway engine fails instead of the host.
+
+    SPX builds the clipped structure in memory with no internal guard; without this
+    an over-large job takes the whole WSL VM down (measured once). ViennaPS is left
+    unlimited because its grid scale is already bounded by the domain itself.
+    """
+    if engine_id != "spx":
+        return None
+    import os
+    import resource
+
+    limit_mib = int(os.environ.get("VIENNAPS_WORKBENCH_SPX_MEM_MIB", "6144"))
+    limit = limit_mib * 1024 * 1024
+
+    def _apply() -> None:
+        try:
+            resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
+        except (ValueError, OSError):
+            pass
+
+    return _apply
+
+
 def compare(job: JobSpec, engine_ids: list[str], out_root: Path,
             timeout: float = DEFAULT_TIMEOUT, max_probe_points: int = 3000) -> dict[str, Any]:
     """Run ``job`` on every engine and produce the aligned comparison record."""
@@ -102,6 +128,10 @@ def compare(job: JobSpec, engine_ids: list[str], out_root: Path,
         raise SystemExit(f"unknown engine(s) {unknown}; known: {sorted(registry)}")
 
     job.validate()
+    for engine_id in engine_ids:
+        reason, metrics = window_verdict(engine_id, job)
+        if reason is not None:
+            raise SystemExit(f"{engine_id}: {reason}")
     if job.probe is None and max_probe_points > 0:
         # The scheduler owns the lattice: every engine must answer the same points.
         measured = build_lattice(job.domain.width, job.domain.depth,

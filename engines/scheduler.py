@@ -25,7 +25,7 @@ from engines.comparability import grade as comparability_grade
 from engines.limits import estimate as step_estimate
 from engines.limits import window_verdict
 from engines.metrics import describe as describe_geometry
-from engines.probe import build_lattice, occupancy_metrics
+from engines.probe import build_lattice, occupancy_metrics, stack_layer_midplanes
 from engines.section import section_metrics
 from engines.protocol import (Frame, JobSpec, ProbeSpec, SectionSpec, StepOutcome,
                               write_json)
@@ -136,7 +136,8 @@ def compare(job: JobSpec, engine_ids: list[str], out_root: Path,
         # The scheduler owns the lattice: every engine must answer the same points.
         measured = build_lattice(job.domain.width, job.domain.depth,
                                  job.initial.substrate_thickness,
-                                 job.domain.height, max_probe_points)
+                                 job.domain.height, max_probe_points,
+                                 extra_z=stack_layer_midplanes(job))
         job = replace(job, probe=ProbeSpec(points=measured.points))
         probe_shape = list(measured.shape)
     else:

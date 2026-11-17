@@ -304,15 +304,19 @@ class SpxSession:
             layer_name = str(params.get("layer_name") or params.get("layer"))
             sp.litho_patterning(Location=self._loc(step["step_id"]), LayerNames=[layer_name])
         elif mechanism == "cmp":
-            # Measured (docs/engine-abstraction.md §5.3): SPX ``etch_cmp`` does not
-            # cut at an absolute height. With stop=Oxide and Offset=0 it removed a
-            # whole 0.1 um oxide layer, so the stop is not "the exposed top" and a
-            # negative offset appeared to add material. Until that model is mapped
-            # correctly, CMP stays a ViennaPS-only step instead of a silent
-            # mismatch.
-            raise NotImplementedError(
-                "SPX etch_cmp offset semantics are not mapped to an absolute cutoff; "
-                "run this step on viennaps or mark it no_counterpart")
+            params = step.get("parameters") or {}
+            stop = params.get("stop_material")
+            if not stop:
+                # Measured (§5.3): with an empty stop filter and an absolute offset
+                # the step is a no-op or removes a whole layer, so only the
+                # stop-material form is mapped.
+                raise NotImplementedError(
+                    "SPX etch_cmp is only mapped for a stop material; an absolute "
+                    "cutoff has no measured equivalent")
+            sp.etch_cmp(Location=self._loc(step["step_id"]),
+                        EtchstopMaterialsFilter=_material_filter(self._ensure_material(stop)),
+                        MaterialFilter=[[]],
+                        Offset=_um(float(params.get("offset", 0.0))))
         else:
             raise NotImplementedError(f"mechanism {mechanism!r} has no SPX lowering")
 

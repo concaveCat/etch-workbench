@@ -129,7 +129,23 @@ class ViennapsSession:
         ps = self.ps
         started = time.perf_counter()
         try:
-            if step.mechanism == "isotropic" and step.kind in ("etch", "deposit"):
+            if step.mechanism == "isotropic" and step.kind == "deposit":
+                present = {name for name in self.stack}
+                new = {name: rate for name, rate in step.rates.items()
+                       if name not in present and float(rate) > 0}
+                growth = {name: rate for name, rate in step.rates.items()
+                          if name in present and abs(float(rate)) > 0}
+                if growth:
+                    model = ps.IsotropicProcess(rate=0.0, maskMaterials=[])
+                    for material, rate in growth.items():
+                        model.setMaterialRate(_material_handle(ps, material), float(rate))
+                    ps.Process(self.domain, model, float(step.duration)).apply()
+                for material, rate in new.items():
+                    # A new material cannot be grown by IsotropicProcess (it only
+                    # advects materials that already exist), so the shell is built
+                    # from the current top surface offset outward by t.
+                    self._deposit_shell(material, abs(float(rate)) * float(step.duration))
+            elif step.mechanism == "isotropic" and step.kind == "etch":
                 model = ps.IsotropicProcess(rate=0.0, maskMaterials=[])
                 for material, rate in step.rates.items():
                     model.setMaterialRate(_material_handle(ps, material), float(rate))
@@ -195,8 +211,24 @@ class ViennapsSession:
             elif step.mechanism == "litho":
                 self._litho(step)
             elif step.mechanism == "cmp":
-                cutoff = float(step.parameters.get("cutoff"))
+                params = step.parameters
+                if params.get("stop_material"):
+                    # Same form as SPX: polish down to the stop material's exposed
+                    # top plus the (usually negative) offset.
+                    stop = str(params["stop_material"])
+                    buckets = self._height_columns()
+                    tops = [bucket[stop] for bucket in buckets.values() if stop in bucket]
+                    if not tops:
+                        raise RuntimeError(
+                            f"cmp stop material {stop!r} has no exposed surface")
+                    # The field (highest exposed stop surface) is what SPX polishes
+                    # down to; a percentile cut left the field standing.
+                    cutoff = max(tops) + float(params.get("offset", 0.0))
+                else:
+                    cutoff = float(params["cutoff"])
                 ps.Planarize(self.domain, cutoff).apply()
+                self._mesh = None
+                self._columns = None
             else:
                 raise NotImplementedError(
                     f"{step.kind}/{step.mechanism} has no ViennaPS lowering yet")
@@ -344,6 +376,56 @@ class ViennapsSession:
         else:
             self.domain.applyBooleanOperation(body, ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT,
                                               False)
+        self._mesh = None
+        self._columns = None
+
+    def _deposit_shell(self, material: str, thickness: float) -> None:
+        """Insert ``material`` as a conformal shell over the current top surface."""
+        ps = self.ps
+        if thickness <= 0:
+            return
+        top = self.domain.getLevelSets()[-1]
+        mesh = ps.ls.Mesh()
+        ps.ls.ToSurfaceMesh(top, mesh).apply()
+        nodes = [[float(v) for v in node] for node in mesh.getNodes()]
+        triangles = [list(tri) for tri in mesh.getTriangles()]
+        if not nodes or not triangles:
+            raise RuntimeError(f"cannot deposit {material}: the top surface is empty")
+        normals = [[0.0, 0.0, 0.0] for _ in nodes]
+        for a, b, c in triangles:
+            ax, ay, az = nodes[a]
+            bx, by, bz = nodes[b]
+            cx, cy, cz = nodes[c]
+            ux, uy, uz = bx - ax, by - ay, bz - az
+            vx, vy, vz = cx - ax, cy - ay, cz - az
+            nx, ny, nz = uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx
+            for index in (a, b, c):
+                normals[index][0] += nx
+                normals[index][1] += ny
+                normals[index][2] += nz
+        outward = ps.ls.Mesh()
+        moved = []
+        for index, (x, y, z) in enumerate(nodes):
+            nx, ny, nz = normals[index]
+            length = (nx * nx + ny * ny + nz * nz) ** 0.5
+            if length <= 1e-20:
+                moved.append(outward.insertNextNode([x, y, z]))
+                continue
+            moved.append(outward.insertNextNode([x + nx / length * thickness,
+                                                 y + ny / length * thickness,
+                                                 z + nz / length * thickness]))
+        for a, b, c in triangles:
+            outward.insertNextTriangle([moved[a], moved[b], moved[c]])
+        shell = ps.LevelSet(self.domain.getGrid())
+        reconstruction = ps.ls.FromSurfaceMesh(shell, outward)
+        reconstruction.setRemoveBoundaryTriangles(False)
+        reconstruction.apply()
+        if shell.getNumberOfPoints() == 0:
+            raise RuntimeError(f"conformal shell for {material} came out empty")
+        self.domain.insertNextLevelSetAsMaterial(shell, _material_handle(ps, material))
+        self._register(material)
+        if material not in self.stack:
+            self.stack.append(material)
         self._mesh = None
         self._columns = None
 

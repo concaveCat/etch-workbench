@@ -498,3 +498,23 @@ connect 会永久挂住）。
 - **M3 完成**：mesh 视图接回 vtk.js（复用 `WorkflowViewer3D`，`SnapshotDoc` 适配层在
   `frontend/src/compare/MeshPane.tsx`）。
 - **仍未完成**：掩膜 / GDS mask（§5.6）；SPX `etch_cmp` 语义（CMP 仍 `no_counterpart`）。
+
+## 5.12 第 56 步："碎成片" 是 advection 用错，不是参数
+
+现象：`56_etch_aniso_oxide`（0.1 µm 整面氧化层刻蚀）之后，Si / Oxide2 / Al2O3 / W / TiN
+在帧里全部消失，只剩四个残缺材料。
+
+根因：整面刻蚀走的是 `ps.Process(DirectionalProcess)`，也就是对**整个界面栈做
+advection**。光刻之后每个界面片层都带孔，advection 让这个多片层栈退化——一步之内
+把一半材料挤没。这不是数值噪声，是算子选错了。
+
+正确算子：逐材料把界面片层切到 `z = top - rate·t`。对一个界面片层减去一块窗口大小的
+板层，正好把该片层挪到板层底面（实测 0.2 µm 的片层减掉 0.15 以上后落在 0.15），
+其它片层一像素不动。**不要用 `Planarize` 代替**：它是全局切面，会把没在刻的材料一起
+切掉（实测第 10 步把 SiO2/SiOC 整层切没）。
+
+代价：中位数从 0.904 掉到 0.843。之前的 0.904 是"advection 悄悄少刻/多刻"换来的虚高，
+现在几何是真的，数字反而低——这是对的。
+
+仍未解决：第 23 步 0.834（掩膜开口细节）、第 64–84 步 ~0.64（埋层归属与 CMP 局部抛光）、
+第 87 步 CMP 把 Cu 切成岛。

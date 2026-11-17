@@ -586,8 +586,15 @@ class ViennapsSession:
             reconstruction.apply()
             if cutter.getNumberOfPoints() == 0:
                 continue
-            self.domain.applyBooleanOperation(cutter,
-                                              ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT, True)
+            # Cut only the level sets of the materials being etched. Applying the
+            # boolean to *all* level sets left the buried layers off the exported
+            # surface (measured: after one masked etch the frame showed only
+            # SiO2/SiOC/BARC/PMMA while the substrate was still present in the
+            # domain).
+            for name in names:
+                target = self.domain.getMaterialLevelSet(_material_handle(ps, name))
+                ps.ls.BooleanOperation(target, cutter,
+                                       ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
         self._mesh = None
         self._columns = None
 

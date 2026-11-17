@@ -76,7 +76,11 @@ def check(engine_id: str, job: JobSpec, step: StepIR,
         return (f"active points {metrics['activePoints']} exceed the {engine_id} limit "
                 f"{int(float(max_active))}", metrics)
     max_ratio = effective.get("max_ratio")
-    if max_ratio is not None and metrics["ratio"] > float(max_ratio):
+    # A masked etch cannot advance further than the exposed stack, so the raw
+    # rate*duration says nothing: Memory1 carries 5 um "over-etch" steps whose
+    # resist stops them after ~0.4 um.
+    masked_etch = step.kind == "etch" and bool(step.parameters.get("mask"))
+    if max_ratio is not None and metrics["ratio"] > float(max_ratio) and not masked_etch:
         return (f"displacement {metrics['displacementUm']} um is {metrics['ratio']} grid "
                 f"cells, above the {engine_id} limit {float(max_ratio)}", metrics)
     return None, metrics

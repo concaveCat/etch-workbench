@@ -151,7 +151,7 @@ class ViennapsSession:
                     model.setMaterialRate(_material_handle(ps, material), float(rate))
                 ps.Process(self.domain, model, float(step.duration)).apply()
             elif (step.mechanism == "anisotropic" and step.kind == "etch"
-                  and step.parameters.get("mask") and self._openings):
+                  and self._openings and not step.parameters.get("blanket")):
                 # Same representation limit as the ellipsoidal branch: a masked
                 # directional etch of a buried layer is cut geometrically through
                 # the openings instead of advecting the whole stack.
@@ -188,7 +188,7 @@ class ViennapsSession:
                     raise NotImplementedError("ellipsoidal step lists no rates")
                 masks = [_material_handle(ps, name)
                          for name in (step.parameters.get("mask") or [])]
-                if step.parameters.get("mask") and self._openings:
+                if self._openings and not step.parameters.get("blanket"):
                     # Native masked DirectionalProcess segfaults on a domain whose
                     # top level set carries the litho openings, so the exposed area
                     # is cut geometrically: through each opening, remove the top
@@ -486,9 +486,17 @@ class ViennapsSession:
         path = (self.job.layout or {}).get("path")
         if not path:
             raise NotImplementedError("litho needs job.layout.path")
-        from engines.layout import read_gds_polygons
+        from engines.layout import read_gds_polygons, to_gds
 
-        _, _, polygons = read_gds_polygons(Path(path))
+        target = Path(path)
+        if target.suffix.lower() in (".oas", ".oasis"):
+            # The comparison reads polygons from GDS records; convert once.
+            cached = Path(self.out) / "layout.gds"
+            if cached.is_file():
+                target = cached
+            else:
+                target = to_gds(target, cached)
+        _, _, polygons = read_gds_polygons(target)
         return [points for poly_layer, _datatype, points in polygons if poly_layer == layer]
 
     def probe(self, points: list[list[float]]) -> list[str]:

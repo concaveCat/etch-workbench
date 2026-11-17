@@ -169,6 +169,10 @@ class ViennapsSession:
     def apply(self, step: StepIR) -> StepOutcome:
         ps = self.ps
         started = time.perf_counter()
+        # Per-step notes, never inherited from the previous step.
+        self.last_fill_model = None
+        self.last_etch_clamp = None
+        self.last_deposit_model = None
         try:
             if step.mechanism == "isotropic" and step.kind == "deposit":
                 present = {name for name in self.stack}
@@ -272,6 +276,7 @@ class ViennapsSession:
                     model = ps.DirectionalProcess([0.0, 0.0, 1.0], rates, 0.0, 0.0)
                     ps.Process(self.domain, model, float(step.duration)).apply()
             elif step.mechanism == "fill":
+                self.last_fill_model = None
                 self._fill(step)
             elif step.mechanism == "litho":
                 self._litho(step)
@@ -309,8 +314,15 @@ class ViennapsSession:
                                reason=f"{type(exc).__name__}: {exc}")
         self._mesh = None
         self._columns = None
+        metrics: dict[str, Any] = {}
+        for key, value in (("fillModel", getattr(self, "last_fill_model", None)),
+                           ("etchClamp", getattr(self, "last_etch_clamp", None)),
+                           ("depositModel", getattr(self, "last_deposit_model", None))):
+            if value:
+                metrics[key] = value
         return StepOutcome(step_id=step.step_id, status="ok",
-                           wall_ms=(time.perf_counter() - started) * 1000.0)
+                           wall_ms=(time.perf_counter() - started) * 1000.0,
+                           metrics=metrics or None)
 
     # -- SPX-parity geometry operations ------------------------------------
     def _surface_top(self) -> float:
@@ -472,6 +484,11 @@ class ViennapsSession:
         self.last_etch_clamp = {"blanketCutoff": round(float(min(planes)), 6)}
         self._mesh = None
         self._columns = None
+
+    def _surface_relief(self) -> float:
+        mesh = self._surface_mesh()
+        zs = [float(node[2]) for node in mesh.getNodes()]
+        return (max(zs) - min(zs)) if zs else 0.0
 
     def _window_box(self, z0: float, z1: float):
         box = self.ps.LevelSet(self.domain.getGrid())
@@ -938,7 +955,8 @@ def run_job(job: JobSpec, out_dir: Path) -> dict[str, Any]:
             out = StepOutcome(step_id=step.step_id, status=out.status,
                               wall_ms=out.wall_ms,
                               frame=frame, checkpoint=session.checkpoint(step.step_id),
-                              metrics={"frame_ms": (time.perf_counter() - started) * 1000.0,
+                              metrics={**(out.metrics or {}),
+                                       "frame_ms": (time.perf_counter() - started) * 1000.0,
                                        "probe_ms": (time.perf_counter() - probe_started) * 1000.0,
                                        "probe_points": len(probe_points)},
                               reason=out.reason, probe=labels, section=section)

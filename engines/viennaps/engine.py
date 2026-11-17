@@ -161,7 +161,7 @@ class ViennapsSession:
                     model.setMaterialRate(_material_handle(ps, material), float(rate))
                 ps.Process(self.domain, model, float(step.duration)).apply()
             elif (step.mechanism == "anisotropic" and step.kind == "etch"
-                  and self._openings and not step.parameters.get("blanket")):
+                  and self._openings and step.parameters.get("patterned")):
                 # Same representation limit as the ellipsoidal branch: a masked
                 # directional etch of a buried layer is cut geometrically through
                 # the openings instead of advecting the whole stack.
@@ -198,7 +198,7 @@ class ViennapsSession:
                     raise NotImplementedError("ellipsoidal step lists no rates")
                 masks = [_material_handle(ps, name)
                          for name in (step.parameters.get("mask") or [])]
-                if self._openings and not step.parameters.get("blanket"):
+                if self._openings and step.parameters.get("patterned"):
                     # Native masked DirectionalProcess segfaults on a domain whose
                     # top level set carries the litho openings, so the exposed area
                     # is cut geometrically: through each opening, remove the top
@@ -223,29 +223,14 @@ class ViennapsSession:
             elif step.mechanism == "cmp":
                 params = step.parameters
                 if params.get("stop_material"):
-                    # Same form as SPX: polish down to the stop material's exposed
-                    # top plus the (usually negative) offset.
+                    # CMP stops on the stop layer: polish down to its highest point
+                    # (even when it is buried under a later film) plus the offset.
                     stop = str(params["stop_material"])
-                    # Use the highest point of the stop material *anywhere*, walls
-                    # included: a per-column maximum only sees horizontal tops and
-                    # stopped the polish at the field nitride instead of the plug
-                    # rim (measured on Memory1 step 17).
-                    mesh = self._surface_mesh()
-                    nodes = mesh.getNodes()
-                    data = mesh.getCellData()
-                    ids = None
-                    for index in range(data.getScalarDataSize()):
-                        if str(data.getScalarDataLabel(index)) == "MaterialIds":
-                            ids = list(data.getScalarData(index))
-                    if ids is None:
-                        raise RuntimeError("cmp needs MaterialIds on the surface mesh")
-                    stop_id = self._material_id(stop)
-                    tops = [float(nodes[k][2]) for tri, mid in zip(mesh.getTriangles(), ids)
-                            if int(mid) == stop_id for k in tri]
-                    if not tops:
+                    stop_top = self._material_top(stop)
+                    if stop_top is None:
                         raise RuntimeError(
-                            f"cmp stop material {stop!r} has no exposed surface")
-                    cutoff = max(tops) + float(params.get("offset", 0.0))
+                            f"cmp stop material {stop!r} is not present in the domain")
+                    cutoff = stop_top + float(params.get("offset", 0.0))
                 else:
                     cutoff = float(params["cutoff"])
                 ps.Planarize(self.domain, cutoff).apply()
@@ -297,6 +282,16 @@ class ViennapsSession:
         for level_set in self.domain.getLevelSets():
             ps.ls.BooleanOperation(box, level_set,
                                    ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
+        if material in self.stack:
+            # SPX's depo_fill routinely fills with a material that already exists
+            # (Memory1 fills SiO2 into an SiO2 stack). A second level set for the
+            # same material is not representable, so the fill is unioned into the
+            # existing body instead of inserted as a duplicate.
+            target = self.domain.getMaterialLevelSet(_material_handle(ps, material))
+            ps.ls.BooleanOperation(target, box, ps.ls.BooleanOperationEnum.UNION).apply()
+            self._mesh = None
+            self._columns = None
+            return
         self.domain.insertNextLevelSetAsMaterial(box, _material_handle(ps, material))
         self._register(material)
         if material not in self.stack:
@@ -399,6 +394,26 @@ class ViennapsSession:
                                               False)
         self._mesh = None
         self._columns = None
+
+    def _material_top(self, name: str) -> float | None:
+        """Highest point of one material, even when it is buried.
+
+        The exported surface only shows exposed interfaces, so a CMP stop layer
+        that is covered by a later film looked "missing" (measured: two Memory1 cmp
+        steps failed with "stop material has no exposed surface"). Reading the
+        material's own level set finds it anyway.
+        """
+        ps = self.ps
+        try:
+            level_set = self.domain.getMaterialLevelSet(_material_handle(ps, name))
+        except Exception:  # noqa: BLE001 - absent material is reported by the caller
+            return None
+        mesh = ps.ls.Mesh()
+        ps.ls.ToSurfaceMesh(level_set, mesh).apply()
+        nodes = mesh.getNodes()
+        if not nodes:
+            return None
+        return max(float(node[2]) for node in nodes)
 
     def _material_id(self, name: str) -> int:
         for material_id, material_name in self.materials.items():
@@ -559,7 +574,10 @@ class ViennapsSession:
             depths.setdefault(depth, []).append(name)
         for depth, names in depths.items():
             z1 = max(tops[name] for name in names) + margin
-            z0 = z1 - depth - margin
+            # Clamp to the domain floor: a 5 um Memory1 over-etch built a prism far
+            # outside the domain and the surface reconstruction never finished
+            # (measured: one step ran 14 minutes at ~1 core).
+            z0 = max(z1 - depth - margin, -float(self.job.initial.substrate_thickness) + margin)
             mesh = ps.ls.Mesh()
 
             def node(x, y, z):

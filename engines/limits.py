@@ -53,7 +53,7 @@ def estimate(job: JobSpec, step: StepIR) -> dict[str, Any]:
     active = (float(job.domain.width) / delta) * (float(job.domain.depth) / delta)
     rate = max((abs(float(value)) for value in step.rates.values()), default=0.0)
     displacement = rate * float(step.duration or 0.0)
-    if step.kind == "etch" and step.parameters.get("mask"):
+    if step.kind == "etch" and (step.parameters.get("mask") or step.parameters.get("patterned")):
         # A masked etch cannot advance further than the exposed stack: Memory1
         # carries 5 um "over-etch" steps whose resist stops them after ~0.4 um.
         displacement = min(displacement, float(job.domain.height))
@@ -79,8 +79,9 @@ def check(engine_id: str, job: JobSpec, step: StepIR,
     # A masked etch cannot advance further than the exposed stack, so the raw
     # rate*duration says nothing: Memory1 carries 5 um "over-etch" steps whose
     # resist stops them after ~0.4 um.
-    masked_etch = step.kind == "etch" and bool(step.parameters.get("mask"))
-    if max_ratio is not None and metrics["ratio"] > float(max_ratio) and not masked_etch:
+    bounded_etch = step.kind == "etch" and (
+        bool(step.parameters.get("mask")) or bool(step.parameters.get("patterned")))
+    if max_ratio is not None and metrics["ratio"] > float(max_ratio) and not bounded_etch:
         return (f"displacement {metrics['displacementUm']} um is {metrics['ratio']} grid "
                 f"cells, above the {engine_id} limit {float(max_ratio)}", metrics)
     return None, metrics

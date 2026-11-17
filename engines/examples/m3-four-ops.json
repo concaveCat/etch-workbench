@@ -47,28 +47,41 @@
       "duration": 0.0,
       "parameters": {
         "layer": 15,
+        "layer_name": "CS",
         "thickness": 0.05,
         "polarity": "negative",
-        "material": "PMMA",
-        "layer_name": "CS"
+        "material": "PMMA"
       }
     },
     {
-      "step_id": "s3_ellip",
+      "step_id": "s3_open_resist",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 0.06,
+      "rates": {
+        "PMMA": -1.0
+      },
+      "anisotropy": 1.0
+    },
+    {
+      "step_id": "s4_etch_oxide",
       "kind": "etch",
       "mechanism": "ellipsoidal",
       "duration": 0.05,
       "parameters": {
         "rates": {
           "SiO2": [
-            1.0,
-            0.2
+            -1.0,
+            -0.2
           ]
-        }
+        },
+        "mask": [
+          "PMMA"
+        ]
       }
     },
     {
-      "step_id": "s4_strip",
+      "step_id": "s5_strip",
       "kind": "strip",
       "mechanism": "strip",
       "duration": 0.0,

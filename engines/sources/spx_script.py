@@ -196,12 +196,12 @@ def translate(text: str, *, case_id: str, window: list[float], grid_delta: float
                 rates[material(materials[0])] = -abs(_rate(entry[1]))
             if not rates:
                 raise TranslationError(f"{step_id}: no material rates")
-            mask = [top_material] if patterned else []
+            mask = [top_material] if (patterned and top_material in present) else []
             steps.append(StepIR(
                 step_id=step_id, kind="etch",
                 mechanism="isotropic" if call.name == "etch_isotropic" else "anisotropic",
                 duration=_amount(call.kwargs.get("Time")), rates=rates, anisotropy=1.0,
-                parameters={"mask": mask}))
+                parameters={"mask": mask, "patterned": patterned}))
             continue
         if call.name == "etch_ellipsoidal":
             rates: dict[str, list[float]] = {}
@@ -210,10 +210,11 @@ def translate(text: str, *, case_id: str, window: list[float], grid_delta: float
                 if not materials:
                     continue
                 rates[material(materials[0])] = [-abs(_rate(entry[1])), -abs(_rate(entry[2]))]
-            mask = [top_material] if patterned else []
+            mask = [top_material] if (patterned and top_material in present) else []
             steps.append(StepIR(step_id=step_id, kind="etch", mechanism="ellipsoidal",
                                 duration=_amount(call.kwargs.get("Time")),
-                                parameters={"rates": rates, "mask": mask}))
+                                parameters={"rates": rates, "mask": mask,
+                                            "patterned": patterned}))
             continue
         if call.name == "etch_strip":
             materials = _filter_materials(call.kwargs.get("MaterialFilter"))

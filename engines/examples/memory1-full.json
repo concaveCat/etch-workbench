@@ -140,7 +140,8 @@
       "parameters": {
         "mask": [
           "PMMA"
-        ]
+        ],
+        "patterned": true
       }
     },
     {
@@ -170,9 +171,8 @@
       "anisotropy": 1.0,
       "comparability": "exact",
       "parameters": {
-        "mask": [
-          "PMMA"
-        ]
+        "mask": [],
+        "patterned": true
       }
     },
     {
@@ -344,7 +344,8 @@
       "parameters": {
         "mask": [
           "PMMA"
-        ]
+        ],
+        "patterned": true
       }
     },
     {
@@ -377,9 +378,8 @@
             -0.3
           ]
         },
-        "mask": [
-          "PMMA"
-        ]
+        "mask": [],
+        "patterned": true
       }
     },
     {
@@ -395,9 +395,8 @@
       "anisotropy": 1.0,
       "comparability": "exact",
       "parameters": {
-        "mask": [
-          "PMMA"
-        ]
+        "mask": [],
+        "patterned": true
       }
     },
     {
@@ -478,7 +477,8 @@
       "parameters": {
         "mask": [
           "W"
-        ]
+        ],
+        "patterned": true
       }
     },
     {
@@ -498,7 +498,8 @@
       "parameters": {
         "mask": [
           "W"
-        ]
+        ],
+        "patterned": true
       }
     },
     {
@@ -607,7 +608,8 @@
       "parameters": {
         "mask": [
           "PMMA"
-        ]
+        ],
+        "patterned": true
       }
     },
     {
@@ -636,9 +638,8 @@
       "anisotropy": 1.0,
       "comparability": "exact",
       "parameters": {
-        "mask": [
-          "PMMA"
-        ]
+        "mask": [],
+        "patterned": true
       }
     },
     {
@@ -652,9 +653,8 @@
       "anisotropy": 1.0,
       "comparability": "exact",
       "parameters": {
-        "mask": [
-          "PMMA"
-        ]
+        "mask": [],
+        "patterned": true
       }
     },
     {
@@ -790,7 +790,8 @@
       "parameters": {
         "mask": [
           "PMMA"
-        ]
+        ],
+        "patterned": true
       }
     },
     {
@@ -819,9 +820,8 @@
       "anisotropy": 1.0,
       "comparability": "exact",
       "parameters": {
-        "mask": [
-          "PMMA"
-        ]
+        "mask": [],
+        "patterned": true
       }
     },
     {
@@ -835,9 +835,8 @@
       "anisotropy": 1.0,
       "comparability": "exact",
       "parameters": {
-        "mask": [
-          "PMMA"
-        ]
+        "mask": [],
+        "patterned": true
       }
     },
     {
@@ -973,7 +972,8 @@
       "parameters": {
         "mask": [
           "PMMA"
-        ]
+        ],
+        "patterned": true
       }
     },
     {
@@ -1002,9 +1002,8 @@
       "anisotropy": 1.0,
       "comparability": "exact",
       "parameters": {
-        "mask": [
-          "PMMA"
-        ]
+        "mask": [],
+        "patterned": true
       }
     },
     {
@@ -1018,9 +1017,8 @@
       "anisotropy": 1.0,
       "comparability": "exact",
       "parameters": {
-        "mask": [
-          "PMMA"
-        ]
+        "mask": [],
+        "patterned": true
       }
     },
     {
@@ -1156,7 +1154,8 @@
       "parameters": {
         "mask": [
           "PMMA"
-        ]
+        ],
+        "patterned": true
       }
     },
     {
@@ -1185,9 +1184,8 @@
       "anisotropy": 1.0,
       "comparability": "exact",
       "parameters": {
-        "mask": [
-          "PMMA"
-        ]
+        "mask": [],
+        "patterned": true
       }
     },
     {
@@ -1201,9 +1199,8 @@
       "anisotropy": 1.0,
       "comparability": "exact",
       "parameters": {
-        "mask": [
-          "PMMA"
-        ]
+        "mask": [],
+        "patterned": true
       }
     },
     {

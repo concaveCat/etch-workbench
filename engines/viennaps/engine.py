@@ -195,13 +195,16 @@ class ViennapsSession:
                     # from the current top surface offset outward by t.
                     self._deposit_shell(material, abs(float(rate)) * float(step.duration))
             elif step.mechanism == "isotropic" and step.kind == "etch":
-                default = max((abs(float(rate)) for rate in step.rates.values()), default=0.0)
-                model = ps.IsotropicProcess(rate=default, maskMaterials=[])
-                for material, rate in step.rates.items():
-                    model.setMaterialRate(_material_handle(ps, material), float(rate))
-                ps.Process(self.domain, model, self._etch_duration(
-                    step, {_material_handle(ps, name): (rate, rate)
-                           for name, rate in step.rates.items()})).apply()
+                # Advecting the sheet stack (IsotropicProcess) moves every
+                # interface of the etched materials *and* lets the stack degenerate
+                # once the sheets carry litho holes: measured, a 0.1 um blanket
+                # oxide etch (step 56) dropped Si/Oxide2/Al2O3/W/TiN out of the
+                # frame in a single step. A blanket etch of a layered stack is a
+                # plane cut, which is what Planarize does.
+                duration = self._etch_duration(step, {
+                    _material_handle(ps, name): (rate, rate)
+                    for name, rate in step.rates.items()})
+                self._blanket_etch(step, duration)
             elif (step.mechanism == "anisotropic" and step.kind == "etch"
                   and self._openings and step.parameters.get("patterned")
                   and self._mask_present(step)):
@@ -223,9 +226,11 @@ class ViennapsSession:
                     raise NotImplementedError("anisotropic step has no rates")
                 direction = [float(v) for v in (step.parameters.get("direction")
                                                 or [0.0, 0.0, 1.0])]
-                model = ps.DirectionalProcess(direction, rates, 0.0, 0.0)
-                duration = self._etch_duration(step, rates) if step.kind == "etch" else float(step.duration)
-                ps.Process(self.domain, model, duration).apply()
+                if step.kind == "etch":
+                    self._blanket_etch(step, self._etch_duration(step, rates))
+                else:
+                    model = ps.DirectionalProcess(direction, rates, 0.0, 0.0)
+                    ps.Process(self.domain, model, float(step.duration)).apply()
             elif step.mechanism == "strip":
                 names = [str(name) for name in step.parameters.get("materials") or []]
                 if not names:
@@ -427,6 +432,64 @@ class ViennapsSession:
                                    ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
         self._mesh = None
         self._columns = None
+
+    def _blanket_etch(self, step: StepIR, duration: float) -> None:
+        """Unmasked etch = cut every interface down to ``top - rate*duration``.
+
+        The cut plane is the *lowest* of the per-material planes, so a step with
+        several rates removes each material by its own amount in the limit where
+        the slowest material sets the plane; steps whose rates differ are recorded
+        in the metrics. This keeps the sheet stack intact, which advection does not
+        once the sheets carry lithographic holes.
+        """
+        planes: list[float] = []
+        for name, rate in step.rates.items():
+            top = self._member_top(name)
+            if top is None or float(rate) >= 0:
+                continue
+            planes.append(top - abs(float(rate)) * float(duration))
+        if not planes:
+            self.last_etch_clamp = {"blanket": "no exposed material with a rate"}
+            return
+        # Per material: subtracting a window-wide slab from one interface sheet
+        # moves that sheet to the slab bottom and leaves every other sheet alone
+        # (measured: a sheet at 0.2 um ends at 0.15 after subtracting the slab above
+        # 0.15). Planarize would instead cut *all* sheets above the plane and wipe
+        # the layers that are not being etched.
+        limit = float(self.job.domain.height) + 1.0
+        for name, rate in step.rates.items():
+            top = self._member_top(name)
+            if top is None or float(rate) >= 0:
+                continue
+            cutoff = top - abs(float(rate)) * float(duration)
+            for sheet in (self._ls.get(name) or []):
+                self.ps.ls.BooleanOperation(
+                    sheet, self._window_box(cutoff, limit),
+                    self.ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
+        self.last_etch_clamp = {"blanketCutoff": round(float(min(planes)), 6)}
+        self._mesh = None
+        self._columns = None
+
+    def _window_box(self, z0: float, z1: float):
+        box = self.ps.LevelSet(self.domain.getGrid())
+        self.ps.MakeGeometry(box, self.ps.Box(
+            [0.0, 0.0, float(z0)],
+            [float(self.job.domain.width), float(self.job.domain.depth), float(z1)])).apply()
+        return box
+
+    def _member_top(self, name: str) -> float | None:
+        """Highest point of one material's own sheet (None when it is absent)."""
+        ref = self._ls.get(name)
+        if isinstance(ref, list):
+            ref = ref[-1] if ref else None
+        if ref is None:
+            return None
+        mesh = self.ps.ls.Mesh()
+        self.ps.ls.ToSurfaceMesh(ref, mesh).apply()
+        nodes = mesh.getNodes()
+        if not nodes:
+            return None
+        return max(float(node[2]) for node in nodes)
 
     def _mask_present(self, step: StepIR) -> bool:
         """True when the resist named by the step is still in the domain."""

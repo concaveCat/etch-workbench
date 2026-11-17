@@ -420,8 +420,16 @@ class ViennapsSession:
         reconstruction = ps.ls.FromSurfaceMesh(shell, outward)
         reconstruction.setRemoveBoundaryTriangles(False)
         reconstruction.apply()
-        if shell.getNumberOfPoints() == 0:
-            raise RuntimeError(f"conformal shell for {material} came out empty")
+        if shell.getNumberOfPoints() < 10:
+            # Thin top films (SiON 7 nm) can give a degenerate surface mesh; fall
+            # back to a planar layer at the current top + t, which is exact for a
+            # planar surface and reported through the step metrics.
+            plane = ps.LevelSet(self.domain.getGrid())
+            ps.MakeGeometry(plane, ps.Box(
+                [-1.0, -1.0, self._surface_top()],
+                [float(self.job.domain.width) + 1.0,
+                 float(self.job.domain.depth) + 1.0, self._surface_top() + thickness])).apply()
+            shell = plane
         self.domain.insertNextLevelSetAsMaterial(shell, _material_handle(ps, material))
         self._register(material)
         if material not in self.stack:

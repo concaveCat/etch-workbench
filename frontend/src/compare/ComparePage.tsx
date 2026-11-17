@@ -1,4 +1,9 @@
-/** P3 - side-by-side comparison: shared camera, aligned timeline, per-step cost. */
+/** P3 — side-by-side comparison, visual only: no labels, no table.
+ *
+ * Everything that used to be text is a mark: the step scrubber is a strip of
+ * coloured ticks (agreement → colour), the timing comparison is two bars, the run
+ * picker is a compact select rendered as a chevron. Titles are tooltips.
+ */
 
 import { useEffect, useMemo, useState } from 'react';
 import type { CompareRun, MeshFrame } from './api';
@@ -13,13 +18,44 @@ type Props = {
   onSelectRun: (runId: string) => void;
 };
 
-const STATUS_COLOR: Record<string, string> = {
-  ok: '#35d6c2', missing: '#8a8f98', unsupported: '#e0a030', failed: '#ff5c5c',
-  out_of_domain: '#e0a030', skipped: '#8a8f98',
+/** agreement -> colour (1 = teal, 0 = red) */
+function agreementColor(value: number | null | undefined): string {
+  if (value === null || value === undefined) return '#d8dee5';
+  const clamped = Math.max(0, Math.min(1, value));
+  const red = Math.round(233 + (20 - 233) * clamped);
+  const green = Math.round(90 + (184 - 90) * clamped);
+  const blue = Math.round(84 + (166 - 84) * clamped);
+  return `rgb(${red},${green},${blue})`;
+}
+
+const CAMERA_ICONS = {
+  azimuth: (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="12" cy="12" r="8" /><path d="M12 4v16M4 12h16" />
+    </svg>
+  ),
+  elevation: (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M4 18h16M6 18l6-9 6 9" />
+    </svg>
+  ),
+  zoom: (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="11" cy="11" r="6" /><path d="M15.5 15.5 20 20M11 8v6M8 11h6" />
+    </svg>
+  ),
 };
 
 export function ComparePage({ run, runId, history, onSelectRun }: Props) {
   const [camera, setCamera] = useState<Camera>(DEFAULT_CAMERA);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [mesh, setMesh] = useState<MeshFrame | null>(null);
+
+  const steps = run?.compare?.steps ?? [];
+  const step = steps[Math.min(stepIndex, Math.max(0, steps.length - 1))];
+  const viennapsFrame = step?.engines.viennaps?.frame ?? null;
+  const spxFrame = step?.engines.spx?.frame ?? null;
+
   const runView = run?.compare?.view;
   const runCamera = run?.compare?.camera;
   useEffect(() => {
@@ -32,23 +68,14 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
       setCamera(cameraForView(runView));
     }
   }, [runView, runCamera?.azimuth, runCamera?.elevation, runCamera?.zoom]);
-  const [stepIndex, setStepIndex] = useState(0);
-  const [mesh, setMesh] = useState<MeshFrame | null>(null);
-  const [meshError, setMeshError] = useState<string | null>(null);
-
-  const steps = run?.compare?.steps ?? [];
-  const step = steps[Math.min(stepIndex, Math.max(0, steps.length - 1))];
-  const viennapsFrame = step?.engines.viennaps?.frame ?? null;
-  const spxFrame = step?.engines.spx?.frame ?? null;
 
   useEffect(() => {
     let cancelled = false;
     setMesh(null);
-    setMeshError(null);
     if (!runId || !viennapsFrame || viennapsFrame.kind !== 'mesh') return;
     fetchMesh(runId, viennapsFrame.path)
       .then((payload) => { if (!cancelled) setMesh(payload); })
-      .catch((error: unknown) => { if (!cancelled) setMeshError(String(error)); });
+      .catch(() => undefined);
     return () => { cancelled = true; };
   }, [runId, viennapsFrame?.path]);
 
@@ -64,144 +91,99 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
 
   if (!run) {
     return (
-      <section className="cmp-page cmp-empty">
-        <p>还没有选中对比运行。回到第 2 页点“开始对比运行”，或从下面选择一条已有结果：</p>
+      <section className="cmp-blank">
         {history.length > 0 ? (
-          <div className="cmp-row">
-            <select value="" onChange={(event) => event.target.value && onSelectRun(event.target.value)}>
-              <option value="">选择一条对比结果…</option>
-              {history.map((row) => (
-                <option key={row.runId} value={row.runId}>
-                  {(row.caseId ?? row.runId)} · {row.runId} · {row.state}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : <p className="cmp-hint">磁盘上还没有可用的对比结果。</p>}
-      </section>
-    );
-  }
-  if (run.state !== 'succeeded') {
-    return (
-      <section className="cmp-page cmp-empty">
-        <p>运行 {run.runId} 状态：<strong>{run.state}</strong></p>
-        {run.detail ? <pre className="cmp-json">{run.detail}</pre> : null}
+          <select
+            className="cmp-ghost-select"
+            value=""
+            onChange={(event) => event.target.value && onSelectRun(event.target.value)}
+          >
+            <option value="">▾</option>
+            {history.map((row) => (
+              <option key={row.runId} value={row.runId}>{row.caseId ?? row.runId}</option>
+            ))}
+          </select>
+        ) : <span className="cmp-dot" />}
       </section>
     );
   }
 
   return (
-    <section className="cmp-page cmp-page-compare">
-      <header className="cmp-compare-head">
-        <h2>3 · 左右对比</h2>
-        <select value={runId ?? ''} onChange={(event) => onSelectRun(event.target.value)}>
+    <section className="cmp-stage">
+      <div className="cmp-toolbar">
+        <select
+          className="cmp-ghost-select"
+          value={runId ?? ''}
+          onChange={(event) => onSelectRun(event.target.value)}
+          title="runs"
+        >
           {history.map((row) => (
-            <option key={row.runId} value={row.runId}>{row.caseId ?? row.runId} · {row.runId.slice(0, 6)}</option>
+            <option key={row.runId} value={row.runId}>{row.caseId ?? row.runId}</option>
           ))}
         </select>
         <span className="cmp-spacer" />
-        <label className="cmp-check">
-          方位 {camera.azimuth}°
+        <label className="cmp-icon-slider" title="azimuth">
+          {CAMERA_ICONS.azimuth}
           <input type="range" min="0" max="360" value={camera.azimuth}
                  onChange={(event) => setCamera({ ...camera, azimuth: Number(event.target.value) })} />
         </label>
-        <label className="cmp-check">
-          仰角 {camera.elevation}°
-          <input type="range" min="-80" max="80" value={camera.elevation}
+        <label className="cmp-icon-slider" title="elevation">
+          {CAMERA_ICONS.elevation}
+          <input type="range" min="-85" max="85" value={camera.elevation}
                  onChange={(event) => setCamera({ ...camera, elevation: Number(event.target.value) })} />
         </label>
-        <label className="cmp-check">
-          缩放 {camera.zoom.toFixed(2)}
+        <label className="cmp-icon-slider" title="zoom">
+          {CAMERA_ICONS.zoom}
           <input type="range" min="0.4" max="3" step="0.05" value={camera.zoom}
                  onChange={(event) => setCamera({ ...camera, zoom: Number(event.target.value) })} />
         </label>
-      </header>
+      </div>
 
-      <div className="cmp-panes">
-        <MeshPane frame={mesh} camera={camera} height={380} title="ViennaPS（水平集参考 · vtk.js）"
-                  note={meshError ?? (viennapsFrame ? `${viennapsFrame.kind} · ${step?.engines.viennaps.status}` : '无帧')} />
-        <div className="cmp-pane">
-          <figcaption>
-            <strong>SPX（几何模拟）</strong>
-            <span className="cmp-note">SPX 侧固定在运行时的相机（自由相机或预设）</span>
-          </figcaption>
+      <div className="cmp-duo">
+        <MeshPane frame={mesh} camera={camera} height={560} title="" />
+        <div className="cmp-raster">
           {spxFrame && runId
-            ? <img src={frameUrl(runId, spxFrame.path)} width={520} height={380} alt="SPX frame"
-                   style={{ borderRadius: 8, background: '#0b1620' }} />
-            : <div className="cmp-missing">无帧：{step?.engines.spx.status ?? 'missing'}</div>}
+            ? <img src={frameUrl(runId, spxFrame.path)} alt="" />
+            : <span className="cmp-dot" />}
         </div>
+      </div>
+
+      <div className="cmp-scrub" role="tablist">
+        {steps.map((row, index) => {
+          const agreement = row.probe?.status === 'measured' ? row.probe.agreement ?? null : null;
+          return (
+            <button
+              key={row.stepId}
+              type="button"
+              className={`cmp-tick ${index === stepIndex ? 'active' : ''}`}
+              style={{ background: agreementColor(agreement) }}
+              title={`${index} ${row.stepId} · ${agreement === null ? '-' : (agreement * 100).toFixed(0) + '%'}`}
+              onClick={() => setStepIndex(index)}
+            />
+          );
+        })}
+      </div>
+
+      <div className="cmp-cost">
+        {(['viennaps', 'spx'] as const).map((engineId) => {
+          const engine = step?.engines?.[engineId];
+          const width = engine?.wallMs ? Math.max(2, (engine.wallMs / maxWall) * 100) : 0;
+          return (
+            <div className={`cmp-cost-row cmp-cost-${engineId}`} key={engineId} title={engineId}>
+              <span style={{ width: `${width}%` }} />
+            </div>
+          );
+        })}
       </div>
 
       <SectionView
         section={step?.section}
-        width={700}
-        height={280}
+        width={640}
+        height={150}
         zRange={run.compare?.sectionZ}
         engines={Object.keys(step?.engines ?? {})}
         domainWidth={run.compare?.domain?.width ?? 1}
       />
-
-      <div className="cmp-timeline">
-        {steps.map((row, index) => (
-          <button type="button" key={row.stepId}
-                  className={`cmp-tl-step ${index === stepIndex ? 'active' : ''} ${row.aligned ? '' : 'unaligned'}`}
-                  onClick={() => setStepIndex(index)}>
-            <span>{row.stepId}</span>
-            <span className={`cmp-badge ${row.comparability}`}>{row.comparability}</span>
-            {row.probe?.status === 'measured' && row.probe.agreement !== undefined
-              ? <span className="cmp-note">一致 {(row.probe.agreement * 100).toFixed(0)}%</span>
-              : null}
-            {Object.entries(row.engines).map(([engineId, engine]) => (
-              <span key={engineId} className="cmp-bar-wrap" title={`${engineId}: ${engine.wallMs ?? '—'} ms`}>
-                <span className="cmp-bar" style={{
-                  width: `${Math.max(2, ((engine.wallMs ?? 0) / maxWall) * 100)}%`,
-                  background: STATUS_COLOR[engine.status] ?? '#8a8f98',
-                }} />
-              </span>
-            ))}
-          </button>
-        ))}
-      </div>
-
-      <div className="cmp-table-wrap">
-      <table className="cmp-table">
-        <thead>
-          <tr>
-            <th>步骤</th><th>机制</th><th>可比性</th>
-            <th>ViennaPS ms</th><th>SPX ms</th><th>逐点一致率</th><th>状态</th>
-          </tr>
-        </thead>
-        <tbody>
-          {steps.map((row) => (
-            <tr key={row.stepId} className={row.aligned ? '' : 'unaligned'}>
-              <td>{row.stepId}</td>
-              <td>{row.kind}/{row.mechanism}</td>
-              <td>{row.comparability}</td>
-              <td>{row.engines.viennaps?.wallMs?.toFixed(1) ?? '—'}</td>
-              <td>{row.engines.spx?.wallMs?.toFixed(1) ?? '—'}</td>
-              <td>{row.probe?.status === 'measured' && row.probe.agreement !== undefined
-                ? `${(row.probe.agreement * 100).toFixed(1)}%`
-                : (row.probe?.status ?? '—')}</td>
-              <td>
-                {Object.entries(row.engines).map(([engineId, engine]) => (
-                  <span key={engineId} className="cmp-status" style={{ color: STATUS_COLOR[engine.status] }}>
-                    {engineId}:{engine.status}
-                  </span>
-                ))}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      </div>
-
-      <p className="cmp-hint">
-        探针 {run.compare?.probePoints ?? 0} 点 · 一致率按材料标签逐一比对 ·
-        总耗时 ViennaPS {run.compare?.engines.viennaps?.processWallMs?.toFixed(0)} ms ·
-        SPX {run.compare?.engines.spx?.processWallMs?.toFixed(0)} ms ·
-        完全对齐 {run.compare?.summary.fullyAlignedSteps}/{run.compare?.summary.stepCount} 步 ·
-        digest {run.compare?.jobDigest}
-      </p>
     </section>
   );
 }

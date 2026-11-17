@@ -1,4 +1,4 @@
-/** Comparison shell: three pages, one draft, one run. */
+/** Comparison shell: three icon-only pages, one draft, one run. */
 
 import { useCallback, useEffect, useState } from 'react';
 import type { CompareRun } from './api';
@@ -11,11 +11,32 @@ import './compare.css';
 
 type Page = 'geometry' | 'flow' | 'compare';
 
-const PAGES: { id: Page; label: string }[] = [
-  { id: 'geometry', label: '1 · 初始几何' },
-  { id: 'flow', label: '2 · 流程图' },
-  { id: 'compare', label: '3 · 对比' },
-];
+/** Icon-only navigation: the interface carries no labels. */
+const ICONS: Record<Page | 'exit', React.ReactNode> = {
+  geometry: (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M12 3 21 8v8l-9 5-9-5V8z" /><path d="M3 8l9 5 9-5M12 13v8" />
+    </svg>
+  ),
+  flow: (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="4" y="3" width="16" height="4" rx="1.5" />
+      <rect x="4" y="10" width="16" height="4" rx="1.5" />
+      <rect x="4" y="17" width="16" height="4" rx="1.5" />
+    </svg>
+  ),
+  compare: (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="3" y="4" width="7.5" height="16" rx="1.5" />
+      <rect x="13.5" y="4" width="7.5" height="16" rx="1.5" />
+    </svg>
+  ),
+  exit: (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" /><path d="M10 8l-4 4 4 4M6 12h9" />
+    </svg>
+  ),
+};
 
 export function CompareApp({ onExit }: { onExit: () => void }) {
   const [page, setPage] = useState<Page>('geometry');
@@ -84,15 +105,21 @@ export function CompareApp({ onExit }: { onExit: () => void }) {
   return (
     <div className="cmp-app">
       <header className="cmp-top">
-        <strong>引擎对比工作台</strong>
         <nav>
-          {PAGES.map((row) => (
-            <button key={row.id} type="button" className={page === row.id ? 'active' : ''}
-                    onClick={() => setPage(row.id)}>{row.label}</button>
+          {(['geometry', 'flow', 'compare'] as Page[]).map((id) => (
+            <button
+              key={id}
+              type="button"
+              title={id}
+              aria-label={id}
+              className={page === id ? 'active' : ''}
+              onClick={() => setPage(id)}
+            >{ICONS[id]}</button>
           ))}
         </nav>
         <span className="cmp-spacer" />
-        <button type="button" onClick={onExit}>返回 Workbench</button>
+        {busy ? <span className="cmp-dot cmp-dot-busy" aria-hidden /> : null}
+        <button type="button" title="exit" aria-label="exit" onClick={onExit}>{ICONS.exit}</button>
       </header>
       {page === 'geometry' ? <GeometryPage draft={draft} onChange={setDraft} /> : null}
       {page === 'flow' ? (

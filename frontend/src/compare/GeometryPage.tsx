@@ -84,23 +84,25 @@ export function GeometryPage({ draft, onChange }: Props) {
       <div className="cmp-preview">
         <h3>材料栈示意</h3>
         <svg viewBox="0 0 220 260" className="cmp-stack">
-          {initial.films.map((film, index) => {
-            const height = (film.thickness / totalHeight) * 200;
-            const below = initial.films.slice(0, index).reduce((sum, f) => sum + f.thickness, 0);
-            const y = 220 - ((below + film.thickness) / totalHeight) * 200;
-            return (
-              <g key={index}>
-                <rect x="20" y={y} width="180" height={height} fill={MATERIAL_COLORS[film.material] ?? '#888'} />
-                <text x="205" y={y + height / 2 + 4} fontSize="9" fill="#cfe">
-                  {film.material} {film.thickness}µm
-                </text>
-              </g>
-            );
-          })}
-          <rect x="20" y={220 - (initial.substrate_thickness / totalHeight) * 200}
-                width="180" height={(initial.substrate_thickness / totalHeight) * 200}
-                fill={MATERIAL_COLORS[initial.substrate] ?? '#888'} />
-          <text x="6" y={250} fontSize="9" fill="#7cf">{initial.substrate}</text>
+          {(() => {
+            const bottom = 230;
+            const scale = 200 / Math.max(totalHeight, 1e-9);
+            const rows: { y: number; height: number; color: string }[] = [];
+            let cursor = bottom;
+            const substrateHeight = initial.substrate_thickness * scale;
+            rows.push({ y: cursor - substrateHeight, height: substrateHeight,
+                        color: MATERIAL_COLORS[initial.substrate] ?? '#888' });
+            cursor -= substrateHeight;
+            for (const film of initial.films) {
+              const height = film.thickness * scale;
+              rows.push({ y: cursor - height, height, color: MATERIAL_COLORS[film.material] ?? '#888' });
+              cursor -= height;
+            }
+            return rows.map((row, index) => (
+              <rect key={index} x="20" y={row.y} width="150" height={Math.max(row.height, 1)}
+                    fill={row.color} stroke="#eef1f5" strokeWidth="0.5" />
+            ));
+          })()}
         </svg>
         <p className="cmp-hint">总高 {totalHeight.toFixed(3)} µm · 域 {domain.width}×{domain.depth}×{domain.height} µm</p>
       </div>

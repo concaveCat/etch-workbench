@@ -68,10 +68,12 @@ export function MeshPane({ frame, camera, height, title, note }: Props) {
 
   return (
     <figure className="cmp-pane">
-      <figcaption>
-        <strong>{title}</strong>
-        {note ? <span className="cmp-note">{note}</span> : null}
-      </figcaption>
+      {title || note ? (
+        <figcaption>
+          <strong>{title}</strong>
+          {note ? <span className="cmp-note">{note}</span> : null}
+        </figcaption>
+      ) : null}
       <div style={{ width: 520, height }}>
         {snapshot ? (
           <WorkflowViewer3D

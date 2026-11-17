@@ -3,6 +3,9 @@
 
 .cmp-app {
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
   background: #07111d;
   color: #d8e6f2;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -37,7 +40,7 @@
   padding: 18px;
   align-items: start;
 }
-.cmp-page-compare { display: flex; flex-direction: column; }
+.cmp-page-compare { display: flex; flex-direction: column; min-width: 0; max-width: 100%; }
 .cmp-empty { display: block; padding: 40px; color: #9fc2dc; }
 
 .cmp-form h2, .cmp-preview h3 { margin: 0 0 8px; color: #bff3ea; }
@@ -96,7 +99,15 @@
   border: 1px dashed #2b4c69; border-radius: 8px; color: #7f9bb2; font-size: 12px;
 }
 
-.cmp-timeline { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0; }
+.cmp-timeline {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 0;
+  max-width: 100%;
+  min-width: 0;
+}
 .cmp-tl-step {
   display: flex; flex-direction: column; gap: 4px; min-width: 150px; text-align: left;
   background: #0a1a29; color: #d8e6f2; border: 1px solid #16324a; border-radius: 8px;
@@ -107,7 +118,8 @@
 .cmp-bar-wrap { display: block; width: 100%; height: 6px; background: #0f2637; border-radius: 3px; }
 .cmp-bar { display: block; height: 6px; border-radius: 3px; }
 
-.cmp-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+.cmp-table { width: 100%; max-width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+.cmp-table-wrap { max-height: 32vh; overflow: auto; }
 .cmp-table th { text-align: left; color: #7f9bb2; font-weight: 500; border-bottom: 1px solid #16324a; padding: 6px; }
 .cmp-table td { padding: 6px; border-bottom: 1px solid #0f2637; }
 .cmp-table tr.unaligned td { color: #7f9bb2; }

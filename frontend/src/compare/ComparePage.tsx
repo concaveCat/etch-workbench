@@ -63,7 +63,23 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
   }, [steps]);
 
   if (!run) {
-    return <section className="cmp-page cmp-empty">还没有对比运行。回到第 2 页点“开始对比运行”。</section>;
+    return (
+      <section className="cmp-page cmp-empty">
+        <p>还没有选中对比运行。回到第 2 页点“开始对比运行”，或从下面选择一条已有结果：</p>
+        {history.length > 0 ? (
+          <div className="cmp-row">
+            <select value="" onChange={(event) => event.target.value && onSelectRun(event.target.value)}>
+              <option value="">选择一条对比结果…</option>
+              {history.map((row) => (
+                <option key={row.runId} value={row.runId}>
+                  {(row.caseId ?? row.runId)} · {row.runId} · {row.state}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : <p className="cmp-hint">磁盘上还没有可用的对比结果。</p>}
+      </section>
+    );
   }
   if (run.state !== 'succeeded') {
     return (
@@ -147,6 +163,7 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
         ))}
       </div>
 
+      <div className="cmp-table-wrap">
       <table className="cmp-table">
         <thead>
           <tr>
@@ -176,6 +193,7 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
           ))}
         </tbody>
       </table>
+      </div>
 
       <p className="cmp-hint">
         探针 {run.compare?.probePoints ?? 0} 点 · 一致率按材料标签逐一比对 ·

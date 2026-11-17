@@ -28,6 +28,27 @@ from .. import storage
 
 COMPARE_RUNS = storage.VAR / "compare-runs"
 STATUS_FILE = "status.json"
+# A comparison written by ``engines.cli`` lives directly under ``var/<name>``
+# (``<name>/compare.json`` + ``<name>/engines/...``). The UI may show those too:
+# re-running an 88-step Memory1 flow just to look at it is 20 minutes.
+ADOPTED_RE = __import__("re").compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
+
+
+def _compare_root(run_id: str, *, must_exist: bool = True) -> tuple[Path, Path | None]:
+    """Return (compare root, status path) for a run id or an adopted var/<name>."""
+    if storage.ID_RE.fullmatch(run_id or ""):
+        run_dir = COMPARE_RUNS / run_id
+        if not run_dir.is_dir():
+            raise HTTPException(status_code=404, detail="comparison run not found")
+        return run_dir / "out", run_dir / STATUS_FILE
+    if ADOPTED_RE.fullmatch(run_id or ""):
+        candidate = (storage.VAR / run_id).resolve()
+        if (storage.VAR.resolve() in candidate.parents
+                and (candidate / "compare.json").is_file()):
+            return candidate, None
+    if must_exist:
+        raise HTTPException(status_code=404, detail="comparison run not found")
+    raise HTTPException(status_code=404, detail="comparison run not found")
 _locks: dict[str, threading.Lock] = {}
 _lock_guard = threading.Lock()
 
@@ -41,12 +62,8 @@ def _new_id() -> str:
 
 
 def _run_dir(run_id: str) -> Path:
-    if not storage.ID_RE.fullmatch(run_id or ""):
-        raise HTTPException(status_code=404, detail="comparison run not found")
-    path = COMPARE_RUNS / run_id
-    if path.is_dir():
-        return path
-    raise HTTPException(status_code=404, detail="comparison run not found")
+    root, _status = _compare_root(run_id)
+    return root
 
 
 def _write_status(path: Path, payload: dict[str, Any]) -> None:
@@ -142,34 +159,42 @@ def build_router() -> APIRouter:
 
     @router.get("/runs")
     async def list_runs(limit: int = 20) -> dict[str, Any]:
-        if not COMPARE_RUNS.is_dir():
-            return {"runs": []}
-        rows = []
-        for path in sorted(COMPARE_RUNS.iterdir(), reverse=True):
-            if not path.is_dir():
-                continue
-            status = _read_status(path / STATUS_FILE)
-            if status is None:
-                continue
-            rows.append(status)
-            if len(rows) >= max(1, min(limit, 100)):
-                break
-        return {"runs": rows}
+        rows: list[dict[str, Any]] = []
+        if COMPARE_RUNS.is_dir():
+            for path in sorted(COMPARE_RUNS.iterdir(), reverse=True):
+                if not path.is_dir():
+                    continue
+                status = _read_status(path / STATUS_FILE)
+                if status is not None:
+                    rows.append(status)
+        # Comparison output written by the CLI: any var/<name> with compare.json.
+        if storage.VAR.is_dir():
+            for path in sorted(storage.VAR.iterdir(), reverse=True):
+                if not path.is_dir() or not ADOPTED_RE.fullmatch(path.name):
+                    continue
+                if not (path / "compare.json").is_file():
+                    continue
+                rows.append({"runId": path.name, "state": "succeeded",
+                             "caseId": path.name, "adopted": True,
+                             "updatedAt": (path / "compare.json").stat().st_mtime})
+        rows.sort(key=lambda row: row.get("updatedAt") or 0, reverse=True)
+        return {"runs": rows[:max(1, min(limit, 100))]}
 
     @router.get("/runs/{run_id}")
     async def get_run(run_id: str) -> dict[str, Any]:
-        run_dir = _run_dir(run_id)
-        status = _read_status(run_dir / STATUS_FILE) or {"runId": run_id, "state": "unknown"}
-        compare_path = run_dir / "out" / "compare.json"
+        root, status_path = _compare_root(run_id)
+        status = (_read_status(status_path) if status_path else None) or {
+            "runId": run_id, "state": "succeeded" if (root / "compare.json").is_file() else "unknown"}
+        compare_path = root / "compare.json"
         if compare_path.is_file():
             status = {**status, "compare": storage.read_json(compare_path)}
         return status
 
     @router.get("/runs/{run_id}/frames/{frame_path:path}")
     async def get_frame(run_id: str, frame_path: str) -> FileResponse:
-        run_dir = _run_dir(run_id).resolve()
-        target = (run_dir / "out" / frame_path).resolve()
-        if run_dir not in target.parents or not target.is_file():
+        root = _compare_root(run_id)[0].resolve()
+        target = (root / frame_path).resolve()
+        if root not in target.parents or not target.is_file():
             raise HTTPException(status_code=404, detail="frame not found")
         if target.suffix not in (".json", ".png"):
             raise HTTPException(status_code=415, detail="unsupported frame type")

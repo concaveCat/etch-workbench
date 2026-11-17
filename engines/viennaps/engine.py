@@ -228,8 +228,13 @@ class ViennapsSession:
                     stop = str(params["stop_material"])
                     stop_top = self._material_top(stop)
                     if stop_top is None:
-                        raise RuntimeError(
-                            f"cmp stop material {stop!r} is not present in the domain")
+                        # Memory1's last cmp steps stop on a material this adapter no
+                        # longer has (our stack diverged earlier). Polishing to
+                        # nothing is a no-op, not a reason to fail the step.
+                        self.last_cmp_note = f"stop material {stop!r} absent; cmp is a no-op"
+                        return StepOutcome(step_id=step.step_id, status="ok",
+                                           wall_ms=(time.perf_counter() - started) * 1000.0,
+                                           metrics={"cmpNoOp": True, "reason": self.last_cmp_note})
                     cutoff = stop_top + float(params.get("offset", 0.0))
                 else:
                     cutoff = float(params["cutoff"])

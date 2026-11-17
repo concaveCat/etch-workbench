@@ -206,11 +206,13 @@ class ViennapsSession:
                     for name, rate in step.rates.items()})
                 self._blanket_etch(step, duration)
             elif (step.mechanism == "anisotropic" and step.kind == "etch"
-                  and self._openings and step.parameters.get("patterned")
-                  and self._mask_present(step)):
-                # Same representation limit as the ellipsoidal branch: a masked
-                # directional etch of a buried layer is cut geometrically through
-                # the openings instead of advecting the whole stack.
+                  and self._openings and step.parameters.get("patterned")):
+                # Patterned etch: cut only the materials that carry a rate inside
+                # the openings. The mask does *not* have to be photoresist -- after
+                # the resist strip the patterned BARC/SiOC above is the hard mask,
+                # and it is protected simply because it is not in the rate list.
+                # Gating on "the resist is still there" removed the top hard mask's
+                # protection and turned step 10 into a blanket ON strip.""
                 rates = {}
                 for name, rate in step.rates.items():
                     rates[_material_handle(ps, name)] = (float(rate), 0.0)
@@ -235,7 +237,9 @@ class ViennapsSession:
                 names = [str(name) for name in step.parameters.get("materials") or []]
                 if not names:
                     raise NotImplementedError("strip step lists no materials")
-                self._openings = []
+                # Do *not* drop the openings here: Memory1 strips the resist and
+                # then keeps etching down through the holes it left (steps 9 -> 10),
+                # so the pattern belongs to the contact module, not to one step.
                 for name in names:
                     self.domain.removeMaterial(_material_handle(ps, name))
                     self._ls.pop(name, None)
@@ -249,8 +253,7 @@ class ViennapsSession:
                     raise NotImplementedError("ellipsoidal step lists no rates")
                 masks = [_material_handle(ps, name)
                          for name in (step.parameters.get("mask") or [])]
-                if (self._openings and step.parameters.get("patterned")
-                        and self._mask_present(step)):
+                if self._openings and step.parameters.get("patterned"):
                     # Native masked DirectionalProcess segfaults on a domain whose
                     # top level set carries the litho openings, so the exposed area
                     # is cut geometrically: through each opening, remove the top
@@ -491,11 +494,6 @@ class ViennapsSession:
             return None
         return max(float(node[2]) for node in nodes)
 
-    def _mask_present(self, step: StepIR) -> bool:
-        """True when the resist named by the step is still in the domain."""
-        names = [str(name) for name in (step.parameters.get("mask") or [])]
-        return bool(names) and all(name in self.stack for name in names)
-
     def _etch_duration(self, step: StepIR, rates: dict[Any, tuple[float, float]]) -> float:
         """Clamp an etch to the thickness that is actually exposed.
 
@@ -681,7 +679,18 @@ class ViennapsSession:
             depth = round(abs(float(vertical)) * duration, 9)
             if depth <= 0 or name not in tops:
                 continue
-            depths.setdefault(depth, []).append(name)
+            # Stop at the material boundary, like SPX: a 5 um timed over-etch of a
+            # 35 nm nitride removes the nitride and nothing else. Without this the
+            # cutter ran to the domain floor and the patterned ON etch (step 10) left
+            # Si3N4 spanning -0.3..0.085 um.
+            below = [top for other, top in tops.items()
+                     if other != name and top < tops[name] - 1e-9]
+            thickness = tops[name] - (max(below) if below
+                                      else -float(self.job.initial.substrate_thickness))
+            depth = min(depth, max(thickness, 0.0))
+            if depth <= 0:
+                continue
+            depths.setdefault(round(depth, 9), []).append(name)
         for depth, names in depths.items():
             z1 = max(tops[name] for name in names) + margin
             # Clamp to the domain floor: a 5 um Memory1 over-etch built a prism far
@@ -723,10 +732,11 @@ class ViennapsSession:
                 for sheet in self._ls.get(name, []):
                     ps.ls.BooleanOperation(sheet, cutter,
                                            ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
-        # A resist is consumed by the etch it masks. Keeping the openings around made
-        # every later `patterned: true` step cut the *previous* mask pattern
-        # (measured: step 43 etched SiO2 through the step-40 plug openings).
-        self._openings = []
+        # The openings stay valid after the etch: they have been *transferred* into
+        # the layer below, so the next etch (Memory1 step 10 etches the ON through
+        # the holes that step 8 cut into BARC/SiOC) must use the same footprint.
+        # Clearing them here turned step 10 into a blanket ON strip -- the whole ON
+        # layer vanished -- and step 11 then had no hole left to show.
         self._mesh = None
         self._columns = None
 

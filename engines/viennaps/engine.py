@@ -40,6 +40,30 @@ MATERIAL_COLORS = {
 }
 
 
+
+def _ccw_ring(polygon: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    """Return the polygon ring in counter-clockwise order.
+
+    GDS polygons carry no winding convention, and the mask build (fan
+    triangulation + ``ls.FromSurfaceMesh``) turns a clockwise ring into an
+    inside-out body.  The level set then reads inside as outside and the
+    ``RELATIVE_COMPLEMENT`` etch silently becomes an *intersection* -- measured on
+    Memory1: layers 9/11/19 are stored clockwise, and the step-8 etch kept only the
+    volume inside the openings instead of cutting them.
+    """
+    ring = list(polygon)
+    if len(ring) > 3 and ring[0] == ring[-1]:
+        ring.pop()
+    area = 0.0
+    for index in range(len(ring)):
+        x0, y0 = ring[index]
+        x1, y1 = ring[(index + 1) % len(ring)]
+        area += x0 * y1 - x1 * y0
+    if area < 0:
+        ring.reverse()
+    return ring
+
+
 def _material_ids(ps: Any, name: str) -> int:
     from process_models.v2.engines.viennaps import material_handle
     return int(material_handle(ps, name))
@@ -63,6 +87,12 @@ class ViennapsSession:
         # Level-set order equals stack order (substrate first, films bottom-up):
         # the first level set whose filling fraction at a point is <= 0 owns it.
         self.stack: list[str] = []
+        # Live references to the domain's own level sets, keyed by material. This
+        # is not a convenience: domain.getMaterialLevelSet() hands back a *copy*, so
+        # every boolean applied to it was silently discarded. Measured: the
+        # step-8 masked etch left BARC/SiOC byte-identical while the same boolean on
+        # a reference cut the holes.
+        self._ls: dict[str, list[Any]] = {}
         self._mesh = None
         self._columns: dict[tuple[int, int], dict[str, float]] | None = None
         self.column = max(float(job.domain.grid_delta) * 2.0, 1e-4)
@@ -97,18 +127,29 @@ class ViennapsSession:
             raise NotImplementedError(
                 f"initial structure {initial.kind!r} is not wired for the ViennaPS adapter yet")
         height = 0.0
-        ps.MakePlane(self.domain, height=height,
-                     material=_material_handle(ps, initial.substrate),
-                     addToExisting=False).apply()
-        self._register(initial.substrate)
-        self.stack.append(initial.substrate)
+        self._add_sheet(initial.substrate, height)
         for film in initial.films:
             height += film.thickness
-            ps.MakePlane(self.domain, height=height,
-                         material=_material_handle(ps, film.material),
-                         addToExisting=True).apply()
-            self._register(film.material)
-            self.stack.append(film.material)
+            self._add_sheet(film.material, height)
+
+    def _add_sheet(self, material: str, height: float) -> None:
+        """Add one interface sheet of ``material`` at ``height`` and track it.
+
+        The stack is a set of sheets (one per deposited film), which is how
+        ViennaPS represents a layered structure. A fill of a *material that already
+        exists* is just another sheet above the current top -- not a second body,
+        which used to wipe the stack.
+        """
+        ps = self.ps
+        ps.MakePlane(self.domain, height=float(height),
+                     material=_material_handle(ps, material),
+                     addToExisting=bool(self.stack)).apply()
+        self._register(material)
+        self._ls.setdefault(material, []).append(self.domain.getLevelSets()[-1])
+        if material not in self.stack:
+            self.stack.append(material)
+        self._mesh = None
+        self._columns = None
 
     def _register(self, name: str) -> None:
         from process_models.v2.engines.viennaps import material_handle
@@ -140,15 +181,14 @@ class ViennapsSession:
                        if float(rate) > 0 and (name not in present or name != top)}
                 growth = {name: rate for name, rate in step.rates.items()
                           if abs(float(rate)) > 0 and name == top}
-                if growth:
-                    # The global rate is the default; per-material overrides only
-                    # apply on top of a non-zero default (measured: rate=0.0 made
-                    # every override inert and the deposit silently did nothing).
-                    default = max(abs(float(rate)) for rate in growth.values())
-                    model = ps.IsotropicProcess(rate=default, maskMaterials=[])
-                    for material, rate in growth.items():
-                        model.setMaterialRate(_material_handle(ps, material), float(rate))
-                    ps.Process(self.domain, model, float(step.duration)).apply()
+                for material, rate in growth.items():
+                    # Advecting a sheet stack with IsotropicProcess moves the sheet
+                    # *and* the interface below it, so the film thickened in both
+                    # directions (measured: a 5 nm oxide deposit pushed the silicon
+                    # surface down by 20 nm). A conformal deposit on a layered stack
+                    # is one more sheet at top + t.
+                    self._add_sheet(material, self._surface_top()
+                                    + abs(float(rate)) * float(step.duration))
                 for material, rate in new.items():
                     # A new material cannot be grown by IsotropicProcess (it only
                     # advects materials that already exist), so the shell is built
@@ -159,9 +199,12 @@ class ViennapsSession:
                 model = ps.IsotropicProcess(rate=default, maskMaterials=[])
                 for material, rate in step.rates.items():
                     model.setMaterialRate(_material_handle(ps, material), float(rate))
-                ps.Process(self.domain, model, float(step.duration)).apply()
+                ps.Process(self.domain, model, self._etch_duration(
+                    step, {_material_handle(ps, name): (rate, rate)
+                           for name, rate in step.rates.items()})).apply()
             elif (step.mechanism == "anisotropic" and step.kind == "etch"
-                  and self._openings and step.parameters.get("patterned")):
+                  and self._openings and step.parameters.get("patterned")
+                  and self._mask_present(step)):
                 # Same representation limit as the ellipsoidal branch: a masked
                 # directional etch of a buried layer is cut geometrically through
                 # the openings instead of advecting the whole stack.
@@ -181,13 +224,16 @@ class ViennapsSession:
                 direction = [float(v) for v in (step.parameters.get("direction")
                                                 or [0.0, 0.0, 1.0])]
                 model = ps.DirectionalProcess(direction, rates, 0.0, 0.0)
-                ps.Process(self.domain, model, float(step.duration)).apply()
+                duration = self._etch_duration(step, rates) if step.kind == "etch" else float(step.duration)
+                ps.Process(self.domain, model, duration).apply()
             elif step.mechanism == "strip":
                 names = [str(name) for name in step.parameters.get("materials") or []]
                 if not names:
                     raise NotImplementedError("strip step lists no materials")
+                self._openings = []
                 for name in names:
                     self.domain.removeMaterial(_material_handle(ps, name))
+                    self._ls.pop(name, None)
                     self.stack = [entry for entry in self.stack if entry != name] or self.stack
             elif step.mechanism == "ellipsoidal":
                 rates = {}
@@ -198,7 +244,8 @@ class ViennapsSession:
                     raise NotImplementedError("ellipsoidal step lists no rates")
                 masks = [_material_handle(ps, name)
                          for name in (step.parameters.get("mask") or [])]
-                if self._openings and step.parameters.get("patterned"):
+                if (self._openings and step.parameters.get("patterned")
+                        and self._mask_present(step)):
                     # Native masked DirectionalProcess segfaults on a domain whose
                     # top level set carries the litho openings, so the exposed area
                     # is cut geometrically: through each opening, remove the top
@@ -267,42 +314,21 @@ class ViennapsSession:
         return min(float(point[2]) for point in mesh.getNodes())
 
     def _fill(self, step: StepIR) -> None:
-        """Fill the void below ``z_top + offset`` with a new material.
+        """Fill up to ``z_top + offset`` with ``material``.
 
-        Level-set construction: a box covering the window is intersected with the
-        complement of every existing solid, then inserted as the new material.
-        Measured on a 0.08 um trench: the fill reaches the trench bottom and leaves
-        a cap above the field, which is what SPX ``depo_fill`` produces.
+        SPX ``depo_fill`` grows a film to a reference plane, so the result is one
+        more interface sheet -- including when the material is already in the stack
+        (a Memory1 flow fills SiO2 into an SiO2 stack eight times). Building a body
+        instead put a closed island in the middle of the stack, which invalidated
+        the material ordering and wiped everything below it.
         """
-        ps = self.ps
         material = str(step.parameters["material"])
         offset = float(step.parameters.get("offset", 0.0))
-        z_top = self._surface_top() + offset
-        z_bottom = self._surface_bottom() - float(self.job.domain.grid_delta)
-        margin = float(self.job.domain.grid_delta)
-        box = ps.LevelSet(self.domain.getGrid())
-        ps.MakeGeometry(box, ps.Box(
-            [0.0, 0.0, z_bottom],
-            [float(self.job.domain.width), float(self.job.domain.depth), z_top])).apply()
-        for level_set in self.domain.getLevelSets():
-            ps.ls.BooleanOperation(box, level_set,
-                                   ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
-        if material in self.stack:
-            # SPX's depo_fill routinely fills with a material that already exists
-            # (Memory1 fills SiO2 into an SiO2 stack). A second level set for the
-            # same material is not representable, so the fill is unioned into the
-            # existing body instead of inserted as a duplicate.
-            target = self.domain.getMaterialLevelSet(_material_handle(ps, material))
-            ps.ls.BooleanOperation(target, box, ps.ls.BooleanOperationEnum.UNION).apply()
-            self._mesh = None
-            self._columns = None
-            return
-        self.domain.insertNextLevelSetAsMaterial(box, _material_handle(ps, material))
-        self._register(material)
-        if material not in self.stack:
-            self.stack.append(material)
-        self._mesh = None
-        self._columns = None
+        thickness = float(step.parameters.get("thickness", 0.0) or 0.0)
+        depth = offset if offset > 0 else (thickness if thickness > 0 else 0.0)
+        if depth <= 0:
+            raise ValueError(f"fill of {material!r} has no thickness")
+        self._add_sheet(material, self._surface_top() + depth)
 
     def _gds_geometry(self):
         if self._geometry is not None:
@@ -345,15 +371,15 @@ class ViennapsSession:
                 [-margin, -margin, z_top],
                 [float(self.job.domain.width) + margin,
                  float(self.job.domain.depth) + margin, z_top + coat])).apply()
-            if self.stack and self.stack[-1] == material:
+            if self._ls.get(material):
                 # The coat is the same photoresist as the layer underneath, so it is
-                # unioned into the existing top level set. Inserting a second level
-                # set with the same material confused the stack: the following etch
-                # removed the whole film stack instead of only the exposed material.
-                self.domain.applyBooleanOperation(slab, ps.ls.BooleanOperationEnum.UNION, False)
+                # unioned into the existing body instead of adding a second one.
+                ps.ls.BooleanOperation(self._ls[material][-1], slab,
+                                       ps.ls.BooleanOperationEnum.UNION).apply()
             else:
                 self.domain.insertNextLevelSetAsMaterial(slab, _material_handle(ps, material))
                 self._register(material)
+                self._ls.setdefault(material, []).append(self.domain.getLevelSets()[-1])
                 if material not in self.stack:
                     self.stack.append(material)
             z_top += coat
@@ -371,7 +397,7 @@ class ViennapsSession:
         mesh = ps.ls.Mesh()
         node = lambda x, y, z: mesh.insertNextNode([float(x), float(y), float(z)])  # noqa: E731
         for polygon in polygons:
-            ring = polygon[:-1] if len(polygon) > 3 and polygon[0] == polygon[-1] else polygon
+            ring = _ccw_ring(polygon)
             if len(ring) < 3:
                 continue
             top = [node(x, y, z1) for x, y in ring]
@@ -392,13 +418,52 @@ class ViennapsSession:
         if polarity == "positive":
             self.domain.insertNextLevelSetAsMaterial(body, _material_handle(ps, material))
             self._register(material)
+            self._ls.setdefault(material, []).append(self.domain.getLevelSets()[-1])
             if material not in self.stack:
                 self.stack.append(material)
         else:
-            self.domain.applyBooleanOperation(body, ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT,
-                                              False)
+            target = self._ls.get(material) or [self.domain.getLevelSets()[-1]]
+            ps.ls.BooleanOperation(target[-1], body,
+                                   ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
         self._mesh = None
         self._columns = None
+
+    def _mask_present(self, step: StepIR) -> bool:
+        """True when the resist named by the step is still in the domain."""
+        names = [str(name) for name in (step.parameters.get("mask") or [])]
+        return bool(names) and all(name in self.stack for name in names)
+
+    def _etch_duration(self, step: StepIR, rates: dict[Any, tuple[float, float]]) -> float:
+        """Clamp an etch to the thickness that is actually exposed.
+
+        SPX etches *stop at a material boundary*: a 5 um timed over-etch of a 35 nm
+        nitride removes the nitride and nothing else. Advecting for the full
+        duration instead let the interface run into the substrate (measured: after
+        ``10_etch_aniso_ON`` the Si3N4 sheet reached -0.3 um and the whole stack
+        turned into bodies instead of sheets).
+        """
+        duration = float(step.duration)
+        columns = self._height_columns()
+        tops: dict[str, float] = {}
+        for bucket in columns.values():
+            for name, top in bucket.items():
+                tops[name] = max(tops.get(name, top), top)
+        limit = duration
+        for material, (vertical, lateral) in rates.items():
+            name = self.materials.get(int(material))
+            if name is None or name not in tops:
+                continue
+            rate = max(abs(float(vertical)), abs(float(lateral)))
+            if rate <= 0:
+                continue
+            below = [top for other, top in tops.items()
+                     if other != name and top <= tops[name] + 1e-9]
+            thickness = tops[name] - (max(below) if below else -float(self.job.initial.substrate_thickness))
+            if thickness > 0:
+                limit = min(limit, thickness / rate)
+        if limit < duration:
+            self.last_etch_clamp = {"requested": duration, "applied": round(limit, 6)}
+        return limit
 
     def _material_top(self, name: str) -> float | None:
         """Highest point of one material, even when it is buried.
@@ -439,18 +504,8 @@ class ViennapsSession:
             # top surface into a 9M-cell level set costs minutes per step (measured),
             # which would make an 88-step comparison take hours. Callers that want a
             # conformal shell set camera.shell_triangles to a positive budget.
-            plane = ps.LevelSet(self.domain.getGrid())
-            ps.MakeGeometry(plane, ps.Box(
-                [0.0, 0.0, self._surface_top()],
-                [float(self.job.domain.width), float(self.job.domain.depth),
-                 self._surface_top() + thickness])).apply()
             self.last_deposit_model = "planar"
-            self.domain.insertNextLevelSetAsMaterial(plane, _material_handle(ps, material))
-            self._register(material)
-            if material not in self.stack:
-                self.stack.append(material)
-            self._mesh = None
-            self._columns = None
+            self._add_sheet(material, self._surface_top() + thickness)
             return
         top = self.domain.getLevelSets()[-1]
         mesh = ps.ls.Mesh()
@@ -526,39 +581,26 @@ class ViennapsSession:
             # Thin top films (SiON 7 nm) can give a degenerate surface mesh; fall
             # back to a planar layer at the current top + t, which is exact for a
             # planar surface and reported through the step metrics.
-            plane = ps.LevelSet(self.domain.getGrid())
-            # The box must stay inside the domain: a level set that extends past
-            # the bounds is not clipped by the native insert and corrupts the stack
-            # (measured: every layer disappeared after one such insert).
-            ps.MakeGeometry(plane, ps.Box(
-                [0.0, 0.0, self._surface_top()],
-                [float(self.job.domain.width), float(self.job.domain.depth),
-                 self._surface_top() + thickness])).apply()
-            shell = plane
             self.last_deposit_model = "planar"
-        before = set(self.materials.values())
-        self.last_deposit_model = getattr(self, "last_deposit_model", "shell")
+            self._add_sheet(material, self._surface_top() + thickness)
+            return
         self.domain.insertNextLevelSetAsMaterial(shell, _material_handle(ps, material))
         self._register(material)
+        self._ls.setdefault(material, []).append(self.domain.getLevelSets()[-1])
         if material not in self.stack:
             self.stack.append(material)
         self._mesh = None
         self._columns = None
-        after = set(self.materials.values())
-        missing = before - after
-        if missing:
-            raise RuntimeError(
-                f"depositing {material} dropped previously present layers {sorted(missing)}; "
-                f"the shell level set is not a valid top body")
 
     def _etched_openings(self, step: StepIR, rates: dict[Any, tuple[float, float]],
                          *, openings: list[list[tuple[float, float]]]) -> None:
         """Cut ``|v| * duration`` of every listed material inside the openings.
 
-        One cutter body per distinct depth, applied to **all** level sets: a masked
-        etch removes that volume from every material it passes through. Doing one
-        boolean per material was both wrong (the top-only flag only cut the top
-        level set) and slow (measured: one Memory1 step ran for 20+ minutes).
+        The cutter is one prism body per opening and depth, subtracted from every
+        sheet of the materials that carry a rate. Cutting *all* level sets instead
+        (``applyToAll=True``) removed the substrate and every buried film, and
+        cutting through ``getMaterialLevelSet`` did nothing at all because that call
+        returns a copy.
         """
         ps = self.ps
         margin = float(self.job.domain.grid_delta)
@@ -589,7 +631,7 @@ class ViennapsSession:
                 return mesh.insertNextNode([float(x), float(y), float(z)])
 
             for polygon in openings:
-                ring = polygon[:-1] if len(polygon) > 3 and polygon[0] == polygon[-1] else polygon
+                ring = _ccw_ring(polygon)
                 if len(ring) < 3:
                     continue
                 top_nodes = [node(x, y, z1) for x, y in ring]
@@ -609,15 +651,19 @@ class ViennapsSession:
             reconstruction.apply()
             if cutter.getNumberOfPoints() == 0:
                 continue
-            # Cut only the level sets of the materials being etched. Applying the
-            # boolean to *all* level sets left the buried layers off the exported
-            # surface (measured: after one masked etch the frame showed only
-            # SiO2/SiOC/BARC/PMMA while the substrate was still present in the
-            # domain).
+            # Cut only the materials that actually have a rate, and through the
+            # domain's own level sets: getMaterialLevelSet() returns copies, so a
+            # boolean there is silently discarded, while applyToAll=True also cuts
+            # the substrate and every buried sheet (measured: after one masked etch
+            # the SiO2 sheet reached -0.14 um and the stack was gone).
             for name in names:
-                target = self.domain.getMaterialLevelSet(_material_handle(ps, name))
-                ps.ls.BooleanOperation(target, cutter,
-                                       ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
+                for sheet in self._ls.get(name, []):
+                    ps.ls.BooleanOperation(sheet, cutter,
+                                           ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
+        # A resist is consumed by the etch it masks. Keeping the openings around made
+        # every later `patterned: true` step cut the *previous* mask pattern
+        # (measured: step 43 etched SiO2 through the step-40 plug openings).
+        self._openings = []
         self._mesh = None
         self._columns = None
 

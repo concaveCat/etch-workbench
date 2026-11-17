@@ -1,0 +1,1282 @@
+{
+  "case_id": "memory1-full-dx10",
+  "engine": "viennaps",
+  "domain": {
+    "width": 0.624,
+    "depth": 0.74,
+    "height": 2.481,
+    "grid_delta": 0.01,
+    "dimensions": 3,
+    "origin_xy": [
+      0.0,
+      0.0
+    ]
+  },
+  "initial": {
+    "kind": "plane",
+    "substrate": "Si",
+    "substrate_thickness": 0.3,
+    "films": [],
+    "trench_width": null,
+    "trench_depth": null,
+    "mask_material": null
+  },
+  "steps": [
+    {
+      "step_id": "s0_substrate",
+      "kind": "initial",
+      "mechanism": "initial",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "01_depo_fill_Oxide2_50nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "Oxide2",
+        "offset": 0.05
+      }
+    },
+    {
+      "step_id": "02_depo_fill_Nitride_35nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "Si3N4",
+        "offset": 0.035
+      }
+    },
+    {
+      "step_id": "03_depo_fill_Oxide_28nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "SiO2",
+        "offset": 0.028
+      }
+    },
+    {
+      "step_id": "04_depo_fill_Oxide_50nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "SiO2",
+        "offset": 0.05
+      }
+    },
+    {
+      "step_id": "05_depo_fill_SiOC_100nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "SiOC",
+        "offset": 0.1
+      }
+    },
+    {
+      "step_id": "06_depo_fill_BARC_50nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "BARC",
+        "offset": 0.05
+      }
+    },
+    {
+      "step_id": "07_plug_mask",
+      "kind": "mask",
+      "mechanism": "litho",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "layer": 11,
+        "layer_name": "PLG",
+        "thickness": 0.05,
+        "polarity": "negative",
+        "material": "PMMA"
+      }
+    },
+    {
+      "step_id": "08_etch_aniso_BARC_SiOC",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 0.16,
+      "rates": {
+        "BARC": -1.0,
+        "SiOC": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "09_etch_strip_resist_BARC",
+      "kind": "strip",
+      "mechanism": "strip",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "materials": [
+          "BARC",
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "10_etch_aniso_ON",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 5.0,
+      "rates": {
+        "SiO2": -1.0,
+        "Si3N4": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "11_etch_strip_SiOC",
+      "kind": "strip",
+      "mechanism": "strip",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "materials": [
+          "SiOC"
+        ]
+      }
+    },
+    {
+      "step_id": "12_depo_iso_SiO_5nm",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.005,
+      "rates": {
+        "SiO2": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "13_depo_iso_SiN_5nm",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.005,
+      "rates": {
+        "Si3N4": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "14_depo_iso_SiON_7nm",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.007,
+      "rates": {
+        "SiO2": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "15_depo_iso_poly",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.012,
+      "rates": {
+        "PolySi": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "16_depo_iso_OxideCVD",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.05,
+      "rates": {
+        "SiO2": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "17_etch_cmp",
+      "kind": "planarize",
+      "mechanism": "cmp",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "stop_material": "Si3N4",
+        "offset": -0.01
+      }
+    },
+    {
+      "step_id": "18_depo_fill_CESL_3nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "SiN",
+        "offset": 0.003
+      }
+    },
+    {
+      "step_id": "19_depo_fill_Oxide_60nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "SiO2",
+        "offset": 0.06
+      }
+    },
+    {
+      "step_id": "20_depo_fill_SiOC_100nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "SiOC",
+        "offset": 0.1
+      }
+    },
+    {
+      "step_id": "21_depo_fill_BARC_50nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "BARC",
+        "offset": 0.05
+      }
+    },
+    {
+      "step_id": "22_slit_mask",
+      "kind": "mask",
+      "mechanism": "litho",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "layer": 15,
+        "layer_name": "CS",
+        "thickness": 0.05,
+        "polarity": "negative",
+        "material": "PMMA"
+      }
+    },
+    {
+      "step_id": "23_etch_aniso_BARC_SiOC",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 0.16,
+      "rates": {
+        "BARC": -1.0,
+        "SiOC": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "24_etch_strip_resist_BARC",
+      "kind": "strip",
+      "mechanism": "strip",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "materials": [
+          "BARC",
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "25_etch_ellipso_oxide_taper",
+      "kind": "etch",
+      "mechanism": "ellipsoidal",
+      "duration": 0.06,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "rates": {
+          "SiO2": [
+            -1.0,
+            -0.3
+          ]
+        },
+        "mask": [
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "26_etch_aniso_ON_CESL",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 5.0,
+      "rates": {
+        "SiO2": -1.0,
+        "Si3N4": -1.0,
+        "SiN": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "27_etch_strip_SiOC",
+      "kind": "strip",
+      "mechanism": "strip",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "materials": [
+          "SiOC"
+        ]
+      }
+    },
+    {
+      "step_id": "28_etch_strip_Nitride",
+      "kind": "strip",
+      "mechanism": "strip",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "materials": [
+          "Si3N4"
+        ]
+      }
+    },
+    {
+      "step_id": "29_depo_iso_AlO_3nm",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.003,
+      "rates": {
+        "Al2O3": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "30_depo_iso_TiN_2nm",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.002,
+      "rates": {
+        "TiN": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "31_depo_iso_W_15nm",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.015,
+      "rates": {
+        "W": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "32_etch_aniso_TiN_W",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 5.0,
+      "rates": {
+        "TiN": -1.0,
+        "W": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "W"
+        ]
+      }
+    },
+    {
+      "step_id": "33_etch_iso_AlO_TiN_W",
+      "kind": "etch",
+      "mechanism": "isotropic",
+      "duration": 0.004,
+      "rates": {
+        "Al2O3": -1.0,
+        "TiN": -1.0,
+        "W": -1.0,
+        "SiO2": -1.0,
+        "CESL": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "W"
+        ]
+      }
+    },
+    {
+      "step_id": "34_depo_iso_oxide",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.01,
+      "rates": {
+        "SiO2": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "35_depo_iso_W",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.1,
+      "rates": {
+        "W": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "36_etch_cmp",
+      "kind": "planarize",
+      "mechanism": "cmp",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "stop_material": "SiO2",
+        "offset": -0.01
+      }
+    },
+    {
+      "step_id": "37_depo_fill_oxide_150nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "SiO2",
+        "offset": 0.15
+      }
+    },
+    {
+      "step_id": "38_depo_fill_SiOC_100nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "SiOC",
+        "offset": 0.1
+      }
+    },
+    {
+      "step_id": "39_depo_fill_BARC_50nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "BARC",
+        "offset": 0.05
+      }
+    },
+    {
+      "step_id": "40_plug_mask",
+      "kind": "mask",
+      "mechanism": "litho",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "layer": 19,
+        "layer_name": "PC",
+        "thickness": 0.05,
+        "polarity": "negative",
+        "material": "PMMA"
+      }
+    },
+    {
+      "step_id": "41_etch_aniso_BARC_SiOC",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 0.16,
+      "rates": {
+        "BARC": -1.0,
+        "SiOC": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "42_etch_strip_resist_BARC",
+      "kind": "strip",
+      "mechanism": "strip",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "materials": [
+          "BARC",
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "43_etch_aniso_oxide",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 0.25,
+      "rates": {
+        "SiO2": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "44_etch_aniso_CESL",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 0.005,
+      "rates": {
+        "SiN": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "45_etch_strip_SiOC",
+      "kind": "strip",
+      "mechanism": "strip",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "materials": [
+          "SiOC"
+        ]
+      }
+    },
+    {
+      "step_id": "46_depo_iso_TiN",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.003,
+      "rates": {
+        "TiN": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "47_depo_iso_W",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.05,
+      "rates": {
+        "W": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "48_etch_cmp",
+      "kind": "planarize",
+      "mechanism": "cmp",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "stop_material": "SiO2",
+        "offset": -0.001
+      }
+    },
+    {
+      "step_id": "49_depo_fill_CESL_3nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "SiN",
+        "offset": 0.003
+      }
+    },
+    {
+      "step_id": "50_depo_fill_oxide_100nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "SiO2",
+        "offset": 0.05
+      }
+    },
+    {
+      "step_id": "51_depo_fill_SiOC_100nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "SiOC",
+        "offset": 0.05
+      }
+    },
+    {
+      "step_id": "52_depo_fill_BARC_50nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "BARC",
+        "offset": 0.05
+      }
+    },
+    {
+      "step_id": "53_bitline_strap_mask",
+      "kind": "mask",
+      "mechanism": "litho",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "layer": 9,
+        "layer_name": "M1",
+        "thickness": 0.05,
+        "polarity": "negative",
+        "material": "PMMA"
+      }
+    },
+    {
+      "step_id": "54_etch_aniso_BARC_SiOC",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 0.16,
+      "rates": {
+        "BARC": -1.0,
+        "SiOC": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "55_etch_strip_resist_BARC",
+      "kind": "strip",
+      "mechanism": "strip",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "materials": [
+          "BARC",
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "56_etch_aniso_oxide",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 0.1,
+      "rates": {
+        "SiO2": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "57_etch_aniso_CESL",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 0.005,
+      "rates": {
+        "SiN": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "58_etch_strip_SiOC",
+      "kind": "strip",
+      "mechanism": "strip",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "materials": [
+          "SiOC"
+        ]
+      }
+    },
+    {
+      "step_id": "59_depo_iso_TiN",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.003,
+      "rates": {
+        "TiN": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "60_depo_iso_W",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.05,
+      "rates": {
+        "W": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "61_etch_cmp",
+      "kind": "planarize",
+      "mechanism": "cmp",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "stop_material": "SiO2",
+        "offset": -0.001
+      }
+    },
+    {
+      "step_id": "62_depo_fill_CESL_3nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "SiN",
+        "offset": 0.003
+      }
+    },
+    {
+      "step_id": "63_depo_fill_oxide_75nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "SiO2",
+        "offset": 0.075
+      }
+    },
+    {
+      "step_id": "64_depo_fill_SiOC_100nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "SiOC",
+        "offset": 0.1
+      }
+    },
+    {
+      "step_id": "65_depo_fill_BARC_50nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "BARC",
+        "offset": 0.05
+      }
+    },
+    {
+      "step_id": "66_bitline_contact_mask",
+      "kind": "mask",
+      "mechanism": "litho",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "layer": 17,
+        "layer_name": "BC",
+        "thickness": 0.05,
+        "polarity": "negative",
+        "material": "PMMA"
+      }
+    },
+    {
+      "step_id": "67_etch_aniso_BARC_SiOC",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 0.16,
+      "rates": {
+        "BARC": -1.0,
+        "SiOC": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "68_etch_strip_resist_BARC",
+      "kind": "strip",
+      "mechanism": "strip",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "materials": [
+          "BARC",
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "69_etch_aniso_oxide",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 0.1,
+      "rates": {
+        "SiO2": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "70_etch_aniso_CESL",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 0.005,
+      "rates": {
+        "SiN": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "71_etch_strip_SiOC",
+      "kind": "strip",
+      "mechanism": "strip",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "materials": [
+          "SiOC"
+        ]
+      }
+    },
+    {
+      "step_id": "72_depo_iso_TiN",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.003,
+      "rates": {
+        "TiN": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "73_depo_iso_W",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.05,
+      "rates": {
+        "W": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "74_etch_cmp",
+      "kind": "planarize",
+      "mechanism": "cmp",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "stop_material": "SiO2",
+        "offset": -0.001
+      }
+    },
+    {
+      "step_id": "75_depo_fill_CESL_3nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "SiN",
+        "offset": 0.003
+      }
+    },
+    {
+      "step_id": "76_depo_fill_oxide_50nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "SiO2",
+        "offset": 0.05
+      }
+    },
+    {
+      "step_id": "77_depo_fill_SiOC_100nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "SiOC",
+        "offset": 0.05
+      }
+    },
+    {
+      "step_id": "78_depo_fill_BARC_50nm",
+      "kind": "deposit",
+      "mechanism": "fill",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "material": "BARC",
+        "offset": 0.05
+      }
+    },
+    {
+      "step_id": "79_bitline_mask",
+      "kind": "mask",
+      "mechanism": "litho",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "layer": 21,
+        "layer_name": "M2",
+        "thickness": 0.05,
+        "polarity": "negative",
+        "material": "PMMA"
+      }
+    },
+    {
+      "step_id": "80_etch_aniso_BARC_SiOC",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 0.16,
+      "rates": {
+        "BARC": -1.0,
+        "SiOC": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "81_etch_strip_resist_BARC",
+      "kind": "strip",
+      "mechanism": "strip",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "materials": [
+          "BARC",
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "82_etch_aniso_oxide",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 0.1,
+      "rates": {
+        "SiO2": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "83_etch_aniso_CESL",
+      "kind": "etch",
+      "mechanism": "anisotropic",
+      "duration": 0.005,
+      "rates": {
+        "SiN": -1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "mask": [
+          "PMMA"
+        ]
+      }
+    },
+    {
+      "step_id": "84_etch_strip_SiOC",
+      "kind": "strip",
+      "mechanism": "strip",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "materials": [
+          "SiOC"
+        ]
+      }
+    },
+    {
+      "step_id": "85_depo_iso_TaN",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.003,
+      "rates": {
+        "TaN": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "86_depo_iso_Cu",
+      "kind": "deposit",
+      "mechanism": "isotropic",
+      "duration": 0.05,
+      "rates": {
+        "Cu": 1.0
+      },
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {}
+    },
+    {
+      "step_id": "87_etch_cmp",
+      "kind": "planarize",
+      "mechanism": "cmp",
+      "duration": 0.0,
+      "rates": {},
+      "anisotropy": 1.0,
+      "comparability": "exact",
+      "parameters": {
+        "stop_material": "SiO2",
+        "offset": -0.001
+      }
+    }
+  ],
+  "render": {
+    "width": 900,
+    "height": 700,
+    "view": "iso",
+    "camera": {}
+  },
+  "probe": null,
+  "section": null,
+  "layout": {
+    "path": "/root/SPX/spx/V-2024.03/linux64/examples/Memory1_Layout.oasis",
+    "spxLayers": {
+      "M1": 9,
+      "PLG": 11,
+      "CS": 15,
+      "BC": 17,
+      "PC": 19,
+      "M2": 21
+    }
+  },
+  "restore": null,
+  "schema_version": 1
+}

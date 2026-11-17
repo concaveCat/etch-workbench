@@ -292,9 +292,8 @@ class ViennapsSession:
         margin = float(self.job.domain.grid_delta)
         box = ps.LevelSet(self.domain.getGrid())
         ps.MakeGeometry(box, ps.Box(
-            [-margin, -margin, z_bottom],
-            [float(self.job.domain.width) + margin,
-             float(self.job.domain.depth) + margin, z_top])).apply()
+            [0.0, 0.0, z_bottom],
+            [float(self.job.domain.width), float(self.job.domain.depth), z_top])).apply()
         for level_set in self.domain.getLevelSets():
             ps.ls.BooleanOperation(box, level_set,
                                    ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
@@ -409,9 +408,29 @@ class ViennapsSession:
 
     def _deposit_shell(self, material: str, thickness: float) -> None:
         self.last_shell_note = {}
+        self.last_deposit_model = "shell"
         """Insert ``material`` as a conformal shell over the current top surface."""
         ps = self.ps
         if thickness <= 0:
+            return
+        budget = int(self.job.render.camera.get("shell_triangles", 0) or 0)
+        if budget <= 0:
+            # Default path: a plane at top + t. Extracting and reconstructing the
+            # top surface into a 9M-cell level set costs minutes per step (measured),
+            # which would make an 88-step comparison take hours. Callers that want a
+            # conformal shell set camera.shell_triangles to a positive budget.
+            plane = ps.LevelSet(self.domain.getGrid())
+            ps.MakeGeometry(plane, ps.Box(
+                [0.0, 0.0, self._surface_top()],
+                [float(self.job.domain.width), float(self.job.domain.depth),
+                 self._surface_top() + thickness])).apply()
+            self.last_deposit_model = "planar"
+            self.domain.insertNextLevelSetAsMaterial(plane, _material_handle(ps, material))
+            self._register(material)
+            if material not in self.stack:
+                self.stack.append(material)
+            self._mesh = None
+            self._columns = None
             return
         top = self.domain.getLevelSets()[-1]
         mesh = ps.ls.Mesh()
@@ -457,22 +476,48 @@ class ViennapsSession:
         reconstruction.setRemoveBoundaryTriangles(True)
         reconstruction.apply()
         original_top = max(float(node[2]) for node in nodes)
+        original_low = min(float(node[2]) for node in nodes)
         shell_top = max((point[2] for point in offset_positions), default=float("-inf"))
         self.last_shell_note = {"material": material, "thickness": thickness,
                                 "shellPoints": int(shell.getNumberOfPoints()),
                                 "shellTop": round(shell_top, 5),
                                 "originalTop": round(original_top, 5)}
-        if shell.getNumberOfPoints() < 10 or shell_top < original_top + 0.6 * thickness:
+        def has_surface(candidate: Any) -> bool:
+            probe = ps.ls.Mesh()
+            ps.ls.ToSurfaceMesh(candidate, probe).apply()
+            return len(probe.getNodes()) > 0
+
+        # A surface that is flat within the grid resolution *is* a plane; building a
+        # shell there costs minutes and adds nothing. A very dense top surface is
+        # also routed to the plane path: reconstructing a 200k-triangle mesh into a
+        # 9M-cell level set is quadratic in practice (measured: one step ran 20+ min).
+        grid = float(self.job.domain.grid_delta)
+        planar = (original_top - original_low) < 2.0 * grid
+        # Reconstructing a dense surface into a 9M-cell level set is quadratic in
+        # practice (measured: one step ran 20+ min). Above this size the deposit is
+        # placed as a plane and the step records ``depositModel`` so the comparison
+        # can see the approximation.
+        # Measured: reconstructing a surface into a 9M-cell level set costs
+        # minutes per step, so the comparison takes the plane path unless the
+        # caller explicitly opts into shells (camera.shell_triangles).
+        too_dense = len(triangles) > budget
+        if (shell.getNumberOfPoints() < 10 or not has_surface(shell)
+                or shell_top < original_top + 0.6 * thickness or planar or too_dense):
             # Thin top films (SiON 7 nm) can give a degenerate surface mesh; fall
             # back to a planar layer at the current top + t, which is exact for a
             # planar surface and reported through the step metrics.
             plane = ps.LevelSet(self.domain.getGrid())
+            # The box must stay inside the domain: a level set that extends past
+            # the bounds is not clipped by the native insert and corrupts the stack
+            # (measured: every layer disappeared after one such insert).
             ps.MakeGeometry(plane, ps.Box(
-                [-1.0, -1.0, self._surface_top()],
-                [float(self.job.domain.width) + 1.0,
-                 float(self.job.domain.depth) + 1.0, self._surface_top() + thickness])).apply()
+                [0.0, 0.0, self._surface_top()],
+                [float(self.job.domain.width), float(self.job.domain.depth),
+                 self._surface_top() + thickness])).apply()
             shell = plane
+            self.last_deposit_model = "planar"
         before = set(self.materials.values())
+        self.last_deposit_model = getattr(self, "last_deposit_model", "shell")
         self.domain.insertNextLevelSetAsMaterial(shell, _material_handle(ps, material))
         self._register(material)
         if material not in self.stack:
@@ -488,35 +533,42 @@ class ViennapsSession:
 
     def _etched_openings(self, step: StepIR, rates: dict[Any, tuple[float, float]],
                          *, openings: list[list[tuple[float, float]]]) -> None:
-        """Cut ``|v| * duration`` of each material inside the litho openings."""
+        """Cut ``|v| * duration`` of every listed material inside the openings.
+
+        One cutter body per distinct depth, applied to **all** level sets: a masked
+        etch removes that volume from every material it passes through. Doing one
+        boolean per material was both wrong (the top-only flag only cut the top
+        level set) and slow (measured: one Memory1 step ran for 20+ minutes).
+        """
         ps = self.ps
         margin = float(self.job.domain.grid_delta)
         columns = self._height_columns()
-        # per-material reference tops (planar stack: take the highest column top)
         tops: dict[str, float] = {}
         for bucket in columns.values():
             for name, top in bucket.items():
                 tops[name] = max(tops.get(name, top), top)
         duration = float(step.duration)
+        depths: dict[float, list[str]] = {}
         for material, (vertical, _lateral) in rates.items():
             name = self.materials.get(int(material))
             if name is None:
                 raise RuntimeError(f"ellipsoidal step names unknown material {material}")
-            depth = abs(float(vertical)) * duration
-            if depth <= 0:
+            depth = round(abs(float(vertical)) * duration, 9)
+            if depth <= 0 or name not in tops:
                 continue
-            top = tops.get(name)
-            if top is None:
-                continue
+            depths.setdefault(depth, []).append(name)
+        for depth, names in depths.items():
+            z1 = max(tops[name] for name in names) + margin
+            z0 = z1 - depth - margin
             mesh = ps.ls.Mesh()
+
             def node(x, y, z):
                 return mesh.insertNextNode([float(x), float(y), float(z)])
+
             for polygon in openings:
                 ring = polygon[:-1] if len(polygon) > 3 and polygon[0] == polygon[-1] else polygon
                 if len(ring) < 3:
                     continue
-                z1 = top + margin
-                z0 = top - depth
                 top_nodes = [node(x, y, z1) for x, y in ring]
                 bottom_nodes = [node(x, y, z0) for x, y in ring]
                 for index in range(1, len(ring) - 1):
@@ -530,12 +582,12 @@ class ViennapsSession:
                 continue
             cutter = ps.LevelSet(self.domain.getGrid())
             reconstruction = ps.ls.FromSurfaceMesh(cutter, mesh)
-            reconstruction.setRemoveBoundaryTriangles(False)
+            reconstruction.setRemoveBoundaryTriangles(True)
             reconstruction.apply()
             if cutter.getNumberOfPoints() == 0:
                 continue
-            self.domain.applyBooleanOperation(cutter, ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT,
-                                              False)
+            self.domain.applyBooleanOperation(cutter,
+                                              ps.ls.BooleanOperationEnum.RELATIVE_COMPLEMENT, True)
         self._mesh = None
         self._columns = None
 

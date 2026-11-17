@@ -26,7 +26,20 @@ const COLORS: Record<string, string> = {
 export function SectionView({ section, width, height, zRange, engines, domainWidth }: Props) {
   const materials = Object.keys(section?.materials ?? {});
   const heights = section?.heights ?? {};
-  const [zMin, zMax] = zRange ?? [-0.3, 0.4];
+  // Fit the vertical axis to the data: the domain is 2.5 µm tall while every
+  // interface sits inside 0.4 µm, which flattened the curves onto the axis floor.
+  const values: number[] = [];
+  for (const perEngine of Object.values(heights)) {
+    for (const rows of Object.values(perEngine)) {
+      for (const value of rows) if (typeof value === 'number') values.push(value);
+    }
+  }
+  const dataMin = values.length ? Math.min(...values) : -0.1;
+  const dataMax = values.length ? Math.max(...values) : 0.4;
+  const pad = Math.max((dataMax - dataMin) * 0.15, 0.01);
+  const [zMin, zMax] = values.length
+    ? [dataMin - pad, dataMax + pad]
+    : (zRange ?? [-0.3, 0.4]);
   const plotW = width - 96;
   const plotH = height - 56;
   const xFor = (x: number) => 56 + (x / (domainWidth || 1)) * plotW;

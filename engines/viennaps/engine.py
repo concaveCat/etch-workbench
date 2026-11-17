@@ -131,12 +131,21 @@ class ViennapsSession:
         try:
             if step.mechanism == "isotropic" and step.kind == "deposit":
                 present = {name for name in self.stack}
+                top = self.stack[-1] if self.stack else None
+                # Growing a level set that sits *below* the top pushes the layers
+                # above it up instead of depositing on the surface (measured: a
+                # 50 nm oxide CVD left the oxide in place and raised the poly above
+                # it by 66 nm). Only the top material may be grown in place.
                 new = {name: rate for name, rate in step.rates.items()
-                       if name not in present and float(rate) > 0}
+                       if float(rate) > 0 and (name not in present or name != top)}
                 growth = {name: rate for name, rate in step.rates.items()
-                          if name in present and abs(float(rate)) > 0}
+                          if abs(float(rate)) > 0 and name == top}
                 if growth:
-                    model = ps.IsotropicProcess(rate=0.0, maskMaterials=[])
+                    # The global rate is the default; per-material overrides only
+                    # apply on top of a non-zero default (measured: rate=0.0 made
+                    # every override inert and the deposit silently did nothing).
+                    default = max(abs(float(rate)) for rate in growth.values())
+                    model = ps.IsotropicProcess(rate=default, maskMaterials=[])
                     for material, rate in growth.items():
                         model.setMaterialRate(_material_handle(ps, material), float(rate))
                     ps.Process(self.domain, model, float(step.duration)).apply()
@@ -146,7 +155,8 @@ class ViennapsSession:
                     # from the current top surface offset outward by t.
                     self._deposit_shell(material, abs(float(rate)) * float(step.duration))
             elif step.mechanism == "isotropic" and step.kind == "etch":
-                model = ps.IsotropicProcess(rate=0.0, maskMaterials=[])
+                default = max((abs(float(rate)) for rate in step.rates.values()), default=0.0)
+                model = ps.IsotropicProcess(rate=default, maskMaterials=[])
                 for material, rate in step.rates.items():
                     model.setMaterialRate(_material_handle(ps, material), float(rate))
                 ps.Process(self.domain, model, float(step.duration)).apply()
@@ -216,13 +226,25 @@ class ViennapsSession:
                     # Same form as SPX: polish down to the stop material's exposed
                     # top plus the (usually negative) offset.
                     stop = str(params["stop_material"])
-                    buckets = self._height_columns()
-                    tops = [bucket[stop] for bucket in buckets.values() if stop in bucket]
+                    # Use the highest point of the stop material *anywhere*, walls
+                    # included: a per-column maximum only sees horizontal tops and
+                    # stopped the polish at the field nitride instead of the plug
+                    # rim (measured on Memory1 step 17).
+                    mesh = self._surface_mesh()
+                    nodes = mesh.getNodes()
+                    data = mesh.getCellData()
+                    ids = None
+                    for index in range(data.getScalarDataSize()):
+                        if str(data.getScalarDataLabel(index)) == "MaterialIds":
+                            ids = list(data.getScalarData(index))
+                    if ids is None:
+                        raise RuntimeError("cmp needs MaterialIds on the surface mesh")
+                    stop_id = self._material_id(stop)
+                    tops = [float(nodes[k][2]) for tri, mid in zip(mesh.getTriangles(), ids)
+                            if int(mid) == stop_id for k in tri]
                     if not tops:
                         raise RuntimeError(
                             f"cmp stop material {stop!r} has no exposed surface")
-                    # The field (highest exposed stop surface) is what SPX polishes
-                    # down to; a percentile cut left the field standing.
                     cutoff = max(tops) + float(params.get("offset", 0.0))
                 else:
                     cutoff = float(params["cutoff"])
@@ -379,7 +401,14 @@ class ViennapsSession:
         self._mesh = None
         self._columns = None
 
+    def _material_id(self, name: str) -> int:
+        for material_id, material_name in self.materials.items():
+            if material_name == name:
+                return int(material_id)
+        raise RuntimeError(f"material {name!r} is not registered on this domain")
+
     def _deposit_shell(self, material: str, thickness: float) -> None:
+        self.last_shell_note = {}
         """Insert ``material`` as a conformal shell over the current top surface."""
         ps = self.ps
         if thickness <= 0:
@@ -405,22 +434,35 @@ class ViennapsSession:
                 normals[index][2] += nz
         outward = ps.ls.Mesh()
         moved = []
+        offset_positions: list[list[float]] = []
         for index, (x, y, z) in enumerate(nodes):
             nx, ny, nz = normals[index]
             length = (nx * nx + ny * ny + nz * nz) ** 0.5
             if length <= 1e-20:
-                moved.append(outward.insertNextNode([x, y, z]))
-                continue
-            moved.append(outward.insertNextNode([x + nx / length * thickness,
-                                                 y + ny / length * thickness,
-                                                 z + nz / length * thickness]))
+                position = [x, y, z]
+            else:
+                position = [x + nx / length * thickness,
+                            y + ny / length * thickness,
+                            z + nz / length * thickness]
+            offset_positions.append(position)
+            moved.append(outward.insertNextNode(position))
         for a, b, c in triangles:
             outward.insertNextTriangle([moved[a], moved[b], moved[c]])
         shell = ps.LevelSet(self.domain.getGrid())
         reconstruction = ps.ls.FromSurfaceMesh(shell, outward)
-        reconstruction.setRemoveBoundaryTriangles(False)
+        # The surface is clipped by the domain boundary; keeping those boundary
+        # triangles lets the reconstruction invent a closed body that inverts the
+        # level set at the border and wipes the layers underneath (measured on the
+        # Memory1 stack: every material disappeared after one shell deposit).
+        reconstruction.setRemoveBoundaryTriangles(True)
         reconstruction.apply()
-        if shell.getNumberOfPoints() < 10:
+        original_top = max(float(node[2]) for node in nodes)
+        shell_top = max((point[2] for point in offset_positions), default=float("-inf"))
+        self.last_shell_note = {"material": material, "thickness": thickness,
+                                "shellPoints": int(shell.getNumberOfPoints()),
+                                "shellTop": round(shell_top, 5),
+                                "originalTop": round(original_top, 5)}
+        if shell.getNumberOfPoints() < 10 or shell_top < original_top + 0.6 * thickness:
             # Thin top films (SiON 7 nm) can give a degenerate surface mesh; fall
             # back to a planar layer at the current top + t, which is exact for a
             # planar surface and reported through the step metrics.
@@ -430,12 +472,19 @@ class ViennapsSession:
                 [float(self.job.domain.width) + 1.0,
                  float(self.job.domain.depth) + 1.0, self._surface_top() + thickness])).apply()
             shell = plane
+        before = set(self.materials.values())
         self.domain.insertNextLevelSetAsMaterial(shell, _material_handle(ps, material))
         self._register(material)
         if material not in self.stack:
             self.stack.append(material)
         self._mesh = None
         self._columns = None
+        after = set(self.materials.values())
+        missing = before - after
+        if missing:
+            raise RuntimeError(
+                f"depositing {material} dropped previously present layers {sorted(missing)}; "
+                f"the shell level set is not a valid top body")
 
     def _etched_openings(self, step: StepIR, rates: dict[Any, tuple[float, float]],
                          *, openings: list[list[tuple[float, float]]]) -> None:

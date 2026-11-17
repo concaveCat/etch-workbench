@@ -1,0 +1,166 @@
+{
+  "args": {
+    "source": "crossing",
+    "gds": "/root/wb-engines/docs/gds-mask-diagnosis/fixtures/buf4-selected.gds",
+    "output": "/root/wb-engines/docs/gds-mask-diagnosis/product-acceptance/crossing-periodic-inside.json",
+    "boundary": "periodic",
+    "retained": "inside",
+    "delta": 0.1,
+    "duration": 0.2,
+    "extent": 5.0,
+    "base_height": 5.0,
+    "mask_height": 0.3,
+    "rate": -0.2
+  },
+  "setupBefore": {
+    "bounds": [
+      -2.5,
+      2.4000000000000004,
+      -2.5,
+      2.4000000000000004,
+      -0.1,
+      0.1
+    ],
+    "gridDelta": 0.1,
+    "boundary": [
+      "2",
+      "2",
+      "1"
+    ]
+  },
+  "diagnostics": {
+    "gridSource": "simulation-domain",
+    "wrapLowerLevelSet": true,
+    "retainedRegion": "inside",
+    "construction": "native-extrude-capped-surface-regrid-union-v1",
+    "planarPointCount": 90,
+    "extrudedPointCount": 360,
+    "sourceSurfacePointCount": 146,
+    "sourceSurfaceTriangleCount": 288,
+    "nativeBodyPointCount": 0,
+    "alignedMaskPointCount": 382
+  },
+  "maskPoints": 382,
+  "before": {
+    "points": 5316,
+    "triangles": 10231,
+    "materials": {
+      "0": {
+        "triangles": 231,
+        "bounds": [
+          -2.5,
+          2.5,
+          -0.5,
+          0.5,
+          4.9999999999999005,
+          5.2999999999999
+        ]
+      },
+      "10": {
+        "triangles": 5000,
+        "bounds": [
+          -2.5,
+          2.5,
+          -2.5,
+          2.5,
+          -1e-13,
+          -1e-13
+        ]
+      },
+      "30": {
+        "triangles": 5000,
+        "bounds": [
+          -2.5,
+          2.5,
+          -2.5,
+          2.5,
+          4.9999999999999005,
+          4.99999999999995
+        ]
+      }
+    },
+    "filmHeights": {
+      "0.0,0.0": 4.9999999999999005,
+      "-0.2,0.1": 4.9999999999999005,
+      "-1.5,1.0": 4.9999999999999005,
+      "0.75,0.1": 4.9999999999999005,
+      "2.35,0.1": 4.9999999999999005,
+      "-2.35,0.1": 4.9999999999999005,
+      "-1.6,0.1": 4.9999999999999005
+    },
+    "levelSetPoints": [
+      7500,
+      5000,
+      5104
+    ]
+  },
+  "after": {
+    "points": 5316,
+    "triangles": 10231,
+    "materials": {
+      "0": {
+        "triangles": 231,
+        "bounds": [
+          -2.5,
+          2.5,
+          -0.5,
+          0.5,
+          4.960000000000001,
+          5.2999999999999
+        ]
+      },
+      "10": {
+        "triangles": 5000,
+        "bounds": [
+          -2.5,
+          2.5,
+          -2.5,
+          2.5,
+          -1e-13,
+          -1e-13
+        ]
+      },
+      "30": {
+        "triangles": 5000,
+        "bounds": [
+          -2.5,
+          2.5,
+          -2.5,
+          2.5,
+          4.960000000000001,
+          4.99999999999995
+        ]
+      }
+    },
+    "filmHeights": {
+      "0.0,0.0": 4.960000000000001,
+      "-0.2,0.1": 4.960000000000001,
+      "-1.5,1.0": 4.960000000000001,
+      "0.75,0.1": 4.960000000000001,
+      "2.35,0.1": 4.9999999999999005,
+      "-2.35,0.1": 4.9999999999999005,
+      "-1.6,0.1": 4.960000000000001
+    },
+    "levelSetPoints": [
+      5000,
+      5000,
+      5104
+    ]
+  },
+  "setupAfter": {
+    "bounds": [
+      -2.5,
+      2.4000000000000004,
+      -2.5,
+      2.4000000000000004,
+      -0.1,
+      0.1
+    ],
+    "gridDelta": 0.1,
+    "boundary": [
+      "2",
+      "2",
+      "1"
+    ]
+  }
+}

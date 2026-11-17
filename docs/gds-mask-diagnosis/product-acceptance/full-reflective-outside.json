@@ -1,0 +1,32 @@
+{
+  "args": {
+    "source": "full",
+    "gds": "/root/wb-engines/docs/gds-mask-diagnosis/fixtures/buf4-selected.gds",
+    "output": "/root/wb-engines/docs/gds-mask-diagnosis/product-acceptance/full-reflective-outside.json",
+    "boundary": "reflective",
+    "retained": "outside",
+    "delta": 0.1,
+    "duration": 0.2,
+    "extent": 5.0,
+    "base_height": 5.0,
+    "mask_height": 0.3,
+    "rate": -0.2
+  },
+  "setupBefore": {
+    "bounds": [
+      -2.5,
+      2.5,
+      -2.5,
+      2.5,
+      -0.1,
+      0.1
+    ],
+    "gridDelta": 0.1,
+    "boundary": [
+      "0",
+      "0",
+      "1"
+    ]
+  },
+  "emptyError": "GDS \u63a9\u819c\u5728\u5f53\u524d\u8ba1\u7b97\u57df\u5185\u4e3a\u7a7a\uff0c\u8bf7\u8c03\u6574\u7248\u56fe\u4f4d\u7f6e\u3001\u4fdd\u7559\u533a\u57df\u6216\u8ba1\u7b97\u57df\u3002"
+}

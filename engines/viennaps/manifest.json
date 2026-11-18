@@ -1,0 +1,28 @@
+{
+  "engine_id": "viennaps",
+  "label": "ViennaPS (level-set baseline)",
+  "role": "baseline",
+  "runtime": "venv_python",
+  "entrypoint": "engines/viennaps/engine.py",
+  "adapter": "engines.viennaps.engine",
+  "solve_mode": "stepwise",
+  "probe_method": "ray_winding",
+  "mechanisms": [
+    "initial",
+    "isotropic",
+    "anisotropic",
+    "cmp",
+    "strip",
+    "fill",
+    "ellipsoidal",
+    "litho",
+    "custom"
+  ],
+  "frame_kinds": ["mesh"],
+  "rationale": "ViennaPS 4.7 multi-level-set reference; exact vertical ray-winding probe",
+  "limits": {
+    "max_active_points": 5000000.0,
+    "max_ratio": 200.0,
+    "max_area_um2": 100.0
+  }
+}

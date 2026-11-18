@@ -1,12 +1,12 @@
-/** P3 — side-by-side comparison, visual only: no labels, no table.
+/** P3 — multi-engine side-by-side comparison.
  *
- * Everything that used to be text is a mark: the step scrubber is a strip of
- * coloured ticks (agreement → colour), the timing comparison is two bars, the run
- * picker is a compact select rendered as a chevron. Titles are tooltips.
+ * Supports any N engines (mesh vs raster, mesh vs mesh, raster vs raster),
+ * dynamic left/right engine selectors, honest solver timing bars, and active-stack
+ * accuracy tooltips.
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import type { CompareRun, MeshFrame } from './api';
+import type { CompareRun, CompareStep, EngineRow, MeshFrame, PairComparison } from './api';
 import { fetchMesh, frameUrl } from './api';
 import { DEFAULT_CAMERA, MeshPane, cameraForView, type Camera } from './MeshPane';
 import { RunHistory } from './RunHistory';
@@ -19,7 +19,6 @@ type Props = {
   onSelectRun: (runId: string) => void;
 };
 
-/** agreement -> colour (1 = teal, 0 = red) */
 function agreementColor(value: number | null | undefined): string {
   if (value === null || value === undefined) return '#d8dee5';
   const clamped = Math.max(0, Math.min(1, value));
@@ -47,15 +46,82 @@ const CAMERA_ICONS = {
   ),
 };
 
+function resolvePair(step: CompareStep | undefined, left: string, right: string): PairComparison {
+  if (!step) return {};
+  const comps = step.comparisons ?? {};
+  const direct = comps[`${left}|${right}`];
+  if (direct) return direct;
+  const reverse = comps[`${right}|${left}`];
+  if (reverse) return reverse;
+  return { probe: step.probe, section: step.section };
+}
+
+function EngineViewport({
+  runId,
+  engineId,
+  row,
+  camera,
+}: {
+  runId: string | null;
+  engineId: string;
+  row: EngineRow | undefined;
+  camera: Camera;
+}) {
+  const [mesh, setMesh] = useState<MeshFrame | null>(null);
+  const frame = row?.frame ?? null;
+
+  useEffect(() => {
+    let cancelled = false;
+    setMesh(null);
+    if (!runId || !frame || frame.kind !== 'mesh') return;
+    fetchMesh(runId, frame.path)
+      .then((payload) => { if (!cancelled) setMesh(payload); })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [runId, frame?.kind, frame?.path]);
+
+  if (!frame || !runId) {
+    return (
+      <div className="cmp-raster" title={`${engineId}: ${row?.status ?? 'missing'}`}>
+        <span className="cmp-dot" />
+      </div>
+    );
+  }
+  if (frame.kind === 'mesh') {
+    return <MeshPane frame={mesh} camera={camera} height={560} title={engineId} />;
+  }
+  return (
+    <div className="cmp-raster" title={engineId}>
+      <img src={frameUrl(runId, frame.path)} alt={engineId} />
+    </div>
+  );
+}
+
 export function ComparePage({ run, runId, history, onSelectRun }: Props) {
   const [camera, setCamera] = useState<Camera>(DEFAULT_CAMERA);
   const [stepIndex, setStepIndex] = useState(0);
-  const [mesh, setMesh] = useState<MeshFrame | null>(null);
+  const [leftEngine, setLeftEngine] = useState<string>('viennaps');
+  const [rightEngine, setRightEngine] = useState<string>('spx');
+
+  const engineIds = useMemo(
+    () => Object.keys(run?.compare?.engines ?? {}),
+    [run?.compare?.engines],
+  );
+  const referenceEngine = run?.compare?.referenceEngine ?? engineIds[engineIds.length - 1] ?? 'spx';
+
+  useEffect(() => {
+    if (engineIds.length === 0) return;
+    setRightEngine((prev) => (engineIds.includes(prev) ? prev : referenceEngine));
+    setLeftEngine((prev) => {
+      if (engineIds.includes(prev) && (engineIds.length === 1 || prev !== referenceEngine)) {
+        return prev;
+      }
+      return engineIds.find((id) => id !== referenceEngine) ?? engineIds[0];
+    });
+  }, [engineIds, referenceEngine]);
 
   const steps = run?.compare?.steps ?? [];
   const step = steps[Math.min(stepIndex, Math.max(0, steps.length - 1))];
-  const viennapsFrame = step?.engines.viennaps?.frame ?? null;
-  const spxFrame = step?.engines.spx?.frame ?? null;
 
   const runView = run?.compare?.view;
   const runCamera = run?.compare?.camera;
@@ -70,25 +136,27 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
     }
   }, [runView, runCamera?.azimuth, runCamera?.elevation, runCamera?.zoom]);
 
-  useEffect(() => {
-    let cancelled = false;
-    setMesh(null);
-    if (!runId || !viennapsFrame || viennapsFrame.kind !== 'mesh') return;
-    fetchMesh(runId, viennapsFrame.path)
-      .then((payload) => { if (!cancelled) setMesh(payload); })
-      .catch(() => undefined);
-    return () => { cancelled = true; };
-  }, [runId, viennapsFrame?.path]);
+  // Total solver / process time bars across all participating engines
+  const engineTimings = useMemo(() => {
+    const meta = run?.compare?.engines ?? {};
+    const stepCount = Math.max(1, steps.length);
+    return engineIds.map((eid) => {
+      const info = meta[eid];
+      const stepRow = step?.engines?.[eid];
+      // Prefer per-step solveMs; for batch engines (SPX), show average per-step solveWallMs
+      const stepSolve = stepRow?.solveMs ?? (
+        info?.solveWallMs != null ? info.solveWallMs / stepCount : stepRow?.wallMs ?? 0
+      );
+      const totalSolve = info?.solveWallMs ?? info?.processWallMs ?? 0;
+      const speedup = run?.compare?.summary?.speedupVsReference?.[eid];
+      return { eid, stepMs: stepSolve || 0, totalSolveMs: totalSolve, speedup };
+    });
+  }, [engineIds, run?.compare?.engines, run?.compare?.summary?.speedupVsReference, step, steps.length]);
 
-  const maxWall = useMemo(() => {
-    let max = 1;
-    for (const row of steps) {
-      for (const engine of Object.values(row.engines)) {
-        if (engine.wallMs) max = Math.max(max, engine.wallMs);
-      }
-    }
-    return max;
-  }, [steps]);
+  const maxStepMs = useMemo(
+    () => Math.max(1, ...engineTimings.map((t) => t.stepMs)),
+    [engineTimings],
+  );
 
   if (!run) {
     return (
@@ -98,10 +166,35 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
     );
   }
 
+  const activePair = resolvePair(step, leftEngine, rightEngine);
+
   return (
     <section className="cmp-stage">
       <div className="cmp-toolbar">
         <RunHistory runs={history} current={runId} onSelect={onSelectRun} />
+        {engineIds.length >= 2 ? (
+          <>
+            <select
+              className="cmp-ghost-select"
+              aria-label="left engine"
+              value={leftEngine}
+              onChange={(e) => setLeftEngine(e.target.value)}
+              title="Left viewport engine"
+            >
+              {engineIds.map((id) => <option key={id} value={id}>{id}</option>)}
+            </select>
+            <span aria-hidden>⇄</span>
+            <select
+              className="cmp-ghost-select"
+              aria-label="right engine"
+              value={rightEngine}
+              onChange={(e) => setRightEngine(e.target.value)}
+              title="Right viewport engine"
+            >
+              {engineIds.map((id) => <option key={id} value={id}>{id}</option>)}
+            </select>
+          </>
+        ) : null}
         <span className="cmp-spacer" />
         <label className="cmp-icon-slider" title="azimuth">
           {CAMERA_ICONS.azimuth}
@@ -121,24 +214,37 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
       </div>
 
       <div className="cmp-duo">
-        <MeshPane frame={mesh} camera={camera} height={560} title="" />
-        <div className="cmp-raster">
-          {spxFrame && runId
-            ? <img src={frameUrl(runId, spxFrame.path)} alt="" />
-            : <span className="cmp-dot" />}
-        </div>
+        <EngineViewport
+          runId={runId}
+          engineId={leftEngine}
+          row={step?.engines?.[leftEngine]}
+          camera={camera}
+        />
+        <EngineViewport
+          runId={runId}
+          engineId={rightEngine}
+          row={step?.engines?.[rightEngine]}
+          camera={camera}
+        />
       </div>
 
       <div className="cmp-scrub" role="tablist">
         {steps.map((row, index) => {
-          const agreement = row.probe?.status === 'measured' ? row.probe.agreement ?? null : null;
+          const pr = resolvePair(row, leftEngine, rightEngine).probe;
+          const agreement = pr?.status === 'measured' ? (pr.activeAgreement ?? pr.agreement ?? null) : null;
+          const fullAgr = pr?.status === 'measured' && pr.agreement != null
+            ? `${(pr.agreement * 100).toFixed(1)}%`
+            : '-';
+          const actAgr = pr?.status === 'measured' && pr.activeAgreement != null
+            ? ` · active ${(pr.activeAgreement * 100).toFixed(1)}%`
+            : '';
           return (
             <button
               key={row.stepId}
               type="button"
               className={`cmp-tick ${index === stepIndex ? 'active' : ''}`}
               style={{ background: agreementColor(agreement) }}
-              title={`${index} ${row.stepId} · ${agreement === null ? '-' : (agreement * 100).toFixed(0) + '%'}`}
+              title={`${index} ${row.stepId} · all ${fullAgr}${actAgr}`}
               onClick={() => setStepIndex(index)}
             />
           );
@@ -146,11 +252,15 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
       </div>
 
       <div className="cmp-cost">
-        {(['viennaps', 'spx'] as const).map((engineId) => {
-          const engine = step?.engines?.[engineId];
-          const width = engine?.wallMs ? Math.max(2, (engine.wallMs / maxWall) * 100) : 0;
+        {engineTimings.map(({ eid, stepMs, totalSolveMs, speedup }) => {
+          const width = stepMs > 0 ? Math.max(2, (stepMs / maxStepMs) * 100) : 0;
+          const spLabel = speedup != null ? ` · ${speedup.toFixed(2)}x vs ${referenceEngine}` : '';
           return (
-            <div className={`cmp-cost-row cmp-cost-${engineId}`} key={engineId} title={engineId}>
+            <div
+              className={`cmp-cost-row cmp-cost-${eid}`}
+              key={eid}
+              title={`${eid}: step solve ~${stepMs.toFixed(1)} ms · total solve ${totalSolveMs.toFixed(0)} ms${spLabel}`}
+            >
               <span style={{ width: `${width}%` }} />
             </div>
           );
@@ -158,11 +268,11 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
       </div>
 
       <SectionView
-        section={step?.section}
+        section={activePair.section}
         width={640}
         height={150}
         zRange={run.compare?.sectionZ}
-        engines={Object.keys(step?.engines ?? {})}
+        engines={[leftEngine, rightEngine]}
         domainWidth={run.compare?.domain?.width ?? 1}
       />
     </section>

@@ -1,0 +1,28 @@
+{
+  "engine_id": "voxel",
+  "label": "Fast Voxel Emulator (custom model SDK)",
+  "role": "candidate",
+  "runtime": "venv_python",
+  "entrypoint": "engines/voxel/engine.py",
+  "adapter": "engines.voxel.engine",
+  "solve_mode": "stepwise",
+  "probe_method": "voxel_index",
+  "mechanisms": [
+    "initial",
+    "isotropic",
+    "anisotropic",
+    "cmp",
+    "strip",
+    "fill",
+    "ellipsoidal",
+    "litho",
+    "custom"
+  ],
+  "frame_kinds": ["mesh"],
+  "rationale": "Volumetric 3D multi-material grid engine built on engines.sdk; supports Damascene trench fill/CMP, cavities, and pluggable per-step models",
+  "limits": {
+    "max_active_points": 25000000.0,
+    "max_ratio": 2000.0,
+    "max_area_um2": 25.0
+  }
+}

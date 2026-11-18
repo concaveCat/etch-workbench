@@ -1,17 +1,17 @@
 """Engine-neutral job protocol shared by every simulation engine.
 
 The workbench compiler emits :class:`StepIR` objects. An engine runner consumes a
-:class:`JobSpec` (initial structure + StepIR sequence + render request) and emits
-one :class:`Frame` per step plus a :class:`StepOutcome` per step. Nothing in this
-module imports viennaps, viennals, spx or the backend: it is the only contract
-both sides agree on, so it must stay importable from any interpreter (including
-the SPX-private Python 3.11).
+:class:`JobSpec` (initial structure + StepIR sequence + render/benchmark request)
+and emits up to one :class:`Frame` per step plus a :class:`StepOutcome` per step.
+Nothing in this module imports viennaps, viennals, spx, numpy or the backend: it is
+the only contract every engine interpreter agrees on (including SPX-private Python
+3.11 and external custom-model environments).
 
 Unit convention (deliberate, documented in docs/engine-abstraction.md):
 
 * length  -> micrometre (``um``)
 * time    -> minute (``min``) for every rate and duration
-* z axis  -> up; origin at the substrate top surface, centre of the column
+* z axis  -> up; origin at the substrate top surface, lateral window local [0..W, 0..D]
 * removal -> negative rate, deposition -> positive rate
 
 The workbench project layer may use nm or seconds; the compiler converts. Engines
@@ -30,11 +30,14 @@ LENGTH_UNIT = "um"
 TIME_UNIT = "min"
 
 StepKind = Literal["initial", "deposit", "etch", "planarize", "mask", "strip"]
-Mechanism = Literal["initial", "isotropic", "anisotropic", "cmp", "gds_mask",
-                    "strip", "fill", "ellipsoidal", "litho"]
+Mechanism = Literal[
+    "initial", "isotropic", "anisotropic", "cmp", "gds_mask",
+    "strip", "fill", "ellipsoidal", "litho", "custom",
+]
 Comparability = Literal["exact", "approximate", "no_counterpart"]
 StepStatus = Literal["ok", "out_of_domain", "unsupported", "failed", "skipped"]
 FrameKind = Literal["mesh", "raster"]
+SolveMode = Literal["stepwise", "batch_route"]
 
 
 class ProtocolError(ValueError):
@@ -74,13 +77,12 @@ class Film:
 
 @dataclass(frozen=True)
 class InitialStructure:
-    """Where both engines must start. Parametric on purpose (phase A)."""
+    """Where all engines start."""
 
     kind: Literal["plane", "trench"]
     substrate: str
     substrate_thickness: float
     films: tuple[Film, ...] = ()
-    # trench-only geometry (um). Absent for a plane.
     trench_width: float | None = None
     trench_depth: float | None = None
     mask_material: str | None = None
@@ -104,8 +106,14 @@ class InitialStructure:
 class StepIR:
     """One engine-neutral process step.
 
-    ``rates`` maps material name -> signed rate in um/min (removal negative).
+    ``rates`` maps canonical material name -> signed rate in um/min (removal negative).
     A material absent from ``rates`` is untouched (selectivity 0).
+
+    ``model`` is an optional process-specific model override (for example
+    ``"damascene_cmp_dishing"`` or ``"high_ar_contact_etch"``). Reference engines
+    such as SPX ignore ``model`` and lower ``(kind, mechanism)``; custom model
+    engines dispatch to ``model`` first when registered, allowing per-step model
+    experimentation on the exact same StepIR flow.
     """
 
     step_id: str
@@ -116,6 +124,7 @@ class StepIR:
     anisotropy: float = 1.0
     comparability: Comparability = "exact"
     parameters: dict[str, Any] = field(default_factory=dict)
+    model: str | None = None
 
     def validate(self) -> None:
         if not self.step_id:
@@ -123,8 +132,11 @@ class StepIR:
         if self.kind not in ("initial", "deposit", "etch", "planarize", "mask", "strip"):
             raise ProtocolError(f"unsupported step kind {self.kind!r}")
         if self.mechanism not in ("initial", "isotropic", "anisotropic", "cmp",
-                                  "gds_mask", "strip", "fill", "ellipsoidal", "litho"):
+                                  "gds_mask", "strip", "fill", "ellipsoidal", "litho",
+                                  "custom"):
             raise ProtocolError(f"unsupported mechanism {self.mechanism!r}")
+        if self.mechanism == "custom" and not self.model:
+            raise ProtocolError(f"custom step {self.step_id!r} requires a model name")
         if self.mechanism == "strip" and not self.parameters.get("materials"):
             raise ProtocolError(f"strip step {self.step_id!r} needs parameters.materials")
         if self.mechanism == "fill" and not self.parameters.get("material"):
@@ -135,21 +147,18 @@ class StepIR:
                     raise ProtocolError(f"litho step {self.step_id!r} needs parameters.{key}")
         if self.comparability not in ("exact", "approximate", "no_counterpart"):
             raise ProtocolError(f"unsupported comparability {self.comparability!r}")
-        if self.kind in ("deposit", "etch") and self.mechanism not in ("fill", "strip") and self.duration <= 0:
+        if (self.kind in ("deposit", "etch")
+                and self.mechanism not in ("fill", "strip", "custom")
+                and self.duration <= 0):
             raise ProtocolError(f"step {self.step_id!r} needs a positive duration")
         for material, rate in self.rates.items():
-            if not isinstance(rate, (int, float)):
+            if not isinstance(rate, (int, float)) or isinstance(rate, bool):
                 raise ProtocolError(f"rate for {material!r} must be numeric, got {rate!r}")
 
 
 @dataclass(frozen=True)
 class ProbeSpec:
-    """Points every engine must answer with a material label.
-
-    Generated by the scheduler, shipped inside the job: both engines answer the
-    same questions in the same order, which is the only way a per-point comparison
-    can mean anything across two different geometry representations.
-    """
+    """Points every engine must answer with a canonical material label."""
 
     points: list[list[float]]
 
@@ -161,13 +170,7 @@ class ProbeSpec:
 
 @dataclass(frozen=True)
 class SectionSpec:
-    """A cross-section every engine must report interface heights on.
-
-    SPX exposes no structure export we can parse without a new dependency, so the
-    section is measured by asking each engine for the interface height of every
-    material along a fixed line of columns. Both answer in structure-local
-    coordinates; ``z`` is measured from the substrate top.
-    """
+    """A cross-section every engine must report interface heights on."""
 
     columns: list[list[float]]
     materials: list[str]
@@ -186,12 +189,7 @@ class SectionSpec:
 
 @dataclass(frozen=True)
 class RenderSpec:
-    """Render request.
-
-    ``view`` is an SPX preset (``iso``/``xz``/...). ``camera`` is an explicit
-    orbit camera ``{azimuth, elevation, zoom}`` in degrees; when present the SPX
-    adapter uses its free camera (focal point + position) instead of a preset.
-    """
+    """Render request."""
 
     width: int = 900
     height: int = 700
@@ -211,11 +209,10 @@ class JobSpec:
     render: RenderSpec = field(default_factory=RenderSpec)
     probe: ProbeSpec | None = None
     section: SectionSpec | None = None
-    # Layout used by mask/litho steps: {"path": <gds|oasis>, "spxLayers": {"9": "PLG"}}
     layout: dict[str, Any] | None = None
-    # Absolute path of an engine-native checkpoint to resume from. Only engines
-    # that declare a reader may honour it; the others must report ``unsupported``.
     restore: str | None = None
+    emit_frames: bool = True
+    emit_checkpoints: bool = True
     schema_version: int = SCHEMA_VERSION
 
     def validate(self) -> None:
@@ -265,23 +262,31 @@ class JobSpec:
             anisotropy=float(s.get("anisotropy", 1.0)),
             comparability=s.get("comparability", "exact"),
             parameters=dict(s.get("parameters") or {}),
+            model=(str(s["model"]) if s.get("model") else None),
         ) for s in payload["steps"])
-        job = cls(case_id=payload["case_id"], engine=payload["engine"], domain=domain,
-                  initial=initial, steps=steps,
-                  render=RenderSpec(**payload.get("render", {})),
-                  probe=(ProbeSpec(points=[[float(v) for v in p]
-                                           for p in payload["probe"]["points"]])
-                         if payload.get("probe") else None),
-                  section=(SectionSpec(
-                      columns=[[float(v) for v in c]
-                               for c in payload["section"]["columns"]],
-                      materials=[str(m) for m in payload["section"]["materials"]],
-                      z_min=float(payload["section"]["z_min"]),
-                      z_max=float(payload["section"]["z_max"]))
-                      if payload.get("section") else None),
-                  restore=(str(payload["restore"]) if payload.get("restore") else None),
-                  layout=(dict(payload["layout"]) if payload.get("layout") else None),
-                  schema_version=int(payload.get("schema_version", SCHEMA_VERSION)))
+        job = cls(
+            case_id=payload["case_id"],
+            engine=payload.get("engine", "any"),
+            domain=domain,
+            initial=initial,
+            steps=steps,
+            render=RenderSpec(**payload.get("render", {})),
+            probe=(ProbeSpec(points=[[float(v) for v in p]
+                                     for p in payload["probe"]["points"]])
+                   if payload.get("probe") else None),
+            section=(SectionSpec(
+                columns=[[float(v) for v in c]
+                         for c in payload["section"]["columns"]],
+                materials=[str(m) for m in payload["section"]["materials"]],
+                z_min=float(payload["section"]["z_min"]),
+                z_max=float(payload["section"]["z_max"]))
+                if payload.get("section") else None),
+            restore=(str(payload["restore"]) if payload.get("restore") else None),
+            layout=(dict(payload["layout"]) if payload.get("layout") else None),
+            emit_frames=bool(payload.get("emit_frames", True)),
+            emit_checkpoints=bool(payload.get("emit_checkpoints", True)),
+            schema_version=int(payload.get("schema_version", SCHEMA_VERSION)),
+        )
         job.validate()
         return job
 
@@ -294,6 +299,42 @@ def _rates(raw: dict[str, Any], step_id: str) -> dict[str, float]:
                 f"rate for {material!r} in step {step_id!r} must be numeric, got {value!r}")
         rates[str(material)] = float(value)
     return rates
+
+
+def flow_materials(job: JobSpec, *, include_masks: bool = False) -> list[str]:
+    """Ordered unique canonical materials introduced across initial + all steps."""
+    seen: list[str] = []
+    mask_names = {"PMMA", "Mask"}
+
+    def add(name: Any) -> None:
+        if not name:
+            return
+        text = str(name)
+        if not include_masks and text in mask_names:
+            return
+        if text not in seen:
+            seen.append(text)
+
+    add(job.initial.substrate)
+    for film in job.initial.films:
+        add(film.material)
+    if include_masks and job.initial.mask_material:
+        add(job.initial.mask_material)
+    for step in job.steps:
+        for mat, rate in step.rates.items():
+            if float(rate) != 0.0:
+                add(mat)
+        params = step.parameters or {}
+        if step.mechanism == "fill":
+            add(params.get("material"))
+        elif step.mechanism == "litho" and include_masks:
+            add(params.get("material", "PMMA"))
+        elif step.mechanism == "cmp":
+            add(params.get("stop_material"))
+        elif step.mechanism == "ellipsoidal":
+            for mat in (params.get("rates") or {}):
+                add(mat)
+    return seen
 
 
 @dataclass(frozen=True)
@@ -318,11 +359,29 @@ class Frame:
 
 @dataclass(frozen=True)
 class StepOutcome:
-    """Per-step result. ``status`` is never inferred: engines state it."""
+    """Per-step result.
+
+    Timing fields are strictly separated so solver speed benchmarks are never
+    polluted by screenshot rendering, mesh export, or probe IPC:
+
+    * ``solve_ms``      - pure physics/geometry step update (``None`` for batch-route
+                          engines such as SPX whose solver runs all steps in one call);
+    * ``frame_ms``      - mesh extraction or raster screenshot time;
+    * ``probe_ms``      - probe-lattice query time;
+    * ``section_ms``    - cross-section height query time;
+    * ``checkpoint_ms`` - state serialisation time;
+    * ``wall_ms``       - backward-compatible primary step wall time (equals
+                          ``solve_ms`` when available, otherwise ``frame_ms``).
+    """
 
     step_id: str
     status: StepStatus
     wall_ms: float
+    solve_ms: float | None = None
+    frame_ms: float = 0.0
+    probe_ms: float = 0.0
+    section_ms: float = 0.0
+    checkpoint_ms: float = 0.0
     frame: Frame | None = None
     checkpoint: str | None = None
     metrics: dict[str, Any] = field(default_factory=dict)
@@ -333,7 +392,7 @@ class StepOutcome:
 
 @dataclass(frozen=True)
 class EngineInfo:
-    """Self-declaration used by the scheduler for routing and guards."""
+    """Self-declaration emitted by an engine inside ``result.json``."""
 
     engine_id: str
     version: str
@@ -341,6 +400,8 @@ class EngineInfo:
     mechanisms: tuple[str, ...]
     frame_kinds: tuple[str, ...]
     adapter: str
+    solve_mode: SolveMode = "stepwise"
+    probe_method: str = "unknown"
     limits: dict[str, Any] = field(default_factory=dict)
 
     def supports(self, step: StepIR) -> bool:

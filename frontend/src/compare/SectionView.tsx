@@ -1,10 +1,4 @@
-/** Cross-section overlay: the two engines' interface polylines on one axis.
- *
- * Both sides are asked for the same columns (x positions) and the same materials,
- * so the polylines are directly comparable. The dashed line is SPX, the solid one
- * ViennaPS; the wall/void boundary is intentionally not drawn because a periodic
- * ViennaPS cell has no side wall.
- */
+/** Cross-section overlay: dynamic multi-engine interface polylines on one axis. */
 
 import type { SectionMetrics } from './api';
 
@@ -21,13 +15,13 @@ const COLORS: Record<string, string> = {
   Si: '#90a4ae', SiO2: '#00e5ff', Si3N4: '#dce775', PolySi: '#ff7043',
   SiGe: '#26a69a', Al2O3: '#80cbc4', HfO2: '#ef5350', TiN: '#bdbdbd',
   W: '#78909c', Cu: '#ffb74d', PMMA: '#fff176', Mask: '#fff176', void: '#37474f',
+  Oxide2: '#26c6da', SiOC: '#8d6e63', BARC: '#e6e672', CESL: '#55aaff',
+  SiN: '#55aaff', SiON: '#4dd0e1', TaN: '#b0bec5',
 };
 
 export function SectionView({ section, width, height, zRange, engines, domainWidth }: Props) {
   const materials = Object.keys(section?.materials ?? {});
   const heights = section?.heights ?? {};
-  // Fit the vertical axis to the data: the domain is 2.5 µm tall while every
-  // interface sits inside 0.4 µm, which flattened the curves onto the axis floor.
   const values: number[] = [];
   for (const perEngine of Object.values(heights)) {
     for (const rows of Object.values(perEngine)) {
@@ -54,6 +48,9 @@ export function SectionView({ section, width, height, zRange, engines, domainWid
     );
   }
 
+  const leftLabel = engines[0] ?? 'left';
+  const rightLabel = engines[1] ?? 'right';
+
   return (
     <div className="cmp-section">
       <svg width={width} height={height} role="img" aria-label="截面轮廓对比">
@@ -72,9 +69,9 @@ export function SectionView({ section, width, height, zRange, engines, domainWid
         <text x={8} y={14} fontSize={9} fill="#5f7d93">z (µm)</text>
         {materials.map((material) => {
           const rows = engines.map((engineId, index) => {
-            const values = heights[engineId]?.[material] ?? [];
-            const points = values
-              .map((z, i) => (z === null ? null : `${xFor((i + 0.5) / values.length * domainWidth)},${yFor(z)}`))
+            const colValues = heights[engineId]?.[material] ?? [];
+            const points = colValues
+              .map((z, i) => (z === null ? null : `${xFor((i + 0.5) / colValues.length * domainWidth)},${yFor(z)}`))
               .filter((value): value is string => value !== null);
             if (points.length < 2) return null;
             return (
@@ -95,17 +92,16 @@ export function SectionView({ section, width, height, zRange, engines, domainWid
       <div className="cmp-section-legend">
         {materials.map((material) => {
           const row = section.materials?.[material];
+          if (row?.status !== 'measured') return null;
           return (
             <span key={material} className="cmp-section-row">
               <i style={{ background: COLORS[material] ?? '#90a4ae' }} />
               {material}
-              {row?.status === 'measured'
-                ? ` 平均 |Δz| ${((row.meanAbsUm ?? 0) * 1000).toFixed(2)} nm · 最大 ${((row.maxAbsUm ?? 0) * 1000).toFixed(2)} nm`
-                : ` ${row?.status ?? '—'}`}
+              {` 平均 |Δz| ${((row.meanAbsUm ?? 0) * 1000).toFixed(2)} nm · 最大 ${((row.maxAbsUm ?? 0) * 1000).toFixed(2)} nm`}
             </span>
           );
         })}
-        <span className="cmp-note">实线 ViennaPS · 虚线 SPX · 两侧同列同材料</span>
+        <span className="cmp-note">{`实线 ${leftLabel} · 虚线 ${rightLabel} · 两侧同列同材料`}</span>
       </div>
     </div>
   );

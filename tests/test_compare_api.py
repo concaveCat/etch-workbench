@@ -37,7 +37,7 @@ class CompareApiTests(unittest.TestCase):
         status, body = _call("/api/compare/engines")
         self.assertEqual(status, 200)
         ids = {row["engineId"] for row in body["engines"]}
-        self.assertEqual(ids, {"viennaps", "spx"})
+        self.assertTrue({"viennaps", "spx", "voxel"}.issubset(ids))
 
     def test_invalid_job_is_rejected_not_queued(self):
         bad = {**JOB, "steps": [{"step_id": "s1", "kind": "etch",

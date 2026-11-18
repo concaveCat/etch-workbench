@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 2,
-  "comment": "Grade of a StepIR (key: 'kind/mechanism', 'initial' for the first step) for an engine pair. exact = pointwise comparable, approximate = same quantity but a different model, no_counterpart = one side has no equivalent. This file is the only place a grade may change.",
+  "schemaVersion": 3,
+  "comment": "Grade of a StepIR (key: 'kind/mechanism', 'initial' for the first step) for an engine pair. Wildcard '*|<engine>' covers newly plugged-in candidate engines without editing this table.",
   "pairs": {
     "viennaps|spx": {
       "initial": "exact",
@@ -8,42 +8,76 @@
       "deposit/isotropic": "exact",
       "etch/anisotropic": "approximate",
       "deposit/anisotropic": "approximate",
-      "planarize/cmp": "no_counterpart",
+      "planarize/cmp": "approximate",
       "mask/gds_mask": "no_counterpart",
       "etch/wet": "approximate",
       "deposit/epi": "approximate",
-      "deposit/fill": "approximate",
+      "deposit/fill": "exact",
       "strip/strip": "exact",
       "etch/ellipsoidal": "approximate",
-      "mask/litho": "approximate"
+      "mask/litho": "approximate",
+      "*/custom": "approximate"
     },
-    "viennaps|mine": {
+    "voxel|spx": {
       "initial": "exact",
       "etch/isotropic": "exact",
       "deposit/isotropic": "exact",
       "etch/anisotropic": "exact",
-      "deposit/anisotropic": "exact",
+      "deposit/anisotropic": "approximate",
       "planarize/cmp": "exact",
-      "mask/gds_mask": "no_counterpart"
+      "deposit/fill": "exact",
+      "strip/strip": "exact",
+      "etch/ellipsoidal": "approximate",
+      "mask/litho": "approximate",
+      "*/custom": "approximate"
     },
-    "spx|mine": {
+    "voxel|viennaps": {
       "initial": "exact",
       "etch/isotropic": "exact",
       "deposit/isotropic": "exact",
       "etch/anisotropic": "approximate",
       "deposit/anisotropic": "approximate",
-      "planarize/cmp": "no_counterpart",
-      "mask/gds_mask": "no_counterpart"
+      "planarize/cmp": "exact",
+      "deposit/fill": "exact",
+      "strip/strip": "exact",
+      "etch/ellipsoidal": "approximate",
+      "mask/litho": "approximate",
+      "*/custom": "approximate"
+    },
+    "*|spx": {
+      "initial": "exact",
+      "etch/isotropic": "exact",
+      "deposit/isotropic": "exact",
+      "etch/anisotropic": "approximate",
+      "deposit/anisotropic": "approximate",
+      "planarize/cmp": "approximate",
+      "deposit/fill": "exact",
+      "strip/strip": "exact",
+      "etch/ellipsoidal": "approximate",
+      "mask/litho": "approximate",
+      "*/custom": "approximate"
+    },
+    "*|*": {
+      "initial": "exact",
+      "etch/isotropic": "exact",
+      "deposit/isotropic": "exact",
+      "etch/anisotropic": "approximate",
+      "deposit/anisotropic": "approximate",
+      "planarize/cmp": "approximate",
+      "deposit/fill": "exact",
+      "strip/strip": "exact",
+      "etch/ellipsoidal": "approximate",
+      "mask/litho": "approximate",
+      "*/custom": "approximate"
     }
   },
   "notes": {
-    "etch/anisotropic": "ViennaPS splits the rate into directional+isotropic parts; SPX takes a sidewall Angle. Geometric, not physical.",
+    "etch/anisotropic": "ViennaPS splits rate into directional+isotropic; SPX takes sidewall Angle; voxel advances masked/unmasked columns with material selectivity stop.",
     "deposit/anisotropic": "SPX depo_anisotropic has no exponent/angle and takes one material filter per call.",
-    "planarize/cmp": "SPX etch_cmp removes to a stop-material boundary, not to an absolute height; measured stop=Oxide/Offset=0 removed a whole 0.1 um oxide layer. ViennaPS Planarize(height) has no mapped equivalent yet.",
-    "mask/gds_mask": "SPX can extrude a layout layer into a material (layout_extrude_structure(LayerName, MaterialFilter, Thickness, Polarity='Negative'|'Positive')), but the ViennaPS side needs the workbench GDS pipeline (backend/gds.py + worker/gds_mask.py, which take a full project dict) adapted to StepIR, and the clip layout does not drive patterning in the headless runs measured so far. Not shipped as comparable until both sides read the same layer.",
-    "deposit/fill": "SPX depo_fill fills to a reference surface + offset; ViennaPS builds 'box minus existing solids' up to the current top + offset. Measured 1.0 agreement on a filled stack.",
-    "strip/strip": "SPX etch_strip(MaterialFilter) vs ViennaPS removeMaterial. Measured 1.0 agreement.",
-    "etch/ellipsoidal": "SPX etch_ellipsoidal(filter, vertical, lateral); ViennaPS DirectionalProcess with the same two components (no lateral curvature term).",
-    "mask/litho": "SPX litho_patterning(LayerNames=[name]); ViennaPS cuts/adds axis-aligned rectangles from the same GDS layer. Layer-number-to-name mapping and non-rectangular polygons are still open, so measured agreement is 0.80, not 1.0."
+    "planarize/cmp": "Stop-material + offset CMP is supported across SPX, ViennaPS, and Voxel; cutoff-only CMP without stop_material remains unsupported in SPX.",
+    "deposit/fill": "Fills recesses and grows overburden to top + offset.",
+    "strip/strip": "Complete selective removal of named materials.",
+    "etch/ellipsoidal": "Vertical + lateral rate components.",
+    "mask/litho": "Layout-driven resist coat + polygon exposure/development."
   }
 }

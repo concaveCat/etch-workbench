@@ -1,26 +1,22 @@
 """Translate an SPX reference flow (exported Python) into StepIR steps.
 
-`spx.io.node_to_python` turns a route into plain Python; that file names every
-process step with its exact parameters, so it is the most reliable description of
-what the reference flow does. Parsing it gives the comparison an honest source of
-truth instead of hand-copying 88 steps.
-
-Only the calls this platform maps are translated; anything else raises so a step is
-never silently dropped:
-
-    substrate, depo_fill, depo_isotropic, etch_isotropic, etch_anisotropic,
-    etch_ellipsoidal, etch_strip, etch_cmp, litho_patterning
+Fixes over Phase A:
+* ``patterned`` resets to ``False`` when a blanket ``depo_fill``, ``depo_isotropic``,
+  or ``etch_cmp`` buries/planarises the wafer, preventing later blanket etchback
+  steps (such as Memory1 step 32 ``etch_aniso_TiN_W``) from being misclassified as
+  litho-masked etches;
+* ``mask`` never lists a material that is itself being etched in ``rates``;
+* Assigns honest ``comparability`` grades instead of marking every step ``exact``.
 """
 
 from __future__ import annotations
 
 import ast
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 from engines.normalize import canonical
-from engines.protocol import Film, InitialStructure, JobSpec, StepIR, DomainSpec
+from engines.protocol import DomainSpec, InitialStructure, JobSpec, StepIR
 
 SUPPORTED = {
     "substrate", "depo_fill", "depo_isotropic", "etch_isotropic", "etch_anisotropic",
@@ -41,7 +37,6 @@ class Call:
 
 
 def _unit(node: ast.AST) -> str | None:
-    """``qupy.Unit('um min^-1')`` -> ``'um min^-1'``."""
     if isinstance(node, ast.Call):
         func = ast.unparse(node.func)
         if func.endswith("Unit") and node.args and isinstance(node.args[0], ast.Constant):
@@ -50,7 +45,6 @@ def _unit(node: ast.AST) -> str | None:
 
 
 def _value(node: ast.AST) -> Any:
-    """Evaluate the literal subset used in an exported flow."""
     unit = _unit(node)
     if unit is not None:
         return ("unit", unit)
@@ -74,7 +68,6 @@ def parse_calls(text: str) -> list[Call]:
     try:
         tree = ast.parse(text)
     except SyntaxError:
-        # The exporter's output can carry a loader banner on the first line(s).
         lines = text.splitlines()
         for index, line in enumerate(lines):
             if line.startswith(("def ", "import ", "from ")):
@@ -97,7 +90,6 @@ def parse_calls(text: str) -> list[Call]:
 
 
 def _amount(value: Any) -> float:
-    """``(0.05, ('unit','um'))`` -> 0.05; plain numbers pass through."""
     if isinstance(value, tuple) and len(value) == 2 and isinstance(value[1], tuple):
         return float(value[0])
     if isinstance(value, (int, float)):
@@ -112,7 +104,6 @@ def _rate(value: Any) -> float:
 
 
 def _filter_materials(filters: Any) -> list[str]:
-    """``[[('Material','equals','Oxide')], ...]`` -> ``['Oxide', ...]``."""
     names: list[str] = []
     if not isinstance(filters, list):
         return names
@@ -128,9 +119,16 @@ def _step_location(call: Call) -> dict[str, str]:
     return {str(k): str(v) for k, v in (call.kwargs.get("Location") or {}).items()}
 
 
-def translate(text: str, *, case_id: str, window: list[float], grid_delta: float,
-              layout_path: str, spx_layers: dict[str, int],
-              domain_height: float) -> JobSpec:
+def translate(
+    text: str,
+    *,
+    case_id: str,
+    window: list[float],
+    grid_delta: float,
+    layout_path: str,
+    spx_layers: dict[str, int],
+    domain_height: float,
+) -> JobSpec:
     calls = [call for call in parse_calls(text) if call.name in SUPPORTED | IGNORED]
     substrate = next((call for call in calls if call.name == "substrate"), None)
     if substrate is None:
@@ -142,18 +140,18 @@ def translate(text: str, *, case_id: str, window: list[float], grid_delta: float
         films=(),
     )
 
-    steps: list[StepIR] = [StepIR(step_id="s0_substrate", kind="initial",
-                                  mechanism="initial", duration=0.0)]
-    # Materials currently in the stack, used to decide whether an etch is masked by
-    # the photoresist (SPX carries the resist as a solid body; a level-set stack
-    # needs the mask named explicitly).
+    steps: list[StepIR] = [
+        StepIR(step_id="s0_substrate", kind="initial", mechanism="initial", duration=0.0)
+    ]
     present: set[str] = {initial.substrate}
     height = 0.0
     top_material = initial.substrate
     patterned = False
+    active_layer: int | None = None
 
     def material(name: str) -> str:
         return canonical(name, "spx")
+
     for call in calls:
         if call.name in IGNORED:
             continue
@@ -167,11 +165,20 @@ def translate(text: str, *, case_id: str, window: list[float], grid_delta: float
                 raise TranslationError(f"{step_id}: depo_fill needs one material")
             target = material(materials[0])
             offset = _amount(call.kwargs.get("Offset"))
-            steps.append(StepIR(step_id=step_id, kind="deposit", mechanism="fill",
-                                duration=0.0,
-                                parameters={"material": target, "offset": offset}))
+            steps.append(
+                StepIR(
+                    step_id=step_id,
+                    kind="deposit",
+                    mechanism="fill",
+                    duration=0.0,
+                    comparability="exact",
+                    parameters={"material": target, "offset": offset},
+                )
+            )
             present.add(target)
             top_material = target
+            patterned = False
+            active_layer = None
             height += offset
             continue
         if call.name == "depo_isotropic":
@@ -181,10 +188,20 @@ def translate(text: str, *, case_id: str, window: list[float], grid_delta: float
                 raise TranslationError(f"{step_id}: depo_isotropic needs one material")
             target = material(materials[0])
             duration = _amount(call.kwargs.get("Time"))
-            steps.append(StepIR(step_id=step_id, kind="deposit", mechanism="isotropic",
-                                duration=duration, rates={target: rate}))
+            steps.append(
+                StepIR(
+                    step_id=step_id,
+                    kind="deposit",
+                    mechanism="isotropic",
+                    duration=duration,
+                    rates={target: rate},
+                    comparability="exact",
+                )
+            )
             present.add(target)
             top_material = target
+            patterned = False
+            active_layer = None
             height += abs(rate) * duration
             continue
         if call.name in ("etch_isotropic", "etch_anisotropic"):
@@ -196,39 +213,89 @@ def translate(text: str, *, case_id: str, window: list[float], grid_delta: float
                 rates[material(materials[0])] = -abs(_rate(entry[1]))
             if not rates:
                 raise TranslationError(f"{step_id}: no material rates")
-            mask = [top_material] if (patterned and top_material in present) else []
-            steps.append(StepIR(
-                step_id=step_id, kind="etch",
-                mechanism="isotropic" if call.name == "etch_isotropic" else "anisotropic",
-                duration=_amount(call.kwargs.get("Time")), rates=rates, anisotropy=1.0,
-                parameters={"mask": mask, "patterned": patterned}))
+            mask = (
+                [top_material]
+                if (patterned and top_material in present and top_material not in rates)
+                else []
+            )
+            params: dict[str, Any] = {"mask": mask, "patterned": patterned}
+            if patterned and active_layer is not None:
+                params["openings_layer"] = active_layer
+            mech = "isotropic" if call.name == "etch_isotropic" else "anisotropic"
+            steps.append(
+                StepIR(
+                    step_id=step_id,
+                    kind="etch",
+                    mechanism=mech,
+                    duration=_amount(call.kwargs.get("Time")),
+                    rates=rates,
+                    anisotropy=1.0,
+                    comparability="exact" if mech == "isotropic" else "approximate",
+                    parameters=params,
+                )
+            )
             continue
         if call.name == "etch_ellipsoidal":
-            rates: dict[str, list[float]] = {}
+            ellip_rates: dict[str, list[float]] = {}
             for entry in call.kwargs.get("MaterialDependent") or []:
                 materials = _filter_materials(entry[0])
                 if not materials:
                     continue
-                rates[material(materials[0])] = [-abs(_rate(entry[1])), -abs(_rate(entry[2]))]
-            mask = [top_material] if (patterned and top_material in present) else []
-            steps.append(StepIR(step_id=step_id, kind="etch", mechanism="ellipsoidal",
-                                duration=_amount(call.kwargs.get("Time")),
-                                parameters={"rates": rates, "mask": mask,
-                                            "patterned": patterned}))
+                ellip_rates[material(materials[0])] = [
+                    -abs(_rate(entry[1])),
+                    -abs(_rate(entry[2])),
+                ]
+            mask = (
+                [top_material]
+                if (patterned and top_material in present and top_material not in ellip_rates)
+                else []
+            )
+            params = {"rates": ellip_rates, "mask": mask, "patterned": patterned}
+            if patterned and active_layer is not None:
+                params["openings_layer"] = active_layer
+            steps.append(
+                StepIR(
+                    step_id=step_id,
+                    kind="etch",
+                    mechanism="ellipsoidal",
+                    duration=_amount(call.kwargs.get("Time")),
+                    comparability="approximate",
+                    parameters=params,
+                )
+            )
             continue
         if call.name == "etch_strip":
             materials = _filter_materials(call.kwargs.get("MaterialFilter"))
             targets = [material(name) for name in materials]
-            steps.append(StepIR(step_id=step_id, kind="strip", mechanism="strip",
-                                duration=0.0, parameters={"materials": targets}))
+            steps.append(
+                StepIR(
+                    step_id=step_id,
+                    kind="strip",
+                    mechanism="strip",
+                    duration=0.0,
+                    comparability="exact",
+                    parameters={"materials": targets},
+                )
+            )
             present.difference_update(targets)
             continue
         if call.name == "etch_cmp":
             stop = _filter_materials(call.kwargs.get("EtchstopMaterialsFilter"))
-            steps.append(StepIR(step_id=step_id, kind="planarize", mechanism="cmp",
-                                duration=0.0,
-                                parameters={"stop_material": material(stop[0]) if stop else None,
-                                            "offset": _amount(call.kwargs.get("Offset"))}))
+            steps.append(
+                StepIR(
+                    step_id=step_id,
+                    kind="planarize",
+                    mechanism="cmp",
+                    duration=0.0,
+                    comparability="approximate",
+                    parameters={
+                        "stop_material": material(stop[0]) if stop else None,
+                        "offset": _amount(call.kwargs.get("Offset")),
+                    },
+                )
+            )
+            patterned = False
+            active_layer = None
             continue
         if call.name == "litho_patterning":
             names = [str(name) for name in call.kwargs.get("LayerNames") or []]
@@ -237,11 +304,24 @@ def translate(text: str, *, case_id: str, window: list[float], grid_delta: float
             if names[0] not in spx_layers:
                 raise TranslationError(f"{step_id}: unknown SPX layer {names[0]!r}")
             patterned = True
+            active_layer = int(spx_layers[names[0]])
             top_material = "PMMA"
-            steps.append(StepIR(step_id=step_id, kind="mask", mechanism="litho", duration=0.0,
-                                parameters={"layer": spx_layers[names[0]],
-                                            "layer_name": names[0], "thickness": 0.05,
-                                            "polarity": "negative", "material": "PMMA"}))
+            steps.append(
+                StepIR(
+                    step_id=step_id,
+                    kind="mask",
+                    mechanism="litho",
+                    duration=0.0,
+                    comparability="approximate",
+                    parameters={
+                        "layer": active_layer,
+                        "layer_name": names[0],
+                        "thickness": 0.05,
+                        "polarity": "negative",
+                        "material": "PMMA",
+                    },
+                )
+            )
             present.add("PMMA")
             height += 0.1
             continue
@@ -249,12 +329,15 @@ def translate(text: str, *, case_id: str, window: list[float], grid_delta: float
 
     job = JobSpec(
         case_id=case_id,
-        engine="viennaps",
+        engine="any",
         domain=DomainSpec(
-            width=float(window[2]), depth=float(window[3]),
+            width=float(window[2]),
+            depth=float(window[3]),
             height=max(float(domain_height), round(height + 0.1, 3)),
-            grid_delta=float(grid_delta), dimensions=3,
-            origin_xy=[float(window[0]), float(window[1])]),
+            grid_delta=float(grid_delta),
+            dimensions=3,
+            origin_xy=[float(window[0]), float(window[1])],
+        ),
         initial=initial,
         steps=tuple(steps),
         layout={"path": layout_path, "spxLayers": spx_layers},

@@ -1,0 +1,28 @@
+{
+  "engine_id": "spx",
+  "label": "Sentaurus Process Explorer (reference)",
+  "role": "reference",
+  "runtime": "spx_python",
+  "entrypoint": "engines/spx/bridge.py",
+  "adapter": "engines.spx.bridge",
+  "solve_mode": "batch_route",
+  "probe_method": "meas_thickness",
+  "mechanisms": [
+    "initial",
+    "isotropic",
+    "anisotropic",
+    "cmp",
+    "strip",
+    "fill",
+    "ellipsoidal",
+    "litho"
+  ],
+  "frame_kinds": ["raster"],
+  "rationale": "Synopsys SPX geometric/CSG emulator; ground-truth target for speed and accuracy",
+  "limits": {
+    "max_active_points": 10000000.0,
+    "max_ratio": 2000.0,
+    "max_area_um2": 1.0,
+    "max_mem_mib": 6144.0
+  }
+}

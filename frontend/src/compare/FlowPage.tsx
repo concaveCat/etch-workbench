@@ -1,14 +1,17 @@
-/** P2 - the compiled StepIR flow. The JSON is shown on purpose: it is the only
- * contract both engines agree on, so the page doubles as a debugger. */
+/** P2 - compiled StepIR flow editor with dynamic multi-engine selection. */
 
 import { useMemo } from 'react';
+import type { EngineDescriptor } from './api';
 import type { Draft } from './draft';
 import { MATERIALS, gradeOf, toJob } from './draft';
 
 type Props = {
   draft: Draft;
   onChange: (next: Draft) => void;
+  catalog: EngineDescriptor[];
   engines: string[];
+  sequential: boolean;
+  onToggleSequential: (next: boolean) => void;
   onToggleEngine: (engineId: string) => void;
   onRun: () => void;
   busy: boolean;
@@ -20,13 +23,34 @@ const KIND_OPTIONS: { kind: Draft['steps'][number]['kind']; mechanism: Draft['st
   { kind: 'deposit', mechanism: 'isotropic', label: '各向同性沉积' },
   { kind: 'etch', mechanism: 'anisotropic', label: '各向异性刻蚀' },
   { kind: 'deposit', mechanism: 'anisotropic', label: '各向异性沉积' },
+  { kind: 'deposit', mechanism: 'fill', label: '沟槽填充 (fill)' },
+  { kind: 'strip', mechanism: 'strip', label: '材料剥离 (strip)' },
   { kind: 'planarize', mechanism: 'cmp', label: '平坦化 / CMP' },
 ];
 
 const BADGE: Record<string, string> = { exact: '可比', approximate: '近似可比', no_counterpart: '无可比实现' };
 
-export function FlowPage({ draft, onChange, engines, onToggleEngine, onRun, busy, error }: Props) {
+export function FlowPage({
+  draft,
+  onChange,
+  catalog,
+  engines,
+  sequential,
+  onToggleSequential,
+  onToggleEngine,
+  onRun,
+  busy,
+  error,
+}: Props) {
   const job = useMemo(() => toJob(draft), [draft]);
+  const availableEngines = catalog.length > 0
+    ? catalog
+    : [
+        { engineId: 'voxel', label: 'voxel', adapter: '', mechanisms: [], frameKinds: ['mesh'], rationale: '' },
+        { engineId: 'viennaps', label: 'viennaps', adapter: '', mechanisms: [], frameKinds: ['mesh'], rationale: '' },
+        { engineId: 'spx', label: 'spx', adapter: '', mechanisms: [], frameKinds: ['raster'], rationale: '' },
+      ];
+
   const patchStep = (index: number, patch: Partial<Draft['steps'][number]>) => {
     onChange({ ...draft, steps: draft.steps.map((step, i) => (i === index ? { ...step, ...patch } : step)) });
   };
@@ -42,8 +66,8 @@ export function FlowPage({ draft, onChange, engines, onToggleEngine, onRun, busy
   return (
     <section className="cmp-page">
       <div className="cmp-form">
-        <h2>2 · 工艺流程图</h2>
-        <p className="cmp-hint">只开放两端都支持的机制。缺少可比实现的步骤会立即标红，不会等到运行。</p>
+        <h2>2 · 工艺流程与多引擎选择</h2>
+        <p className="cmp-hint">支持任意数量已注册引擎同时对拍，也可为单步绑定自定义模型 ID（<code>step.model</code>）。</p>
 
         {draft.steps.map((step, index) => {
           const grade = gradeOf(step);
@@ -86,6 +110,15 @@ export function FlowPage({ draft, onChange, engines, onToggleEngine, onRun, busy
                   <input type="number" step="0.005" value={step.duration}
                          onChange={(event) => patchStep(index, { duration: Number(event.target.value) })} />
                 </label>
+                <label>
+                  自定义模型覆写 (可选)
+                  <input
+                    type="text"
+                    placeholder="如 cmp_dishing"
+                    value={step.model ?? ''}
+                    onChange={(event) => patchStep(index, { model: event.target.value.trim() || null })}
+                  />
+                </label>
               </div>
               <table className="cmp-rates">
                 <thead><tr><th>材料</th><th>速率 (µm/min，负=去除)</th></tr></thead>
@@ -125,12 +158,7 @@ export function FlowPage({ draft, onChange, engines, onToggleEngine, onRun, busy
           </button>
         </div>
 
-        <h3>渲染视角（左右共用）</h3>
-        <p className="cmp-hint">
-          自由相机走 SPX 的 <code>View=free</code>：焦点=bcc 中心、位置=焦点+方向×距离、
-          正交投影；仰角 &gt;85° 时退回预设（正上方会触发 SPX 的退化 up 向量）。
-          改视角需要重新运行。
-        </p>
+        <h3>渲染视角（多引擎共用）</h3>
         <div className="cmp-row">
           <label className="cmp-check">
             <input type="radio" checked={draft.cameraMode === 'free'}
@@ -167,15 +195,20 @@ export function FlowPage({ draft, onChange, engines, onToggleEngine, onRun, busy
           </div>
         ) : null}
 
-        <h3>运行</h3>
+        <h3>运行引擎（自动发现自引擎注册表）</h3>
         <div className="cmp-row">
-          {['viennaps', 'spx'].map((engineId) => (
-            <label key={engineId} className="cmp-check">
-              <input type="checkbox" checked={engines.includes(engineId)}
-                     onChange={() => onToggleEngine(engineId)} />
-              {engineId}
+          {availableEngines.map((item) => (
+            <label key={item.engineId} className="cmp-check" title={item.rationale || item.label}>
+              <input type="checkbox" checked={engines.includes(item.engineId)}
+                     onChange={() => onToggleEngine(item.engineId)} />
+              {item.engineId}
             </label>
           ))}
+          <label className="cmp-check" title="串行执行可消除多引擎 CPU/缓存抢占噪声，用于速度基准测试">
+            <input type="checkbox" checked={sequential}
+                   onChange={(e) => onToggleSequential(e.target.checked)} />
+            串行测速
+          </label>
           <button type="button" disabled={busy || engines.length === 0} onClick={onRun}>
             {busy ? '运行中…' : '开始对比运行'}
           </button>
@@ -185,7 +218,6 @@ export function FlowPage({ draft, onChange, engines, onToggleEngine, onRun, busy
 
       <div className="cmp-preview">
         <h3>编译产物 · StepIR</h3>
-        <p className="cmp-hint">这就是两端共用的唯一契约。<code>comparability</code> 由引擎对推导，不由流程填写。</p>
         <pre className="cmp-json">{JSON.stringify(job, null, 2)}</pre>
       </div>
     </section>

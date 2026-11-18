@@ -1,12 +1,30 @@
-/** Types and fetchers for the engine comparison surface.
- *
- * Kept deliberately independent from `../api/types`: the comparison contract is
- * the engine job protocol (`engines/protocol.py`), not the legacy project schema.
- */
+/** Types and fetchers for the multi-engine comparison & benchmark surface. */
 
-export type StepKind = 'initial' | 'deposit' | 'etch' | 'planarize' | 'mask';
-export type Mechanism = 'initial' | 'isotropic' | 'anisotropic' | 'cmp' | 'gds_mask';
+export type StepKind = 'initial' | 'deposit' | 'etch' | 'planarize' | 'mask' | 'strip';
+export type Mechanism =
+  | 'initial'
+  | 'isotropic'
+  | 'anisotropic'
+  | 'cmp'
+  | 'gds_mask'
+  | 'strip'
+  | 'fill'
+  | 'ellipsoidal'
+  | 'litho'
+  | 'custom';
 export type Comparability = 'exact' | 'approximate' | 'no_counterpart';
+
+export type EngineDescriptor = {
+  engineId: string;
+  label: string;
+  role?: string;
+  adapter: string;
+  solveMode?: string;
+  probeMethod?: string;
+  mechanisms: string[];
+  frameKinds: string[];
+  rationale: string;
+};
 
 export type Film = { material: string; thickness: number };
 
@@ -24,6 +42,8 @@ export type StepIR = {
   duration: number;
   rates: Record<string, number>;
   comparability: Comparability;
+  parameters?: Record<string, unknown>;
+  model?: string | null;
 };
 
 export type DomainSpec = {
@@ -63,6 +83,10 @@ export type MeshFrame = {
 export type EngineRow = {
   status: 'ok' | 'missing' | 'unsupported' | 'failed' | 'out_of_domain' | 'skipped';
   wallMs: number | null;
+  solveMs?: number | null;
+  frameMs?: number | null;
+  probeMs?: number | null;
+  sectionMs?: number | null;
   frame: null | {
     kind: 'mesh' | 'raster';
     path: string;
@@ -76,7 +100,11 @@ export type EngineRow = {
 
 export type ProbeMetrics = {
   status: 'measured' | 'incomplete' | 'disabled' | 'single_engine' | 'invalid' | 'empty';
+  leftEngine?: string;
+  rightEngine?: string;
   agreement?: number;
+  activeAgreement?: number;
+  featureAgreement?: number;
   mismatchCount?: number;
   iou?: Record<string, number>;
   topHeightUm?: Record<string, Record<string, number | null>>;
@@ -103,22 +131,46 @@ export type SectionMetrics = {
   reason?: string;
 };
 
+export type PairComparison = {
+  probe?: ProbeMetrics;
+  section?: SectionMetrics;
+};
+
 export type CompareStep = {
   stepId: string;
   kind: StepKind;
   mechanism: Mechanism;
+  model?: string | null;
   duration: number;
   rates: Record<string, number>;
   comparability: Comparability;
   aligned: boolean;
   engines: Record<string, EngineRow>;
+  comparisons?: Record<string, PairComparison>;
   probe?: ProbeMetrics;
   section?: SectionMetrics;
+};
+
+export type EngineSummaryInfo = {
+  label?: string;
+  role?: string;
+  version: string | null;
+  solveMode?: string;
+  probeMethod?: string;
+  solveWallMs?: number | null;
+  frameWallMs?: number;
+  probeWallMs?: number;
+  sectionWallMs?: number;
+  processWallMs: number;
+  returncode: number;
+  error: string | null;
 };
 
 export type ComparePayload = {
   schemaVersion: number;
   caseId: string;
+  referenceEngine?: string;
+  executionMode?: string;
   jobDigest: string;
   view?: string;
   camera?: { azimuth?: number; elevation?: number; zoom?: number } | null;
@@ -128,13 +180,25 @@ export type ComparePayload = {
   probeMethod?: Record<string, string>;
   sectionColumns?: number[][];
   sectionZ?: number[] | null;
-  engines: Record<string, { version: string | null; processWallMs: number; returncode: number; error: string | null }>;
+  engines: Record<string, EngineSummaryInfo>;
   steps: CompareStep[];
   summary: {
     engineCount: number;
+    referenceEngine?: string;
     stepCount: number;
     fullyAlignedSteps: number;
+    totalSolveMs?: Record<string, number | null>;
+    speedupVsReference?: Record<string, number | null>;
     totalWallMs: Record<string, number>;
+    accuracy?: Record<string, {
+      meanAgreement: number;
+      medianAgreement: number;
+      minAgreement: number;
+      meanActiveAgreement: number;
+      meanFeatureAgreement: number;
+      exactSteps: number;
+      measuredSteps: number;
+    }>;
   };
 };
 
@@ -154,11 +218,20 @@ async function readJson<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
-export async function submitComparison(job: JobSpec, engines: string[]): Promise<{ runId: string }> {
+export async function fetchEngines(): Promise<EngineDescriptor[]> {
+  const payload = await readJson<{ engines: EngineDescriptor[] }>(await fetch('/api/compare/engines'));
+  return payload.engines;
+}
+
+export async function submitComparison(
+  job: JobSpec,
+  engines: string[],
+  options?: { sequential?: boolean; reference?: string },
+): Promise<{ runId: string }> {
   const response = await fetch('/api/compare/runs', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ job, engines }),
+    body: JSON.stringify({ job, engines, ...options }),
   });
   return readJson<{ runId: string }>(response);
 }

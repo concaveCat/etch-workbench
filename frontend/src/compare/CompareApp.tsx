@@ -1,8 +1,8 @@
-/** Comparison shell: three icon-only pages, one draft, one run. */
+/** Comparison shell: three icon-only pages, multi-engine registry aware. */
 
 import { useCallback, useEffect, useState } from 'react';
-import type { CompareRun } from './api';
-import { fetchComparison, fetchRecentRuns, submitComparison } from './api';
+import type { CompareRun, EngineDescriptor } from './api';
+import { fetchComparison, fetchEngines, fetchRecentRuns, submitComparison } from './api';
 import { ComparePage } from './ComparePage';
 import { FlowPage } from './FlowPage';
 import { GeometryPage } from './GeometryPage';
@@ -11,7 +11,6 @@ import './compare.css';
 
 type Page = 'geometry' | 'flow' | 'compare';
 
-/** Icon-only navigation: the interface carries no labels. */
 const ICONS: Record<Page | 'exit', React.ReactNode> = {
   geometry: (
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -41,7 +40,9 @@ const ICONS: Record<Page | 'exit', React.ReactNode> = {
 export function CompareApp({ onExit }: { onExit: () => void }) {
   const [page, setPage] = useState<Page>('geometry');
   const [draft, setDraft] = useState<Draft>(defaultDraft);
-  const [engines, setEngines] = useState<string[]>(['viennaps', 'spx']);
+  const [catalog, setCatalog] = useState<EngineDescriptor[]>([]);
+  const [engines, setEngines] = useState<string[]>(['voxel', 'viennaps', 'spx']);
+  const [sequential, setSequential] = useState(false);
   const [runId, setRunId] = useState<string | null>(null);
   const [run, setRun] = useState<CompareRun | null>(null);
   const [history, setHistory] = useState<CompareRun[]>([]);
@@ -56,7 +57,21 @@ export function CompareApp({ onExit }: { onExit: () => void }) {
     }
   }, []);
 
-  useEffect(() => { void refreshHistory(); }, [refreshHistory]);
+  useEffect(() => {
+    void refreshHistory();
+    fetchEngines()
+      .then((rows) => {
+        setCatalog(rows);
+        if (rows.length > 0) {
+          const ids = rows.map((r) => r.engineId);
+          setEngines((prev) => {
+            const valid = prev.filter((id) => ids.includes(id));
+            return valid.length > 0 ? valid : ids;
+          });
+        }
+      })
+      .catch(() => setCatalog([]));
+  }, [refreshHistory]);
 
   useEffect(() => {
     if (!runId) return;
@@ -87,7 +102,7 @@ export function CompareApp({ onExit }: { onExit: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      const { runId: created } = await submitComparison(withLayout(toJob(draft)), engines);
+      const { runId: created } = await submitComparison(withLayout(toJob(draft)), engines, { sequential });
       setRunId(created);
       setRun(null);
       setPage('compare');
@@ -126,7 +141,10 @@ export function CompareApp({ onExit }: { onExit: () => void }) {
         <FlowPage
           draft={draft}
           onChange={setDraft}
+          catalog={catalog}
           engines={engines}
+          sequential={sequential}
+          onToggleSequential={setSequential}
           onToggleEngine={(engineId) => setEngines((current) =>
             current.includes(engineId) ? current.filter((id) => id !== engineId) : [...current, engineId])}
           onRun={onRun}

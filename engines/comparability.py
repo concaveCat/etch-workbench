@@ -1,10 +1,4 @@
-"""Per-engine-pair comparability grades.
-
-``engines/comparability.json`` is the single editable table; this module resolves
-the grade for a concrete step on a concrete engine pair. The scheduler records the
-resolved value in ``compare.json`` so the UI never has to guess, and a grade change
-never requires touching a flow.
-"""
+"""Per-engine-pair comparability grades with wildcard support for custom engines."""
 
 from __future__ import annotations
 
@@ -27,22 +21,41 @@ def table() -> dict[str, Any]:
 def _key(step: StepIR) -> str:
     if step.mechanism == "initial":
         return "initial"
+    if step.mechanism == "custom":
+        return "*/custom"
     return f"{step.kind}/{step.mechanism}"
 
 
-def grade(engine_ids: list[str] | tuple[str, ...], step: StepIR) -> Comparability:
-    """Grade for a step across a set of engines.
+def _lookup_pair(pairs: dict[str, Any], left: str, right: str) -> dict[str, Any] | None:
+    for candidate in (
+        f"{left}|{right}",
+        f"{right}|{left}",
+        f"*|{right}",
+        f"{right}|*",
+        f"*|{left}",
+        f"{left}|*",
+        "*|*",
+    ):
+        if candidate in pairs:
+            return pairs[candidate]
+    return None
 
-    With more than two engines the result is the worst grade any pair would get,
-    because a chain is only as comparable as its least comparable link.
-    """
+
+def grade(engine_ids: list[str] | tuple[str, ...], step: StepIR) -> Comparability:
+    """Grade for a step across a set of engines."""
+    # Unmapped cutoff-only CMP has no SPX counterpart.
+    if step.mechanism == "cmp" and "spx" in engine_ids and not step.parameters.get("stop_material"):
+        return "no_counterpart"
     pairs = table()["pairs"]
     key = _key(step)
     grades: list[Comparability] = []
     ids = list(engine_ids)
+    if len(ids) == 1:
+        entry = _lookup_pair(pairs, ids[0], ids[0])
+        return entry.get(key, DEFAULT) if entry else "exact"
     for index, left in enumerate(ids):
         for right in ids[index + 1:]:
-            entry = pairs.get(f"{left}|{right}") or pairs.get(f"{right}|{left}")
+            entry = _lookup_pair(pairs, left, right)
             if entry is None:
                 grades.append(DEFAULT)
             else:

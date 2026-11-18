@@ -162,8 +162,9 @@
 /* relative cost: two thin bars, no numbers */
 .cmp-cost { display: flex; flex-direction: column; gap: 4px; max-width: 480px; }
 .cmp-cost-row { height: 6px; background: #f1f4f8; border-radius: 3px; overflow: hidden; }
-.cmp-cost-row span { display: block; height: 100%; border-radius: 3px; }
+.cmp-cost-row span { display: block; height: 100%; border-radius: 3px; background: #6366f1; }
 .cmp-cost-viennaps span { background: #1b2430; }
+.cmp-cost-voxel span { background: #2563eb; }
 .cmp-cost-spx span { background: #18b8a6; }
 
 /* section overlay: lines only */

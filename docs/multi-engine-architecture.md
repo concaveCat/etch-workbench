@@ -1,6 +1,8 @@
-# 多引擎对拍与可插拔单步工艺模型架构（`wb-engines-next`）
+# 多引擎对拍与可插拔单步工艺模型架构
 
 本文档说明从“ViennaPS ↔ SPX 双引擎原型”升级为**通用 N 引擎速度/精度基准测试平台 + 单步工艺模型 SDK** 的设计与扩展方法。
+
+> **面向自动化 Agent 的实操手册（如何构造自定义测试样例、运行仿真对拍、解读 `compare.json` 与开展下一步引擎开发）**：请直接阅读 [AGENT_ENGINE_DEV_GUIDE.md](./AGENT_ENGINE_DEV_GUIDE.md)。
 
 ---
 

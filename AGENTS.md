@@ -98,9 +98,12 @@ git diff --check
 - 非平凡改动走分支 + PR，不要直接推 `main`。
 - 推送前确认 `git status` 里没有误加的运行时文件。
 
-## 4.1 引擎层的外部进程（踩过的坑）
+## 4.1 引擎层的外部进程与多引擎开发指南（必读）
 
-`engines/` 会拉起 ViennaPS 与 **SPX 私有 Python** 子进程。SPX **自己没有任何规模保护**：
+- **自定义测试样例输入、多引擎仿真对拍与下一步引擎/工艺模型开发完整手册**：
+  详见 [`docs/AGENT_ENGINE_DEV_GUIDE.md`](docs/AGENT_ENGINE_DEV_GUIDE.md)（架构设计概览见 [`docs/multi-engine-architecture.md`](docs/multi-engine-architecture.md)）。
+
+`engines/` 会拉起 `voxel`、ViennaPS 与 **SPX 私有 Python** 子进程。SPX **自己没有任何规模保护**：
 它把整个 clip 窗口的结构一次性建进内存，窗口面积一大就把整台 WSL 拖死。
 
 真实事故：为了验证 GDS 单位，手写脚本把 clip 窗口从 `0.624 x 0.740 µm` 改成

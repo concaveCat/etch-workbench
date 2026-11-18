@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CompareRun, MeshFrame } from './api';
 import { fetchMesh, frameUrl } from './api';
 import { DEFAULT_CAMERA, MeshPane, cameraForView, type Camera } from './MeshPane';
+import { RunHistory } from './RunHistory';
 import { SectionView } from './SectionView';
 
 type Props = {
@@ -92,18 +93,7 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
   if (!run) {
     return (
       <section className="cmp-blank">
-        {history.length > 0 ? (
-          <select
-            className="cmp-ghost-select"
-            value=""
-            onChange={(event) => event.target.value && onSelectRun(event.target.value)}
-          >
-            <option value="">▾</option>
-            {history.map((row) => (
-              <option key={row.runId} value={row.runId}>{row.caseId ?? row.runId}</option>
-            ))}
-          </select>
-        ) : <span className="cmp-dot" />}
+        <RunHistory runs={history} current={null} onSelect={onSelectRun} />
       </section>
     );
   }
@@ -111,16 +101,7 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
   return (
     <section className="cmp-stage">
       <div className="cmp-toolbar">
-        <select
-          className="cmp-ghost-select"
-          value={runId ?? ''}
-          onChange={(event) => onSelectRun(event.target.value)}
-          title="runs"
-        >
-          {history.map((row) => (
-            <option key={row.runId} value={row.runId}>{row.caseId ?? row.runId}</option>
-          ))}
-        </select>
+        <RunHistory runs={history} current={runId} onSelect={onSelectRun} />
         <span className="cmp-spacer" />
         <label className="cmp-icon-slider" title="azimuth">
           {CAMERA_ICONS.azimuth}

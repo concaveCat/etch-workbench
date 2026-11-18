@@ -281,3 +281,61 @@
 .cmp-pane .wb-viewer3d__clip { display: none !important; }
 .cmp-pane .wb-viewer3d__stage { border: none !important; background: #f7f9fb !important; }
 .cmp-pane .wb-viewer3d__canvas { border-radius: 16px; }
+
+/* ---------- run history picker ---------- */
+
+.cmp-history { position: relative; }
+.cmp-history-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #e7ebf0;
+  border-radius: 10px;
+  background: #fff;
+  color: #55606d;
+  cursor: pointer;
+}
+.cmp-history-trigger:hover { border-color: #cfd6df; color: #1b2430; }
+.cmp-history-current { font-size: 12px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmp-history-count {
+  font-size: 10px;
+  color: #9aa5b1;
+  background: #f4f6f9;
+  border-radius: 99px;
+  padding: 1px 6px;
+}
+.cmp-history-panel {
+  position: absolute;
+  top: 38px;
+  left: 0;
+  z-index: 30;
+  min-width: 300px;
+  max-height: 46vh;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #eef1f5;
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(27, 36, 48, .10);
+  padding: 6px;
+}
+.cmp-history-empty { padding: 10px; }
+.cmp-history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #1b2430;
+  cursor: pointer;
+  text-align: left;
+}
+.cmp-history-item:hover { background: #f7f9fb; }
+.cmp-history-item.active { background: #f1fbf9; }
+.cmp-history-state { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+.cmp-history-name { font-size: 12px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmp-history-meta { font-size: 11px; color: #9aa5b1; }

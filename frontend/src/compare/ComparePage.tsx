@@ -4,7 +4,14 @@
  *  3) Bottom dashboard comparing per-step render/solve times, consistency & IoU, and cross-section.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import type {
   CompareRun,
   CompareStep,
@@ -26,6 +33,13 @@ type Props = {
 };
 
 const VIEWPORT_HEIGHT = 500;
+const VIEWPORT_MIN_HEIGHT = 220;
+const VIEWPORT_MAX_HEIGHT = 900;
+const VIEWPORT_KEY_STEP = 24;
+
+function clampViewportHeight(value: number): number {
+  return Math.min(VIEWPORT_MAX_HEIGHT, Math.max(VIEWPORT_MIN_HEIGHT, value));
+}
 
 function agreementColor(value: number | null | undefined): string {
   if (value === null || value === undefined) return '#d8dee5';
@@ -112,6 +126,7 @@ function EngineViewportCard({
   row,
   stepCount,
   camera,
+  height,
 }: {
   runId: string | null;
   engineId: string;
@@ -119,6 +134,7 @@ function EngineViewportCard({
   row: EngineRow | undefined;
   stepCount: number;
   camera: Camera;
+  height: number;
 }) {
   const [mesh, setMesh] = useState<MeshFrame | null>(null);
   const [loadingMesh, setLoadingMesh] = useState(false);
@@ -164,7 +180,7 @@ function EngineViewportCard({
           {fmtMs(solve.ms)}
         </span>
       </div>
-      <div className="cmp-viewport-body" style={{ height: VIEWPORT_HEIGHT }}>
+      <div className="cmp-viewport-body" style={{ height }}>
         {!frame || !runId ? (
           <div className="cmp-missing">{row?.reason ?? `本步无帧 (${row?.status ?? 'missing'})`}</div>
         ) : frame.kind === 'mesh' ? (
@@ -172,7 +188,7 @@ function EngineViewportCard({
             frame={mesh}
             loading={loadingMesh}
             camera={camera}
-            height={VIEWPORT_HEIGHT}
+            height={height}
             title=""
           />
         ) : (
@@ -190,6 +206,42 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
   const [stepIndex, setStepIndex] = useState(0);
   const [leftEngine, setLeftEngine] = useState<string>('voxel');
   const [rightEngine, setRightEngine] = useState<string>('spx');
+  const [viewportHeight, setViewportHeight] = useState<number>(VIEWPORT_HEIGHT);
+  const [resizingViewports, setResizingViewports] = useState(false);
+  const viewportDrag = useRef<{ startY: number; startHeight: number } | null>(null);
+
+  useEffect(() => {
+    if (!resizingViewports) return;
+    document.body.classList.add('cmp-duo-resizing');
+    return () => document.body.classList.remove('cmp-duo-resizing');
+  }, [resizingViewports]);
+
+  const beginViewportResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    viewportDrag.current = { startY: event.clientY, startHeight: viewportHeight };
+    setResizingViewports(true);
+    try { event.currentTarget.setPointerCapture(event.pointerId); } catch { /* capture unsupported */ }
+  };
+
+  const moveViewportResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = viewportDrag.current;
+    if (!drag) return;
+    setViewportHeight(clampViewportHeight(drag.startHeight + (event.clientY - drag.startY)));
+  };
+
+  const endViewportResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!viewportDrag.current) return;
+    viewportDrag.current = null;
+    setResizingViewports(false);
+    try { event.currentTarget.releasePointerCapture(event.pointerId); } catch { /* capture unsupported */ }
+  };
+
+  const nudgeViewportHeight = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+    event.preventDefault();
+    const delta = event.key === 'ArrowUp' ? VIEWPORT_KEY_STEP : -VIEWPORT_KEY_STEP;
+    setViewportHeight((current) => clampViewportHeight(current + delta));
+  };
 
   const engineIds = useMemo(
     () => Object.keys(run?.compare?.engines ?? {}),
@@ -358,6 +410,20 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
               </span>
             ) : null}
             <span className="cmp-spacer" />
+            {(() => {
+              const totals = run.compare?.summary?.totalWallMs ?? {};
+              const leftTotal = totals[leftEngine];
+              const rightTotal = totals[rightEngine];
+              if (typeof leftTotal !== 'number' && typeof rightTotal !== 'number') return null;
+              return (
+                <span className="cmp-step-summary-pill" title="全流程总用时（求解 + 出帧 + 探针 + 截面）">
+                  总用时 {leftEngine} <strong>{fmtMs(leftTotal)}</strong>
+                  {leftEngine !== rightEngine ? (
+                    <> · {rightEngine} <strong>{fmtMs(rightTotal)}</strong></>
+                  ) : null}
+                </span>
+              );
+            })()}
             {probe?.status === 'measured' ? (
               <span className="cmp-step-summary-pill">
                 全空间一致率 <strong>{fmtPct(probe.agreement)}</strong>
@@ -424,6 +490,7 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
           row={step?.engines?.[leftEngine]}
           stepCount={steps.length}
           camera={camera}
+          height={viewportHeight}
         />
         <EngineViewportCard
           runId={runId}
@@ -432,7 +499,28 @@ export function ComparePage({ run, runId, history, onSelectRun }: Props) {
           row={step?.engines?.[rightEngine]}
           stepCount={steps.length}
           camera={camera}
+          height={viewportHeight}
         />
+      </div>
+
+      {/* 3b. Vertical splitter: drag up/down to grow or shrink both preview viewports */}
+      <div
+        className={`cmp-duo-splitter${resizingViewports ? ' active' : ''}`}
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="拖动调整左右预览窗口高度"
+        aria-valuemin={VIEWPORT_MIN_HEIGHT}
+        aria-valuemax={VIEWPORT_MAX_HEIGHT}
+        aria-valuenow={Math.round(viewportHeight)}
+        tabIndex={0}
+        title="上下拖动调整左右两个预览窗口高度（↑/↓ 微调）"
+        onPointerDown={beginViewportResize}
+        onPointerMove={moveViewportResize}
+        onPointerUp={endViewportResize}
+        onPointerCancel={endViewportResize}
+        onKeyDown={nudgeViewportHeight}
+      >
+        <span className="cmp-duo-splitter-grip" aria-hidden />
       </div>
 
       {/* 4. BOTTOM Comparison Panel: Render/Solve Timing + Consistency Metrics */}

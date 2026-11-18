@@ -257,6 +257,42 @@
   min-width: 0;
 }
 
+/* Drag handle pinned under both viewports: pointer drag (or arrow keys) resizes them together. */
+.cmp-duo-splitter {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 12px;
+  margin: -4px 0;
+  border-radius: 99px;
+  cursor: ns-resize;
+  touch-action: none;
+  outline: none;
+}
+.cmp-duo-splitter-grip {
+  display: block;
+  width: 72px;
+  height: 4px;
+  border-radius: 99px;
+  background: #d6dee8;
+  transition: background-color 0.15s ease, width 0.15s ease;
+}
+.cmp-duo-splitter:hover .cmp-duo-splitter-grip,
+.cmp-duo-splitter:focus-visible .cmp-duo-splitter-grip {
+  background: #94a3b8;
+  width: 96px;
+}
+.cmp-duo-splitter.active .cmp-duo-splitter-grip {
+  background: #0f766e;
+  width: 96px;
+}
+body.cmp-duo-resizing,
+body.cmp-duo-resizing * {
+  cursor: ns-resize !important;
+  user-select: none;
+}
+
 .cmp-viewport-card {
   display: flex;
   flex-direction: column;

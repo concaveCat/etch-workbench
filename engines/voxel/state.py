@@ -1,11 +1,10 @@
 """Volumetric 3D multi-material grid state and fast geometric primitives.
 
-Why anisotropic vertical resolution (``dz <= 2 nm``): multi-layer semiconductor flows
-such as Memory1 contain 2 nm TiN, 3 nm Al2O3, 3 nm CESL, and 5 nm SiO2/Si3N4 liners
-inside a 0.62 x 0.74 x 2.78 um window. A uniform cubic grid at 2 nm would require
-160M cells; decoupling lateral ``(dx, dy)`` from vertical ``dz = 1..2 nm`` keeps the
-entire 3D grid under ~12 MB of ``uint8`` memory while resolving every nanometer film,
-Damascene trench fill/CMP, and buried replacement-gate cavity without topology loss.
+Supports both anisotropic coarse-lateral grids (``dx = 5..10 nm, dz = 1 nm``) and full
+native ``1 nm x 1 nm x 1 nm`` simulation (``624 x 740 x 2781 = 1.284B`` voxels on the
+Memory1 window, matching SPX's ``1 nm`` column pitch) via the C++17/OpenMP Z-slabbed
+linear-time Euclidean distance transform in :mod:`engines.voxel.native` (<2 GiB RSS).
+When no C++ compiler is available, falls back automatically to pure NumPy.
 """
 
 from __future__ import annotations
@@ -20,6 +19,7 @@ import numpy as np
 
 from engines.normalize import VOID, color as canonical_color
 from engines.protocol import Frame, JobSpec, SectionSpec
+from engines.voxel import native
 
 
 @dataclass
@@ -44,14 +44,18 @@ class VoxelState:
         z_span = z_max - z_min
 
         base_delta = float(job.domain.grid_delta)
-        nx = max(8, min(140, int(round(w / base_delta))))
-        ny = max(8, min(140, int(round(d / base_delta))))
+        if native.is_available():
+            lateral_cap = 2048
+            max_total_cells = 1_600_000_000
+        else:
+            lateral_cap = 512
+            max_total_cells = 220_000_000
+
+        nx = max(8, min(lateral_cap, int(round(w / base_delta))))
+        ny = max(8, min(lateral_cap, int(round(d / base_delta))))
         dx = w / nx
         dy = d / ny
 
-        # Target 1 nm vertical resolution when budget permits (~16M cells cap),
-        # otherwise relax smoothly so memory stays small and predictable.
-        max_total_cells = 16_000_000
         max_nz = max(64, max_total_cells // max(nx * ny, 1))
         target_dz = min(base_delta, 0.001)
         nz = max(32, min(max_nz, int(round(z_span / max(target_dz, 1e-5)))))
@@ -63,10 +67,14 @@ class VoxelState:
             dx=dx, dy=dy, dz=dz, grid=grid,
         )
 
+        use_native = native.is_available()
         init = job.initial
         sub_id = state.material_id(init.substrate)
         k0 = state.z_to_index(0.0)
-        state.grid[:, :, :k0] = sub_id
+        if use_native:
+            native.fill_z_band(state.grid, 0, k0, sub_id)
+        else:
+            state.grid[:, :, :k0] = sub_id
 
         cur_z = 0.0
         for film in init.films:
@@ -75,7 +83,10 @@ class VoxelState:
             ka = state.z_to_index(cur_z)
             kb = state.z_to_index(next_z)
             if kb > ka:
-                state.grid[:, :, ka:kb] = fid
+                if use_native:
+                    native.fill_z_band(state.grid, ka, kb, fid)
+                else:
+                    state.grid[:, :, ka:kb] = fid
             cur_z = next_z
 
         if init.kind == "trench":
@@ -108,6 +119,8 @@ class VoxelState:
 
     def active_k_top(self) -> int:
         """Exclusive upper z index of non-void material (0 when completely empty)."""
+        if native.is_available():
+            return native.active_k_top(self.grid)
         non_void = np.any(self.grid != 0, axis=(0, 1))
         indices = np.flatnonzero(non_void)
         return int(indices[-1]) + 1 if indices.size else 0
@@ -121,6 +134,8 @@ class VoxelState:
         ktop = self.active_k_top()
         if ktop == 0:
             return np.zeros(self.grid.shape[:2], dtype=np.int32)
+        if native.is_available():
+            return native.column_tops_k(self.grid, ktop)
         sub = self.grid[:, :, :ktop] != 0
         has_any = np.any(sub, axis=2)
         rev = np.argmax(sub[:, :, ::-1], axis=2)
@@ -128,19 +143,15 @@ class VoxelState:
         return np.where(has_any, tops, 0).astype(np.int32)
 
     def exposed_void_mask(self, k_limit: int) -> np.ndarray:
-        """Boolean mask on ``grid[:, :, :k_limit]`` of void cells connected to top gas.
-
-        Fast-path: when no void sits underneath a solid overhang (true for planar and
-        open-trench Damascene steps), the top-down cumulative product already captures
-        100% of void cells in <0.5 ms with zero flood iterations.
-        """
+        """Boolean mask on ``grid[:, :, :k_limit]`` of void cells connected to top gas."""
+        if native.is_available():
+            return native.exposed_void_mask(self.grid, k_limit)
         void = self.grid[:, :, :k_limit] == 0
         if not np.any(void):
             return void
         reach = np.cumprod(void[:, :, ::-1], axis=2, dtype=np.int8)[:, :, ::-1].astype(bool)
         if np.array_equal(reach, void):
             return reach
-        # Propagate into lateral undercuts / cavities (e.g. replacement-gate cavity)
         frontier = reach.copy()
         for _ in range(max(self.grid.shape[0], self.grid.shape[1]) + 4):
             grown = (
@@ -161,9 +172,11 @@ class VoxelState:
     def rasterize_polygons(self, polygons: list[list[tuple[float, float]]]) -> np.ndarray:
         """2D boolean mask ``[nx, ny]`` of cell centres inside any polygon."""
         nx, ny = self.grid.shape[0], self.grid.shape[1]
-        mask = np.zeros((nx, ny), dtype=bool)
         if not polygons:
-            return mask
+            return np.zeros((nx, ny), dtype=bool)
+        if native.is_available():
+            return native.rasterize_polygons(nx, ny, self.dx, self.dy, polygons)
+        mask = np.zeros((nx, ny), dtype=bool)
         xs = (np.arange(nx) + 0.5) * self.dx + 1.37e-9
         ys = (np.arange(ny) + 0.5) * self.dy + 2.19e-9
         gx, gy = np.meshgrid(xs, ys, indexing="ij")
@@ -199,7 +212,7 @@ class VoxelState:
         return [VOID if int(m) == 0 else lookup.get(int(m), str(int(m))) for m in mids]
 
     def section(self, spec: SectionSpec) -> dict[str, list[float | None]]:
-        nx, ny, nz = self.grid.shape
+        nx, ny, _nz = self.grid.shape
         ktop = self.active_k_top()
         result: dict[str, list[float | None]] = {m: [] for m in spec.materials}
         for x, y in spec.columns:
@@ -225,13 +238,16 @@ class VoxelState:
     def save_checkpoint(self, out_dir: Path, step_id: str) -> str:
         target = out_dir / "state" / f"{step_id}.npz"
         target.parent.mkdir(parents=True, exist_ok=True)
+        ktop = self.active_k_top()
         np.savez_compressed(
             target,
-            grid=self.grid,
+            grid_active=np.ascontiguousarray(self.grid[:, :, :ktop]),
             meta=json.dumps({
                 "width": self.width, "depth": self.depth,
                 "z_min": self.z_min, "z_max": self.z_max,
                 "dx": self.dx, "dy": self.dy, "dz": self.dz,
+                "shape": list(self.grid.shape),
+                "ktop": ktop,
                 "name_to_id": self.name_to_id,
             }),
         )
@@ -240,8 +256,14 @@ class VoxelState:
     @classmethod
     def load_checkpoint(cls, path: Path) -> "VoxelState":
         with np.load(path, allow_pickle=False) as archive:
-            grid = archive["grid"].astype(np.uint8)
             meta = json.loads(str(archive["meta"]))
+            if "grid_active" in archive:
+                shape = tuple(int(v) for v in meta["shape"])
+                grid = np.zeros(shape, dtype=np.uint8)
+                active = archive["grid_active"].astype(np.uint8)
+                grid[:, :, : active.shape[2]] = active
+            else:
+                grid = np.ascontiguousarray(archive["grid"].astype(np.uint8))
         name_to_id = {str(k): int(v) for k, v in meta["name_to_id"].items()}
         id_to_name = {int(v): str(k) for k, v in name_to_id.items()}
         return cls(
@@ -254,27 +276,46 @@ class VoxelState:
     def write_mesh_frame(self, out_dir: Path, step_id: str, dimensions: int = 3) -> Frame:
         """Extract exposed material boundary quads into a compact triangulated mesh.
 
-        Downsamples vertical z slices strictly for visualisation when ``nz`` is very
-        fine (``dz = 1 nm``), keeping the rendered mesh crisp (<120k triangles) and
-        fast (<25 ms) while probes/sections query the full 1 nm grid directly.
+        Downsamples ultra-fine grids (such as ``1 nm`` ``624 x 740 x 2781``) strictly
+        for WebGL visualisation (~4 nm lateral / ~2 nm vertical display stride, keeping
+        frames ~2-4 MB and interactive at 60 FPS) while all physics steps, 3D probes,
+        and 2D cross-sections execute on the full un-downsampled ``1 nm`` grid.
         """
-        ktop = self.active_k_top()
-        sub = self.grid[:, :, : max(ktop, 1)]
-        stride_z = max(1, int(round(max(self.dx, self.dy) / max(self.dz * 2.0, 1e-6))))
-        if stride_z > 1 and sub.shape[2] > stride_z * 4:
-            idx_z = np.arange(0, sub.shape[2], stride_z)
-            if idx_z[-1] != sub.shape[2] - 1:
-                idx_z = np.append(idx_z, sub.shape[2] - 1)
-            vis = sub[:, :, idx_z]
-            z_edges = self.z_min + np.append(idx_z, sub.shape[2]) * self.dz
+        nx_full, ny_full, _nz_full = self.grid.shape
+        ktop = max(self.active_k_top(), 1)
+
+        max_vis_xy = 160
+        stride_x = max(1, int(math.ceil(nx_full / max_vis_xy)))
+        stride_y = max(1, int(math.ceil(ny_full / max_vis_xy)))
+        eff_dx = self.dx * stride_x
+        eff_dy = self.dy * stride_y
+        stride_z = max(
+            1,
+            int(round(max(eff_dx, eff_dy) / max(self.dz * 2.0, 1e-6))),
+            int(round(0.002 / max(self.dz, 1e-6))),
+        )
+
+        if stride_z > 1 and ktop > stride_z * 4:
+            idx_z = np.arange(0, ktop, stride_z)
+            if idx_z[-1] != ktop - 1:
+                idx_z = np.append(idx_z, ktop - 1)
+            z_edges = self.z_min + np.append(idx_z, ktop) * self.dz
         else:
-            vis = sub
-            z_edges = self.z_min + np.arange(vis.shape[2] + 1) * self.dz
+            idx_z = np.arange(0, ktop)
+            z_edges = self.z_min + np.arange(ktop + 1, dtype=np.float64) * self.dz
+
+        if stride_x > 1 or stride_y > 1:
+            idx_x = np.arange(0, nx_full, stride_x)
+            idx_y = np.arange(0, ny_full, stride_y)
+            vis = self.grid[np.ix_(idx_x, idx_y, idx_z)]
+            x_edges = np.append(idx_x.astype(np.float64) * self.dx, self.width)
+            y_edges = np.append(idx_y.astype(np.float64) * self.dy, self.depth)
+        else:
+            vis = self.grid[:, :, idx_z]
+            x_edges = np.arange(nx_full + 1, dtype=np.float64) * self.dx
+            y_edges = np.arange(ny_full + 1, dtype=np.float64) * self.dy
 
         nx, ny, nz_v = vis.shape
-        x_edges = np.arange(nx + 1, dtype=np.float64) * self.dx
-        y_edges = np.arange(ny + 1, dtype=np.float64) * self.dy
-
         ny1 = ny + 1
         nz1 = nz_v + 1
         quad_vids: list[np.ndarray] = []
@@ -406,19 +447,22 @@ class VoxelState:
 
 
 def dilate_3d_euclidean(mask: np.ndarray, radius_um: float, dx: float, dy: float, dz: float) -> np.ndarray:
-    """Exact separable 3-pass 3D Euclidean sphere dilation on a periodic-XY grid.
+    """Exact separable 3D Euclidean sphere dilation on a periodic-XY grid.
 
-    Uses ``O(rx + ry)`` separable squared-distance sweeps instead of ``O(rx * ry)``
-    3D shifts, running ~50-200x faster on thick Damascene metal fills (50-100 nm).
+    Uses the C++17/OpenMP Z-slabbed Felzenszwalb-Huttenlocher ``O(N)`` transform when
+    available, falling back to a 3-pass separable NumPy implementation otherwise.
     """
-    if radius_um <= 0.0 or not np.any(mask):
+    if radius_um <= 0.0:
+        return mask.copy()
+    if native.is_available():
+        return native.dilate_3d(mask, radius_um, dx, dy, dz)
+    if not np.any(mask):
         return mask.copy()
     rx = int(math.floor(radius_um / dx + 1e-9))
     ry = int(math.floor(radius_um / dy + 1e-9))
     nz = mask.shape[2]
     inf = np.float32((radius_um * 4.0 + 1.0) ** 2)
 
-    # Pass 1: exact 1D vertical distance along Z, then square it.
     dz_f = np.float32(dz)
     dist = np.where(mask, np.float32(0.0), np.float32(radius_um * 4.0 + 1.0))
     for k in range(1, nz):
@@ -428,7 +472,6 @@ def dilate_3d_euclidean(mask: np.ndarray, radius_um: float, dx: float, dy: float
     np.multiply(dist, dist, out=dist)
     np.minimum(dist, inf, out=dist)
 
-    # Pass 2: separable X sweep (periodic boundary)
     if rx > 0:
         d_xz = dist.copy()
         for ox in range(1, rx + 1):
@@ -438,7 +481,6 @@ def dilate_3d_euclidean(mask: np.ndarray, radius_um: float, dx: float, dy: float
     else:
         d_xz = dist
 
-    # Pass 3: separable Y sweep (periodic boundary)
     if ry > 0:
         d_xyz = d_xz.copy()
         for oy in range(1, ry + 1):

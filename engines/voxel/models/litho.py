@@ -8,6 +8,7 @@ import numpy as np
 
 from engines.protocol import StepIR
 from engines.sdk.models import StepModelContext, StepModelRegistry
+from engines.voxel import native
 from engines.voxel.state import VoxelState
 
 
@@ -30,18 +31,18 @@ def register_models(registry: StepModelRegistry[VoxelState]) -> None:
         z_base = state.surface_top_z()
 
         if polarity == "negative":
-            # SPX litho_patterning coats fresh resist (default 0.1 um) and develops
-            # openings where polygons exist.
             eff_coat = coat if coat > 0.0 else thickness
             k0 = state.z_to_index(z_base)
             k1 = state.z_to_index(z_base + eff_coat)
             if k1 > k0:
-                exposed = state.exposed_void_mask(k1)
-                coat_zone = np.zeros_like(exposed, dtype=bool)
-                coat_zone[:, :, k0:k1] = (~in_poly)[:, :, None]
-                # Also planarise open recesses outside openings if exposed
-                fill_mask = exposed & coat_zone
-                state.grid[:, :, :k1][fill_mask] = mid
+                if native.is_available():
+                    native.litho_coat_inplace(state.grid, in_poly, k0, k1, mid, negative=True)
+                else:
+                    exposed = state.exposed_void_mask(k1)
+                    coat_zone = np.zeros_like(exposed, dtype=bool)
+                    coat_zone[:, :, k0:k1] = (~in_poly)[:, :, None]
+                    fill_mask = exposed & coat_zone
+                    state.grid[:, :, :k1][fill_mask] = mid
             return {
                 "layer": layer,
                 "polarity": polarity,
@@ -49,13 +50,15 @@ def register_models(registry: StepModelRegistry[VoxelState]) -> None:
                 "resistTopUm": round(z_base + eff_coat, 6),
             }
 
-        # Positive polarity: keep resist inside polygons
         k0 = state.z_to_index(z_base)
         k1 = state.z_to_index(z_base + thickness)
         if k1 > k0:
-            sub = state.grid[:, :, k0:k1]
-            place = in_poly[:, :, None] & (sub == 0)
-            sub[place] = mid
+            if native.is_available():
+                native.litho_coat_inplace(state.grid, in_poly, k0, k1, mid, negative=False)
+            else:
+                sub = state.grid[:, :, k0:k1]
+                place = in_poly[:, :, None] & (sub == 0)
+                sub[place] = mid
         return {
             "layer": layer,
             "polarity": polarity,
@@ -72,12 +75,14 @@ def register_models(registry: StepModelRegistry[VoxelState]) -> None:
         ktop = state.active_k_top()
         removed = 0
         if ktop > 0:
-            sub = state.grid[:, :, :ktop]
-            for name in names:
-                mid = state.name_to_id.get(name)
-                if mid is None:
-                    continue
-                hit = sub == mid
-                removed += int(np.count_nonzero(hit))
-                sub[hit] = 0
+            mids = [state.name_to_id[name] for name in names if name in state.name_to_id]
+            if mids:
+                if native.is_available():
+                    removed = native.strip_materials_inplace(state.grid, ktop, mids)
+                else:
+                    sub = state.grid[:, :, :ktop]
+                    for mid in mids:
+                        hit = sub == mid
+                        removed += int(np.count_nonzero(hit))
+                        sub[hit] = 0
         return {"strippedMaterials": names, "removedVoxels": removed}

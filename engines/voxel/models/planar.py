@@ -8,6 +8,7 @@ import numpy as np
 
 from engines.protocol import StepIR
 from engines.sdk.models import StepModelContext, StepModelRegistry
+from engines.voxel import native
 from engines.voxel.state import VoxelState
 
 
@@ -18,6 +19,11 @@ def _material_max_z(state: VoxelState, material: str) -> float | None:
     ktop = state.active_k_top()
     if ktop == 0:
         return None
+    if native.is_available():
+        best_k = native.material_max_k(state.grid, ktop, mid)
+        if best_k <= 0:
+            return None
+        return state.z_min + best_k * state.dz
     z_has = np.any(state.grid[:, :, :ktop] == mid, axis=(0, 1))
     idx = np.flatnonzero(z_has)
     if idx.size == 0:
@@ -44,20 +50,16 @@ def register_models(registry: StepModelRegistry[VoxelState]) -> None:
         ktop = state.active_k_top()
         removed = 0
         if ktop > k_cut:
-            removed = int(np.count_nonzero(state.grid[:, :, k_cut:ktop]))
-            state.grid[:, :, k_cut:ktop] = 0
+            if native.is_available():
+                removed = native.cmp_clear_above_inplace(state.grid, k_cut, ktop)
+            else:
+                removed = int(np.count_nonzero(state.grid[:, :, k_cut:ktop]))
+                state.grid[:, :, k_cut:ktop] = 0
         return {"cutoffUm": round(cutoff, 6), "removedVoxels": removed}
 
     @registry.register_model("cmp_dishing")
     def cmp_dishing(state: VoxelState, step: StepIR, _ctx: StepModelContext) -> dict[str, Any]:
-        """Process-specific custom model: CMP with metal dishing inside trenches.
-
-        Parameters (in ``step.parameters``):
-        * ``stop_material``  - dielectric stop layer (e.g. ``"SiO2"``);
-        * ``offset``         - base polish offset relative to stop layer (um);
-        * ``metal_material`` - soft conductor subject to dishing (default ``"Cu"``);
-        * ``max_dishing_um`` - maximum centre-of-trench recess (default ``0.008`` um).
-        """
+        """Process-specific custom model: CMP with metal dishing inside trenches."""
         base = planarize_cmp(state, step, _ctx)
         if base.get("cmpNoOp"):
             return base
@@ -71,7 +73,6 @@ def register_models(registry: StepModelRegistry[VoxelState]) -> None:
         k_cut = state.z_to_index(float(base["cutoffUm"]))
         if k_cut <= 0:
             return {**base, "dishedVoxels": 0}
-        # Columns exposing ``metal`` right below cutoff get recessed by max_dishing_um
         surface_is_metal = state.grid[:, :, k_cut - 1] == mid
         dish_cells = max(1, int(round(max_dish / state.dz)))
         k0 = max(0, k_cut - dish_cells)

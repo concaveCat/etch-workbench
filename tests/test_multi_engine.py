@@ -388,5 +388,60 @@ class SpxColumnProfileHelperTests(unittest.TestCase):
         )
 
 
+class NativeCppOpenmpParityAndOneNmGridTests(unittest.TestCase):
+    def test_native_edt_and_cavity_mask_match_numpy_bit_for_bit(self):
+        import numpy as np
+        from engines.voxel import native, state
+
+        if not native.is_available():
+            self.skipTest("g++ native voxel extension unavailable")
+
+        rng = np.random.default_rng(20261118)
+        mask = rng.random((29, 31, 47)) < 0.05
+        cpp_dil = native.dilate_3d(mask, 0.014, 0.003, 0.004, 0.001)
+        with mock.patch.dict(os.environ, {"VIENNAPS_VOXEL_DISABLE_NATIVE": "1"}):
+            native.get_lib.cache_clear()
+            py_dil = state.dilate_3d_euclidean(mask, 0.014, 0.003, 0.004, 0.001)
+        native.get_lib.cache_clear()
+        self.assertTrue(np.array_equal(cpp_dil, py_dil))
+
+        # Build a grid containing BOTH a sealed pocket (must stay False) and an
+        # overhang cavity connected via a narrow shaft to top gas (must become True):
+        grid = np.ones((20, 20, 30), dtype=np.uint8)
+        grid[:, :, 20:] = 0  # open gas above k=20
+        grid[4:8, 4:8, 5:9] = 0  # sealed void pocket
+        grid[10:18, 10:18, 10:14] = 0  # buried overhang cavity
+        grid[10, 10, 14:20] = 0  # vertical access shaft connecting cavity to top gas
+
+        st = state.VoxelState(0.02, 0.02, -0.01, 0.02, 0.001, 0.001, 0.001, grid)
+        cpp_exp = st.exposed_void_mask(25)
+        with mock.patch.dict(os.environ, {"VIENNAPS_VOXEL_DISABLE_NATIVE": "1"}):
+            native.get_lib.cache_clear()
+            py_exp = st.exposed_void_mask(25)
+        native.get_lib.cache_clear()
+        self.assertTrue(np.array_equal(cpp_exp, py_exp))
+        self.assertFalse(bool(cpp_exp[5, 5, 6]))
+        self.assertTrue(bool(cpp_exp[16, 16, 12]))
+
+    def test_one_nanometre_pitch_is_honoured_without_clamping(self):
+        from engines.voxel import native, state
+
+        if not native.is_available():
+            self.skipTest("g++ native voxel extension unavailable")
+
+        job = protocol.JobSpec.from_json({
+            "case_id": "pitch-1nm",
+            "engine": "voxel",
+            "domain": {"width": 0.624, "depth": 0.740, "height": 0.100, "grid_delta": 0.001},
+            "initial": {"kind": "plane", "substrate": "Si", "substrate_thickness": 0.050},
+            "steps": [{"step_id": "s0", "kind": "initial", "mechanism": "initial"}],
+        })
+        st = state.VoxelState.create(job)
+        self.assertEqual(st.grid.shape, (624, 740, 150))
+        self.assertAlmostEqual(st.dx, 0.001, places=9)
+        self.assertAlmostEqual(st.dy, 0.001, places=9)
+        self.assertAlmostEqual(st.dz, 0.001, places=9)
+
+
 if __name__ == "__main__":
     unittest.main()

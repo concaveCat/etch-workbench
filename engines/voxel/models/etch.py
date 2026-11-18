@@ -9,6 +9,7 @@ import numpy as np
 
 from engines.protocol import StepIR
 from engines.sdk.models import StepModelContext, StepModelRegistry
+from engines.voxel import native
 from engines.voxel.state import VoxelState, dilate_3d_euclidean
 
 
@@ -17,18 +18,14 @@ def _top_down_column_etch(
     rate_by_id: dict[int, float],
     duration: float,
 ) -> int:
-    """Exact top-down line-of-sight selective etch per ``(x, y)`` column.
-
-    Starts from the highest non-void voxel in each column and advances downward
-    while consuming ``duration``. Automatically stops on any mask / etch-stop
-    material absent from ``rate_by_id`` (rate == 0), while protecting buried
-    features shadowed under un-etched overhangs (such as 3D NAND wordline cavities).
-    """
+    """Exact top-down line-of-sight selective etch per ``(x, y)`` column."""
     if duration <= 0.0 or not rate_by_id:
         return 0
     ktop = state.active_k_top()
     if ktop == 0:
         return 0
+    if native.is_available():
+        return native.top_down_etch_inplace(state.grid, ktop, rate_by_id, duration, state.dz)
 
     nx, ny = state.grid.shape[0], state.grid.shape[1]
     dz = state.dz
@@ -40,7 +37,6 @@ def _top_down_column_etch(
             rem_t = duration
             k = ktop - 1
             while k >= 0 and rem_t > 1e-12:
-                # Skip open void from the top down until we hit the exposed surface:
                 while k >= 0 and col[k] == 0:
                     k -= 1
                 if k < 0:
@@ -48,9 +44,7 @@ def _top_down_column_etch(
                 mid = int(col[k])
                 rate = rate_by_id.get(mid, 0.0)
                 if rate <= 0.0:
-                    # Hit a mask or etch-stop material -> column is blocked!
                     break
-                # Find contiguous vertical run of ``mid``
                 k_run_start = k
                 while k_run_start > 0 and int(col[k_run_start - 1]) == mid:
                     k_run_start -= 1
@@ -79,16 +73,25 @@ def _isotropic_selective_etch(
     if max_disp <= 0.0:
         return 0
 
-    # Sub-step when multi-material transitions could occur across thin layers.
     step_um = max(min(state.dx, state.dy) * 1.5, 0.015)
     n_sub = max(1, min(16, int(math.ceil(max_disp / step_um))))
     dt = duration / n_sub
     removed = 0
+    use_native = native.is_available()
 
     for _ in range(n_sub):
         ktop = min(state.grid.shape[2], state.active_k_top() + 2)
         if ktop == 0:
             break
+        if use_native:
+            count = native.etch_isotropic_substep_inplace(
+                state.grid, ktop, rate_by_id, dt, state.dx, state.dy, state.dz
+            )
+            if count == 0:
+                break
+            removed += count
+            continue
+
         exposed_gas = state.exposed_void_mask(ktop)
         sub = state.grid[:, :, :ktop]
         to_clear = np.zeros_like(exposed_gas, dtype=bool)
@@ -151,25 +154,29 @@ def register_models(registry: StepModelRegistry[VoxelState]) -> None:
             if abs(lat) > 0.0:
                 l_rates[mid] = abs(lat)
 
-        # Vertical front advance + tapered lateral widening on newly exposed sidewalls
         removed = _top_down_column_etch(state, v_rates, duration)
         if l_rates:
             ktop = min(state.grid.shape[2], state.active_k_top() + 1)
             if ktop > 0:
-                exposed_gas = state.exposed_void_mask(ktop)
-                sub = state.grid[:, :, :ktop]
-                for mid, l_rate in l_rates.items():
-                    lat_um = l_rate * duration * 0.5  # average taper half-width
-                    rx = int(round(lat_um / state.dx))
-                    ry = int(round(lat_um / state.dy))
-                    if rx <= 0 and ry <= 0:
-                        continue
-                    widened = np.zeros_like(exposed_gas, dtype=bool)
-                    for ox in range(-rx, rx + 1):
-                        for oy in range(-ry, ry + 1):
-                            if (ox * state.dx) ** 2 + (oy * state.dy) ** 2 <= lat_um ** 2 + 1e-15:
-                                widened |= np.roll(np.roll(exposed_gas, ox, axis=0), oy, axis=1)
-                    hit = widened & (sub == mid)
-                    removed += int(np.count_nonzero(hit))
-                    sub[hit] = 0
+                if native.is_available():
+                    removed += native.widen_2d_clear_inplace(
+                        state.grid, ktop, l_rates, duration, state.dx, state.dy
+                    )
+                else:
+                    exposed_gas = state.exposed_void_mask(ktop)
+                    sub = state.grid[:, :, :ktop]
+                    for mid, l_rate in l_rates.items():
+                        lat_um = l_rate * duration * 0.5
+                        rx = int(round(lat_um / state.dx))
+                        ry = int(round(lat_um / state.dy))
+                        if rx <= 0 and ry <= 0:
+                            continue
+                        widened = np.zeros_like(exposed_gas, dtype=bool)
+                        for ox in range(-rx, rx + 1):
+                            for oy in range(-ry, ry + 1):
+                                if (ox * state.dx) ** 2 + (oy * state.dy) ** 2 <= lat_um ** 2 + 1e-15:
+                                    widened |= np.roll(np.roll(exposed_gas, ox, axis=0), oy, axis=1)
+                        hit = widened & (sub == mid)
+                        removed += int(np.count_nonzero(hit))
+                        sub[hit] = 0
         return {"removedVoxels": removed}

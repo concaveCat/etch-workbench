@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
@@ -13,15 +14,17 @@ import numpy as np  # noqa: E402
 
 from engines.protocol import EngineInfo, Frame, JobSpec, SectionSpec  # noqa: E402
 from engines.sdk import EngineAdapterBase, run_adapter_cli  # noqa: E402
+from engines.voxel import native  # noqa: E402
 from engines.voxel.models import build_default_registry  # noqa: E402
 from engines.voxel.state import VoxelState  # noqa: E402
 
-ENGINE_VERSION = "0.2.0"
+ENGINE_VERSION = "0.3.0"
 
 
 class VoxelEngineAdapter(EngineAdapterBase[VoxelState]):
     def __init__(self) -> None:
         super().__init__(build_default_registry())
+        self._last_state: VoxelState | None = None
 
     def info(self) -> EngineInfo:
         return EngineInfo(
@@ -36,20 +39,37 @@ class VoxelEngineAdapter(EngineAdapterBase[VoxelState]):
             limits={
                 "numpy": np.__version__,
                 "python": sys.version.split()[0],
+                "native_cpp_openmp": native.is_available(),
                 "max_active_points": 25_000_000.0,
-                "max_ratio": 2000.0,
+                "max_ratio": 5000.0,
                 "max_area_um2": 25.0,
             },
         )
 
     def engine_limits(self) -> dict[str, float]:
-        return {"max_active_points": 25_000_000.0, "max_ratio": 2000.0, "max_area_um2": 25.0}
+        return {"max_active_points": 25_000_000.0, "max_ratio": 5000.0, "max_area_um2": 25.0}
 
     def open_state(self, job: JobSpec, out_dir: Path) -> VoxelState:
         del out_dir
         if job.restore:
-            return VoxelState.load_checkpoint(Path(job.restore))
-        return VoxelState.create(job)
+            state = VoxelState.load_checkpoint(Path(job.restore))
+        else:
+            state = VoxelState.create(job)
+        self._last_state = state
+        return state
+
+    def run_job(self, job: JobSpec, out_dir: Path) -> dict[str, Any]:
+        payload = super().run_job(job, out_dir)
+        if self._last_state is not None:
+            st = self._last_state
+            payload["run"]["gridShape"] = list(st.grid.shape)
+            payload["run"]["voxelPitchUm"] = [
+                round(st.dx, 8),
+                round(st.dy, 8),
+                round(st.dz, 8),
+            ]
+            payload["run"]["nativeCppOpenmp"] = native.is_available()
+        return payload
 
     def extract_frame(
         self, state: VoxelState, job: JobSpec, out_dir: Path, step_id: str

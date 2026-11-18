@@ -101,7 +101,7 @@ git diff --check
 ## 4.1 引擎层的外部进程与多引擎开发指南（必读）
 
 - **自定义测试样例输入、多引擎仿真对拍与下一步引擎/工艺模型开发完整手册**：
-  详见 [`docs/AGENT_ENGINE_DEV_GUIDE.md`](docs/AGENT_ENGINE_DEV_GUIDE.md)（架构设计概览见 [`docs/multi-engine-architecture.md`](docs/multi-engine-architecture.md)）。
+  详见 [`docs/AGENT_ENGINE_DEV_GUIDE.md`](docs/AGENT_ENGINE_DEV_GUIDE.md)（架构概览见 [`docs/multi-engine-architecture.md`](docs/multi-engine-architecture.md)，各工序具体算法记录与切换注册表见 [`docs/ENGINE_ALGORITHM_REGISTRY.md`](docs/ENGINE_ALGORITHM_REGISTRY.md) / [`engines/algorithms.json`](engines/algorithms.json)）。
 
 `engines/` 会拉起 `voxel`、ViennaPS 与 **SPX 私有 Python** 子进程。SPX **自己没有任何规模保护**：
 它把整个 clip 窗口的结构一次性建进内存，窗口面积一大就把整台 WSL 拖死。

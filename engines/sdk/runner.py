@@ -140,11 +140,16 @@ class EngineAdapterBase(ABC, Generic[StateT]):
                 step_notes["model"] = "initial"
             else:
                 try:
-                    resolved_model, handler = self.models.resolve(step)
+                    resolved_model, handler, algo_meta = self.models.resolve_with_metadata(
+                        step, job_algorithms=job.algorithms
+                    )
                     extra = handler(state, step, ctx)
                     if extra:
                         step_notes.update(extra)
                     step_notes.setdefault("model", resolved_model)
+                    if algo_meta is not None:
+                        step_notes.setdefault("algorithmType", algo_meta.algorithm_type)
+                        step_notes.setdefault("algorithmFidelity", algo_meta.fidelity)
                 except NotImplementedError as exc:
                     solve_ms = (time.perf_counter() - solve_started) * 1000.0
                     blocked_by = step.step_id
@@ -266,7 +271,9 @@ class EngineAdapterBase(ABC, Generic[StateT]):
                 "solveMode": info.solve_mode,
                 "initMs": round(init_ms, 4),
                 "solveMs": round(total_solve_ms, 4),
+                "jobAlgorithms": dict(job.algorithms),
                 "registeredModels": self.models.registered_models(),
+                "algorithms": self.models.describe_algorithms(),
             },
         }
 
@@ -291,6 +298,7 @@ def run_adapter_cli(adapter: EngineAdapterBase[Any], argv: list[str] | None = No
     if args.describe:
         info = _as_json(adapter.info())
         info["registeredModels"] = adapter.models.registered_models()
+        info["algorithms"] = adapter.models.describe_algorithms()
         print(json.dumps(info, indent=2))
         return 0
 

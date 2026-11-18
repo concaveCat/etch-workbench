@@ -141,6 +141,26 @@ def build_router() -> APIRouter:
 
         return {"engines": describe()}
 
+    @router.get("/algorithms")
+    async def algorithms(engine: str | None = None) -> dict[str, Any]:
+        from engines.algorithms import catalog
+
+        return catalog(engine_filter=engine)
+
+    @router.put("/algorithms/default")
+    async def update_default_algorithm(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+        from engines.algorithms import set_active_default
+
+        engine_id = str(payload.get("engine") or "").strip()
+        slot = str(payload.get("slot") or "").strip()
+        model_id = str(payload.get("modelId") or payload.get("model_id") or "").strip()
+        if not engine_id or not slot or not model_id:
+            raise _invalid("algorithm", "engine, slot, and modelId are required")
+        try:
+            return set_active_default(engine_id, slot, model_id)
+        except ValueError as exc:
+            raise _invalid("modelId", str(exc)) from exc
+
     @router.post("/runs")
     async def create_run(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
         job = payload.get("job")

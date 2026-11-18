@@ -595,9 +595,19 @@ class ViennapsSession:
 
 
 def build_viennaps_models() -> StepModelRegistry[ViennapsSession]:
-    registry: StepModelRegistry[ViennapsSession] = StepModelRegistry("viennaps")
+    registry: StepModelRegistry[ViennapsSession] = StepModelRegistry(
+        "viennaps", use_global_defaults=True
+    )
 
-    @registry.register("deposit", "isotropic")
+    @registry.register(
+        "deposit",
+        "isotropic",
+        model_id="viennaps.depo.ls_isotropic_pde",
+        algorithm_type="pde_levelset",
+        fidelity="approximate",
+        origin="ViennaPS 4.7 IsotropicProcess Level-Set Advection (Fallback Slab Sheet on Multi-Hole Stack)",
+        summary="基于 ViennaPS 水平集 IsotropicProcess 推进（带孔多层栈退化时回退为顶面片层插入）。",
+    )
     def depo_iso(session: ViennapsSession, step: StepIR, _ctx: StepModelContext) -> dict[str, Any]:
         present = set(session.stack)
         top = session.stack[-1] if session.stack else None
@@ -621,7 +631,15 @@ def build_viennaps_models() -> StepModelRegistry[ViennapsSession]:
         session._openings = []
         return {"depositModel": depo_model}
 
-    @registry.register("etch", "isotropic")
+    @registry.register(
+        "etch",
+        "isotropic",
+        model_id="viennaps.etch.ls_isotropic_pde",
+        algorithm_type="pde_levelset",
+        fidelity="approximate",
+        origin="ViennaPS 4.7 IsotropicProcess / Selective Slab Sheet Subtraction",
+        summary="水平集各向同性刻蚀推进（整面回刻时按受影响片层高度做布尔裁切防止层栈坍塌）。",
+    )
     def etch_iso(session: ViennapsSession, step: StepIR, _ctx: StepModelContext) -> dict[str, Any]:
         ps = session.ps
         duration, clamp_note = session._etch_duration(
@@ -632,7 +650,15 @@ def build_viennaps_models() -> StepModelRegistry[ViennapsSession]:
             notes["etchDurationClamp"] = clamp_note
         return notes
 
-    @registry.register("etch", "anisotropic")
+    @registry.register(
+        "etch",
+        "anisotropic",
+        model_id="viennaps.etch.stencil_or_slab_cut",
+        algorithm_type="csg_boolean",
+        fidelity="approximate",
+        origin="ViennaLS Prism/Slab RELATIVE_COMPLEMENT Stencil Cut + DirectionalProcess",
+        summary="带掩膜开口时按开口棱柱对水平集做布尔补集切槽；整面刻蚀时仅裁切顶层片层并保护埋层。",
+    )
     def etch_aniso(session: ViennapsSession, step: StepIR, ctx: StepModelContext) -> dict[str, Any]:
         ps = session.ps
         openings = session._openings
@@ -658,7 +684,15 @@ def build_viennaps_models() -> StepModelRegistry[ViennapsSession]:
             notes["etchDurationClamp"] = clamp_note
         return notes
 
-    @registry.register("deposit", "anisotropic")
+    @registry.register(
+        "deposit",
+        "anisotropic",
+        model_id="viennaps.depo.ls_directional_pde",
+        algorithm_type="pde_levelset",
+        fidelity="approximate",
+        origin="ViennaPS 4.7 DirectionalProcess Level-Set Advection",
+        summary="使用 ViennaPS DirectionalProcess 按定向与各向同性速率分量做水平集推进。",
+    )
     def depo_aniso(session: ViennapsSession, step: StepIR, _ctx: StepModelContext) -> dict[str, Any]:
         ps = session.ps
         split = min(max(float(step.anisotropy), 0.0), 1.0)
@@ -675,7 +709,15 @@ def build_viennaps_models() -> StepModelRegistry[ViennapsSession]:
         session.invalidate_caches()
         return {}
 
-    @registry.register("strip", "strip")
+    @registry.register(
+        "strip",
+        "strip",
+        model_id="viennaps.strip.remove_material_ls",
+        algorithm_type="csg_boolean",
+        fidelity="exact",
+        origin="ViennaPS Domain.removeMaterial Level-Set Layer Removal",
+        summary="调用 ViennaPS domain.removeMaterial 移除指定材料的水平集层。",
+    )
     def strip_step(session: ViennapsSession, step: StepIR, _ctx: StepModelContext) -> dict[str, Any]:
         ps = session.ps
         names = [str(name) for name in (step.parameters.get("materials") or [])]
@@ -688,7 +730,15 @@ def build_viennaps_models() -> StepModelRegistry[ViennapsSession]:
         session.invalidate_caches()
         return {"stripped": names}
 
-    @registry.register("etch", "ellipsoidal")
+    @registry.register(
+        "etch",
+        "ellipsoidal",
+        model_id="viennaps.etch.ls_directional_taper",
+        algorithm_type="pde_levelset",
+        fidelity="approximate",
+        origin="ViennaPS 4.7 DirectionalProcess (Vertical + Lateral Velocity Advection)",
+        summary="采用 ViennaPS DirectionalProcess(vertical, lateral) 推进锥角刻蚀（图案化时走开口几何切法）。",
+    )
     def etch_ellipsoidal(
         session: ViennapsSession, step: StepIR, ctx: StepModelContext
     ) -> dict[str, Any]:
@@ -716,7 +766,15 @@ def build_viennaps_models() -> StepModelRegistry[ViennapsSession]:
         session.invalidate_caches()
         return {}
 
-    @registry.register("deposit", "fill")
+    @registry.register(
+        "deposit",
+        "fill",
+        model_id="viennaps.fill.box_complement",
+        algorithm_type="csg_boolean",
+        fidelity="approximate",
+        origin="ViennaLS Box RELATIVE_COMPLEMENT Against Existing Level-Set Stack",
+        summary="构造顶高为 surface_top + offset 的 Box 水平集并与已有实体做补集插入（受限于层栈表示）。",
+    )
     def depo_fill(session: ViennapsSession, step: StepIR, _ctx: StepModelContext) -> dict[str, Any]:
         material = str(step.parameters["material"])
         offset = float(step.parameters.get("offset", 0.0))
@@ -728,7 +786,15 @@ def build_viennaps_models() -> StepModelRegistry[ViennapsSession]:
         session._openings = []
         return {}
 
-    @registry.register("mask", "litho")
+    @registry.register(
+        "mask",
+        "litho",
+        model_id="viennaps.litho.prism_mesh_boolean",
+        algorithm_type="csg_boolean",
+        fidelity="approximate",
+        origin="ViennaLS FromSurfaceMesh Extruded Polygon Prism + BooleanOperation",
+        summary="将 GDS 多边形挤出为三角棱柱网格转水平集，在 0.1 um 胶层上做布尔减法开孔。",
+    )
     def mask_litho(session: ViennapsSession, step: StepIR, ctx: StepModelContext) -> dict[str, Any]:
         ps = session.ps
         layer = int(step.parameters["layer"])
@@ -808,7 +874,15 @@ def build_viennaps_models() -> StepModelRegistry[ViennapsSession]:
         session.invalidate_caches()
         return {"layer": layer, "polygons": len(polygons)}
 
-    @registry.register("planarize", "cmp")
+    @registry.register(
+        "planarize",
+        "cmp",
+        model_id="viennaps.cmp.ls_planarize_plane",
+        algorithm_type="csg_boolean",
+        fidelity="approximate",
+        origin="ViennaPS 4.7 ps.Planarize(domain, cutoff)",
+        summary="调用 ViennaPS ps.Planarize 在 stop_material 顶高 + offset 平面截断所有水平集。",
+    )
     def planarize_cmp(
         session: ViennapsSession, step: StepIR, _ctx: StepModelContext
     ) -> dict[str, Any]:

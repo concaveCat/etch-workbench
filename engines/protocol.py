@@ -211,6 +211,7 @@ class JobSpec:
     section: SectionSpec | None = None
     layout: dict[str, Any] | None = None
     restore: str | None = None
+    algorithms: dict[str, str] = field(default_factory=dict)
     emit_frames: bool = True
     emit_checkpoints: bool = True
     schema_version: int = SCHEMA_VERSION
@@ -229,6 +230,11 @@ class JobSpec:
             self.probe.validate()
         if self.section is not None:
             self.section.validate()
+        if not isinstance(self.algorithms, dict) or not all(
+            isinstance(k, str) and isinstance(v, str) and k and v
+            for k, v in self.algorithms.items()
+        ):
+            raise ProtocolError("job.algorithms must map non-empty slot strings to model_id strings")
         seen: set[str] = set()
         for step in self.steps:
             step.validate()
@@ -283,6 +289,7 @@ class JobSpec:
                 if payload.get("section") else None),
             restore=(str(payload["restore"]) if payload.get("restore") else None),
             layout=(dict(payload["layout"]) if payload.get("layout") else None),
+            algorithms={str(k): str(v) for k, v in (payload.get("algorithms") or {}).items()},
             emit_frames=bool(payload.get("emit_frames", True)),
             emit_checkpoints=bool(payload.get("emit_checkpoints", True)),
             schema_version=int(payload.get("schema_version", SCHEMA_VERSION)),

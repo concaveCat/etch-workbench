@@ -1,4 +1,4 @@
-"""Planarisation / CMP models, plus a custom Damascene dishing model example."""
+"""Planarisation / CMP models, including selectable Damascene metal dishing."""
 
 from __future__ import annotations
 
@@ -32,7 +32,15 @@ def _material_max_z(state: VoxelState, material: str) -> float | None:
 
 
 def register_models(registry: StepModelRegistry[VoxelState]) -> None:
-    @registry.register("planarize", "cmp")
+    @registry.register(
+        "planarize",
+        "cmp",
+        model_id="voxel.cmp.ideal_stop_plane",
+        algorithm_type="contract_macro",
+        fidelity="exact",
+        origin="Aligned to SPX sp.etch_cmp (Global Horizontal Plane Truncation at Stop-Material Max-Z + Offset)",
+        summary="取 stop_material 当前最高顶面 z_stop + offset（或绝对 cutoff）做全局水平截断平坦化。",
+    )
     def planarize_cmp(state: VoxelState, step: StepIR, _ctx: StepModelContext) -> dict[str, Any]:
         params = step.parameters or {}
         stop = params.get("stop_material")
@@ -57,9 +65,17 @@ def register_models(registry: StepModelRegistry[VoxelState]) -> None:
                 state.grid[:, :, k_cut:ktop] = 0
         return {"cutoffUm": round(cutoff, 6), "removedVoxels": removed}
 
-    @registry.register_model("cmp_dishing")
+    @registry.register_model(
+        "voxel.cmp.dishing",
+        slot="planarize/cmp",
+        algorithm_type="empirical_physical",
+        fidelity="empirical",
+        origin="Damascene Soft-Conductor Overpolish Dishing Model (Exposed Metal Trench Recess)",
+        summary="在理想停止面抛光基础上，对沟槽暴露软金属（默认 Cu）施加 max_dishing_um 碟形凹陷过抛蚀。",
+        aliases=("cmp_dishing",),
+    )
     def cmp_dishing(state: VoxelState, step: StepIR, _ctx: StepModelContext) -> dict[str, Any]:
-        """Process-specific custom model: CMP with metal dishing inside trenches."""
+        """Process-specific selectable model: CMP with metal dishing inside trenches."""
         base = planarize_cmp(state, step, _ctx)
         if base.get("cmpNoOp"):
             return base

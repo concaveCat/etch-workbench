@@ -7,10 +7,16 @@ Damascene CMP dishing model or tapered contact etch) is a single decorated funct
 with zero scheduler, CLI, or UI changes.
 """
 
-from engines.sdk.models import StepModelContext, StepModelFn, StepModelRegistry
+from engines.sdk.models import (
+    AlgorithmMetadata,
+    StepModelContext,
+    StepModelFn,
+    StepModelRegistry,
+)
 from engines.sdk.runner import EngineAdapterBase, run_adapter_cli
 
 __all__ = [
+    "AlgorithmMetadata",
     "EngineAdapterBase",
     "StepModelContext",
     "StepModelFn",

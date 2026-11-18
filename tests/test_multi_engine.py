@@ -443,5 +443,85 @@ class NativeCppOpenmpParityAndOneNmGridTests(unittest.TestCase):
         self.assertAlmostEqual(st.dz, 0.001, places=9)
 
 
+class AlgorithmRegistryAndSelectionTests(unittest.TestCase):
+    def test_catalog_lists_all_engines_primitives_and_selectable_variants(self):
+        from engines import algorithms
+
+        cat = algorithms.catalog()
+        self.assertIn("voxel", cat["engines"])
+        self.assertIn("viennaps", cat["engines"])
+        self.assertIn("spx", cat["engines"])
+        self.assertGreaterEqual(len(cat["primitives"]), 4)
+        voxel_ids = {row["model_id"] for row in cat["engines"]["voxel"]["algorithms"]}
+        self.assertIn("voxel.litho.hard_polygon", voxel_ids)
+        self.assertIn("voxel.litho.gaussian_aerial", voxel_ids)
+        self.assertIn("voxel.etch.cylindrical_halfwidth", voxel_ids)
+        self.assertIn("voxel.etch.linear_depth_taper", voxel_ids)
+        self.assertIn("voxel.cmp.dishing", voxel_ids)
+        rendered = algorithms.format_table(cat)
+        self.assertIn("voxel.depo.fh_euclidean_ball", rendered)
+
+    def test_switching_global_default_and_per_job_algorithm_overrides(self):
+        import shutil
+        import gdstk
+        from engines import algorithms
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg_copy = root / "algorithms.json"
+            shutil.copy2(algorithms.DEFAULT_CONFIG_PATH, cfg_copy)
+
+            lib = gdstk.Library(unit=1e-6, precision=1e-9)
+            cell = lib.new_cell("TOP")
+            cell.add(gdstk.rectangle((0.05, 0.05), (0.15, 0.15), layer=15))
+            gds_path = root / "square.gds"
+            lib.write_gds(str(gds_path))
+
+            with mock.patch.dict(os.environ, {"VIENNAPS_ALGORITHMS_CONFIG": str(cfg_copy)}):
+                with self.assertRaises(ValueError):
+                    algorithms.set_active_default("voxel", "mask/litho", "nonexistent_algo")
+
+                updated = algorithms.set_active_default(
+                    "voxel", "mask/litho", "voxel.litho.gaussian_aerial"
+                )
+                self.assertEqual(updated["previousModel"], "voxel.litho.hard_polygon")
+                self.assertEqual(updated["activeModel"], "voxel.litho.gaussian_aerial")
+
+                job = protocol.JobSpec.from_json({
+                    "case_id": "algo-switch",
+                    "engine": "voxel",
+                    "domain": {"width": 0.2, "depth": 0.2, "height": 0.3, "grid_delta": 0.004},
+                    "initial": {
+                        "kind": "plane",
+                        "substrate": "Si",
+                        "substrate_thickness": 0.05,
+                        "films": [{"material": "SiO2", "thickness": 0.08}],
+                    },
+                    "layout": {"path": str(gds_path)},
+                    "algorithms": {"etch/ellipsoidal": "voxel.etch.linear_depth_taper"},
+                    "emit_frames": False,
+                    "emit_checkpoints": False,
+                    "steps": [
+                        {"step_id": "s0", "kind": "initial", "mechanism": "initial"},
+                        {"step_id": "s1_litho", "kind": "mask", "mechanism": "litho",
+                         "parameters": {"layer": 15, "thickness": 0.05, "coat": 0.05,
+                                        "sigma": 0.012, "polarity": "negative", "material": "PMMA"}},
+                        {"step_id": "s2_taper", "kind": "etch", "mechanism": "ellipsoidal",
+                         "duration": 0.05,
+                         "parameters": {"rates": {"SiO2": [-1.0, -0.3]}, "mask": ["PMMA"]}},
+                    ],
+                })
+                out_dir = root / "out"
+                out_dir.mkdir()
+                res = VoxelEngineAdapter().run_job(job, out_dir)
+
+            m_litho = res["outcomes"][1]["metrics"]
+            m_taper = res["outcomes"][2]["metrics"]
+            self.assertEqual(m_litho["model"], "voxel.litho.gaussian_aerial")
+            self.assertEqual(m_litho["algorithmType"], "optical_aerial")
+            self.assertEqual(m_taper["model"], "voxel.etch.linear_depth_taper")
+            self.assertEqual(m_taper["algorithmType"], "geometric_envelope")
+
+
 if __name__ == "__main__":
     unittest.main()

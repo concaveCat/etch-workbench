@@ -1,4 +1,4 @@
-"""Etch step models: selective top-down anisotropic, 3D isotropic, and ellipsoidal."""
+"""Etch step models: selective column etch, 3D isotropic erosion, and cylindrical/conical ellipsoidal."""
 
 from __future__ import annotations
 
@@ -109,8 +109,50 @@ def _isotropic_selective_etch(
     return removed
 
 
+def _parse_ellipsoidal_rates(
+    state: VoxelState, step: StepIR
+) -> tuple[dict[int, float], dict[int, float]]:
+    raw_rates = (step.parameters or {}).get("rates") or {}
+    v_rates: dict[int, float] = {}
+    l_rates: dict[int, float] = {}
+    for mat, pair in raw_rates.items():
+        v, lat = float(pair[0]), float(pair[1])
+        mid = state.material_id(mat)
+        if abs(v) > 0.0:
+            v_rates[mid] = abs(v)
+        if abs(lat) > 0.0:
+            l_rates[mid] = abs(lat)
+    return v_rates, l_rates
+
+
+def _widen_slice_2d(
+    gas_2d: np.ndarray, radius_um: float, dx: float, dy: float
+) -> np.ndarray:
+    if radius_um <= 0.0 or not np.any(gas_2d):
+        return gas_2d.copy()
+    if native.is_available():
+        # 1-slice 3D dilation with huge dz equals exact 2D periodic Euclidean disk dilation!
+        return native.dilate_3d(gas_2d[:, :, None], radius_um, dx, dy, radius_um * 10.0 + 1.0)[:, :, 0]
+    rx = int(round(radius_um / dx))
+    ry = int(round(radius_um / dy))
+    widened = gas_2d.copy()
+    for ox in range(-rx, rx + 1):
+        for oy in range(-ry, ry + 1):
+            if (ox * dx) ** 2 + (oy * dy) ** 2 <= radius_um ** 2 + 1e-15:
+                widened |= np.roll(np.roll(gas_2d, ox, axis=0), oy, axis=1)
+    return widened
+
+
 def register_models(registry: StepModelRegistry[VoxelState]) -> None:
-    @registry.register("etch", "anisotropic")
+    @registry.register(
+        "etch",
+        "anisotropic",
+        model_id="voxel.etch.line_of_sight_column",
+        algorithm_type="ray_column",
+        fidelity="exact",
+        origin="1D Top-Down Line-of-Sight Column Integration (+ Lie-Trotter Isotropic Split if anisotropy < 1)",
+        summary="逐 (x, y) 列自顶向下按时间预算积分去除速率，自动止于选择比停止层并保护悬空阴影区。",
+    )
     def etch_anisotropic(state: VoxelState, step: StepIR, _ctx: StepModelContext) -> dict[str, Any]:
         duration = float(step.duration)
         split = min(max(float(step.anisotropy), 0.0), 1.0)
@@ -129,7 +171,15 @@ def register_models(registry: StepModelRegistry[VoxelState]) -> None:
             removed += _isotropic_selective_etch(state, iso_rates, duration)
         return {"removedVoxels": removed}
 
-    @registry.register("etch", "isotropic")
+    @registry.register(
+        "etch",
+        "isotropic",
+        model_id="voxel.etch.substepped_fh_erosion",
+        algorithm_type="exact_morphology",
+        fidelity="exact",
+        origin="Sub-Stepped 3D Euclidean Ball Erosion via Felzenszwalb-Huttenlocher Exact EDT",
+        summary="从连通暴露气相向四周做精确三维欧氏球腐蚀（跨材料按 <=15 nm 位移切分子步）。",
+    )
     def etch_isotropic(state: VoxelState, step: StepIR, _ctx: StepModelContext) -> dict[str, Any]:
         rates = {
             state.material_id(mat): abs(float(r))
@@ -139,21 +189,20 @@ def register_models(registry: StepModelRegistry[VoxelState]) -> None:
         removed = _isotropic_selective_etch(state, rates, float(step.duration))
         return {"removedVoxels": removed}
 
-    @registry.register("etch", "ellipsoidal")
-    def etch_ellipsoidal(state: VoxelState, step: StepIR, _ctx: StepModelContext) -> dict[str, Any]:
-        params = step.parameters or {}
+    @registry.register(
+        "etch",
+        "ellipsoidal",
+        model_id="voxel.etch.cylindrical_halfwidth",
+        algorithm_type="first_order_approx",
+        fidelity="approximate",
+        origin="Vertical Column Cut + Uniform Half-Width (0.5 * r_lat * t) Horizontal Disk Widening",
+        summary="先按垂向速率直刻到底，再将暴露侧壁按平均半宽 0.5 * r_lat * t 统一水平扩孔（直筒近似）。",
+    )
+    def etch_ellipsoidal_halfwidth(
+        state: VoxelState, step: StepIR, _ctx: StepModelContext
+    ) -> dict[str, Any]:
         duration = float(step.duration)
-        raw_rates = params.get("rates") or {}
-        v_rates: dict[int, float] = {}
-        l_rates: dict[int, float] = {}
-        for mat, pair in raw_rates.items():
-            v, lat = float(pair[0]), float(pair[1])
-            mid = state.material_id(mat)
-            if abs(v) > 0.0:
-                v_rates[mid] = abs(v)
-            if abs(lat) > 0.0:
-                l_rates[mid] = abs(lat)
-
+        v_rates, l_rates = _parse_ellipsoidal_rates(state, step)
         removed = _top_down_column_etch(state, v_rates, duration)
         if l_rates:
             ktop = min(state.grid.shape[2], state.active_k_top() + 1)
@@ -180,3 +229,60 @@ def register_models(registry: StepModelRegistry[VoxelState]) -> None:
                         removed += int(np.count_nonzero(hit))
                         sub[hit] = 0
         return {"removedVoxels": removed}
+
+    @registry.register_model(
+        "voxel.etch.linear_depth_taper",
+        slot="etch/ellipsoidal",
+        algorithm_type="geometric_envelope",
+        fidelity="approximate",
+        origin="Depth-Interpolated Conical Taper Envelope (Top Full r_lat*t -> Etch Floor 0)",
+        summary="按实际刻蚀深度区间线性插值侧向扩孔半径（槽口扩 r_lat*t，槽底扩 0），生成上宽下窄的连续锥形侧壁。",
+        aliases=("ellipsoidal_taper",),
+    )
+    def etch_ellipsoidal_taper(
+        state: VoxelState, step: StepIR, _ctx: StepModelContext
+    ) -> dict[str, Any]:
+        duration = float(step.duration)
+        v_rates, l_rates = _parse_ellipsoidal_rates(state, step)
+        tops_before = state.column_tops_k()
+        removed = _top_down_column_etch(state, v_rates, duration)
+        if not l_rates:
+            return {"removedVoxels": removed}
+
+        tops_after = state.column_tops_k()
+        etched_cols = tops_after < tops_before
+        if not np.any(etched_cols):
+            return {"removedVoxels": removed}
+
+        k_low = int(np.min(tops_after[etched_cols]))
+        k_high = int(np.max(tops_before[etched_cols]))
+        if k_high <= k_low:
+            return {"removedVoxels": removed}
+
+        ktop = min(state.grid.shape[2], max(state.active_k_top(), k_high) + 1)
+        exposed_gas = state.exposed_void_mask(ktop)
+
+        n_bands = min(12, max(1, k_high - k_low))
+        edges = np.linspace(k_low, k_high, n_bands + 1, dtype=int)
+        for mid, l_rate in l_rates.items():
+            full_lat = l_rate * duration
+            if full_lat <= 0.0:
+                continue
+            for b in range(n_bands):
+                ka, kb = int(edges[b]), int(edges[b + 1])
+                if kb <= ka:
+                    continue
+                frac = ((b + 0.5) / n_bands)
+                r_band = full_lat * frac
+                if r_band < min(state.dx, state.dy) * 0.45:
+                    continue
+                # Use mid-band exposed gas footprint for 2D periodic disk widening
+                k_mid = min(ktop - 1, (ka + kb) // 2)
+                widened_2d = _widen_slice_2d(exposed_gas[:, :, k_mid], r_band, state.dx, state.dy)
+                band_view = state.grid[:, :, ka:kb]
+                hit = widened_2d[:, :, None] & (band_view == mid)
+                cnt = int(np.count_nonzero(hit))
+                if cnt > 0:
+                    band_view[hit] = 0
+                    removed += cnt
+        return {"removedVoxels": removed, "taperBands": n_bands}

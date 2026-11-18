@@ -8,7 +8,9 @@ from engines.voxel.state import VoxelState
 
 
 def build_default_registry() -> StepModelRegistry[VoxelState]:
-    registry: StepModelRegistry[VoxelState] = StepModelRegistry("voxel")
+    registry: StepModelRegistry[VoxelState] = StepModelRegistry(
+        "voxel", use_global_defaults=True
+    )
     deposit.register_models(registry)
     etch.register_models(registry)
     litho.register_models(registry)

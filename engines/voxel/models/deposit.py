@@ -13,7 +13,15 @@ from engines.voxel.state import VoxelState, dilate_3d_euclidean
 
 
 def register_models(registry: StepModelRegistry[VoxelState]) -> None:
-    @registry.register("deposit", "fill")
+    @registry.register(
+        "deposit",
+        "fill",
+        model_id="voxel.fill.gas_overburden",
+        algorithm_type="contract_macro",
+        fidelity="exact",
+        origin="Aligned to SPX sp.depo_fill (Top-Gas Connected Flood + Surface Overburden Offset)",
+        summary="填充所有与顶面气相连通的开放凹槽至全场最高表面 + offset 盖层，封闭内部空隙保持不变。",
+    )
     def depo_fill(state: VoxelState, step: StepIR, _ctx: StepModelContext) -> dict[str, Any]:
         params = step.parameters or {}
         material = str(params["material"])
@@ -38,7 +46,15 @@ def register_models(registry: StepModelRegistry[VoxelState]) -> None:
         sub[exposed] = mid
         return {"fillTargetUm": round(target_z, 6), "filledVoxels": int(np.count_nonzero(exposed))}
 
-    @registry.register("deposit", "isotropic")
+    @registry.register(
+        "deposit",
+        "isotropic",
+        model_id="voxel.depo.fh_euclidean_ball",
+        algorithm_type="exact_morphology",
+        fidelity="exact",
+        origin="Serra (1982) 3D Minkowski Ball + Felzenszwalb & Huttenlocher (2012) O(N) Exact EDT",
+        summary="沿暴露气固界面做精确三维欧氏球包络膨胀 r = rate * duration（Huygens 常速率解析解）。",
+    )
     def depo_isotropic(state: VoxelState, step: StepIR, _ctx: StepModelContext) -> dict[str, Any]:
         duration = float(step.duration)
         deposited = 0
@@ -66,7 +82,15 @@ def register_models(registry: StepModelRegistry[VoxelState]) -> None:
                 deposited += int(np.count_nonzero(shell))
         return {"depositedVoxels": deposited}
 
-    @registry.register("deposit", "anisotropic")
+    @registry.register(
+        "deposit",
+        "anisotropic",
+        model_id="voxel.depo.split_dir_iso",
+        algorithm_type="first_order_approx",
+        fidelity="approximate",
+        origin="Lie-Trotter Operator Splitting (Columnar +Z Growth + Isotropic Euclidean Shell)",
+        summary="按 anisotropy 比例拆分为逐列纯 +Z 定向堆叠与三维欧氏保形沉积两步叠加。",
+    )
     def depo_anisotropic(state: VoxelState, step: StepIR, _ctx: StepModelContext) -> dict[str, Any]:
         duration = float(step.duration)
         split = min(max(float(step.anisotropy), 0.0), 1.0)

@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "comment": "Editable master algorithm selection & taxonomy table. Change active_defaults[engine_id]['<kind>/<mechanism>'] (or run `python -m engines.cli set-algorithm <engine> <slot> <model_id>`) to switch the default algorithm without touching Python code.",
+  "algorithm_types": {
+    "exact_morphology": {
+      "label": "精确三维数学形态学包络 (Exact 3D Mathematical Morphology / Huygens Envelope)",
+      "description": "基于三维欧氏距离变换的球包络膨胀/腐蚀，在单材料常速率下与连续 Hamilton-Jacobi 方程粘性解严格等价。"
+    },
+    "ray_column": {
+      "label": "逐列视线积分模型 (1D Line-of-Sight Column Integration)",
+      "description": "沿 -Z 方向逐 (x, y) 柱独立消耗刻蚀时间预算，自动止于选择比停止层并保护悬空阴影区。"
+    },
+    "pde_levelset": {
+      "label": "水平集偏微分方程时间步进 (Level-Set Hamilton-Jacobi PDE Advection)",
+      "description": "在稀疏窄带水平集网格上按 CFL 条件推进连续表面速度场。"
+    },
+    "csg_boolean": {
+      "label": "显式几何体布尔运算 (Explicit Mesh / Level-Set CSG Boolean)",
+      "description": "构造棱柱或板层水平集并执行并集/补集几何裁剪。"
+    },
+    "contract_macro": {
+      "label": "工艺语义宏算子 (Behavioral Process Contract Macro)",
+      "description": "对齐参考工艺流程定义的整步几何动作（如开放凹槽盖层填充、理想停止层平面截断、负胶涂覆开孔）。"
+    },
+    "optical_aerial": {
+      "label": "高斯光学空中像圆角模型 (2D Gaussian Aerial-Image Smoothing)",
+      "description": "对版图掩膜指示函数做二维高斯卷积再阈值化，模拟光学衍射引起的 90° 拐角圆化。"
+    },
+    "geometric_envelope": {
+      "label": "深度插值锥面几何包络 (Depth-Interpolated Conical Envelope)",
+      "description": "侧向扩孔半径随刻蚀深度从槽口向槽底线性递减，生成上宽下窄的连续锥角侧壁。"
+    },
+    "first_order_approx": {
+      "label": "一阶简化几何近似 (First-Order Geometric Approximation)",
+      "description": "采用算子分裂或平均半宽替代连续角度/光学核的快速基准实现。"
+    },
+    "empirical_physical": {
+      "label": "经验物理效应模型 (Empirical Physical Effect Model)",
+      "description": "针对特定工艺非理想效应的参数化物理模型（如大马士革 CMP 金属碟形凹陷、RIE Lag 等）。"
+    },
+    "reference_blackbox": {
+      "label": "商业参考引擎原生内核 (Commercial Reference Geocolumn Kernel)",
+      "description": "Synopsys SPX 闭源柱状区间 (geocolumns) 原生算子，作为平台精度与速度对标真值。"
+    }
+  },
+  "active_defaults": {
+    "voxel": {
+      "deposit/fill": "voxel.fill.gas_overburden",
+      "deposit/isotropic": "voxel.depo.fh_euclidean_ball",
+      "deposit/anisotropic": "voxel.depo.split_dir_iso",
+      "etch/anisotropic": "voxel.etch.line_of_sight_column",
+      "etch/isotropic": "voxel.etch.substepped_fh_erosion",
+      "etch/ellipsoidal": "voxel.etch.cylindrical_halfwidth",
+      "mask/litho": "voxel.litho.hard_polygon",
+      "strip/strip": "voxel.strip.exact_id_clear",
+      "planarize/cmp": "voxel.cmp.ideal_stop_plane"
+    },
+    "viennaps": {
+      "deposit/fill": "viennaps.fill.box_complement",
+      "deposit/isotropic": "viennaps.depo.ls_isotropic_pde",
+      "deposit/anisotropic": "viennaps.depo.ls_directional_pde",
+      "etch/anisotropic": "viennaps.etch.stencil_or_slab_cut",
+      "etch/isotropic": "viennaps.etch.ls_isotropic_pde",
+      "etch/ellipsoidal": "viennaps.etch.ls_directional_taper",
+      "mask/litho": "viennaps.litho.prism_mesh_boolean",
+      "strip/strip": "viennaps.strip.remove_material_ls",
+      "planarize/cmp": "viennaps.cmp.ls_planarize_plane"
+    }
+  },
+  "primitives": [
+    {
+      "primitive_id": "voxel.edt.fh_slabbed_3d",
+      "engine_id": "voxel",
+      "algorithm_type": "exact_morphology",
+      "fidelity": "exact",
+      "origin": "Felzenszwalb & Huttenlocher (2012), Theory of Computing 8:415-428 (Z-slabbed C++17/OpenMP)",
+      "source": "engines/voxel/_native.cpp:run_slabbed_3d_dilation",
+      "summary": "Z 方向 64 层滑动分块 + 周期边界抛物线下包络精确三维欧氏距离平方变换，时间 O(N) 与半径无关，临时内存 ~118 MB。"
+    },
+    {
+      "primitive_id": "voxel.topology.seeded_cavity_flood",
+      "engine_id": "voxel",
+      "algorithm_type": "exact_morphology",
+      "fidelity": "exact",
+      "origin": "3D 6-Connected Digital Topology Flood-Fill with Buried-Column Indexing",
+      "source": "engines/voxel/_native.cpp:compute_exposed_void_mask_internal",
+      "summary": "顶面气相种子连通域搜索；先做逐列视线快扫，仅对含埋藏空洞的列做正反向 Gauss-Seidel 扫描，保护封死气隙并连通替换栅侧向腔体。"
+    },
+    {
+      "primitive_id": "voxel.raster.scanline_polygon",
+      "engine_id": "voxel",
+      "algorithm_type": "csg_boolean",
+      "fidelity": "exact",
+      "origin": "Jordan Curve Even-Odd Scanline Ray-Crossing (OpenMP)",
+      "source": "engines/voxel/_native.cpp:voxel_rasterize_polygons",
+      "summary": "对 GDS/OASIS 局部多边形做体素中心奇偶射线法光栅化（带亚纳米确定性防退化微扰）。"
+    },
+    {
+      "primitive_id": "viennaps.probe.ray_winding",
+      "engine_id": "viennaps",
+      "algorithm_type": "csg_boolean",
+      "fidelity": "exact",
+      "origin": "Vertical Ray-Triangle Winding Parity on Interface Surface Mesh",
+      "source": "engines/viennaps/engine.py:ViennapsSession._ensure_ray_bins",
+      "summary": "在 getSurfaceMesh(addInterfaces=True) 上按竖直射线穿过片层的奇偶性重建多层重复材料与空腔占用标签。"
+    },
+    {
+      "primitive_id": "spx.probe.meas_thickness_geocolumns",
+      "engine_id": "spx",
+      "algorithm_type": "reference_blackbox",
+      "fidelity": "exact",
+      "origin": "Synopsys SPX V-2024.03 sp.measure(Type='meas_thickness') Geocolumn Stack",
+      "source": "engines/spx/bridge.py:intervals_from_thickness_output",
+      "summary": "按 (x, y) 柱缓存 SPX 原生底到顶连续区间栈（含埋藏 Gas 空腔），单次查询同时支撑三维探针格与全部材料横截面。"
+    }
+  ],
+  "reference_engines": {
+    "spx": [
+      {
+        "slot": "deposit/fill",
+        "model_id": "spx.procedural.depo_fill",
+        "algorithm_type": "reference_blackbox",
+        "fidelity": "exact",
+        "origin": "Synopsys SPX V-2024.03 sp.depo_fill(Offset, ReferenceMaterialsFilter)",
+        "source": "engines/spx/bridge.py:290",
+        "summary": "SPX 原生凹槽填充并覆盖全场最高面 + Offset 盖层。"
+      },
+      {
+        "slot": "deposit/isotropic",
+        "model_id": "spx.procedural.depo_isotropic",
+        "algorithm_type": "reference_blackbox",
+        "fidelity": "exact",
+        "origin": "Synopsys SPX V-2024.03 sp.depo_isotropic(Rate, Time)",
+        "source": "engines/spx/bridge.py:272",
+        "summary": "SPX 原生三维各向同性保形沉积。"
+      },
+      {
+        "slot": "deposit/anisotropic",
+        "model_id": "spx.procedural.depo_anisotropic",
+        "algorithm_type": "reference_blackbox",
+        "fidelity": "exact",
+        "origin": "Synopsys SPX V-2024.03 sp.depo_anisotropic(Rate, Time)",
+        "source": "engines/spx/bridge.py:277",
+        "summary": "SPX 原生定向沉积。"
+      },
+      {
+        "slot": "etch/anisotropic",
+        "model_id": "spx.procedural.etch_anisotropic",
+        "algorithm_type": "reference_blackbox",
+        "fidelity": "exact",
+        "origin": "Synopsys SPX V-2024.03 sp.etch_anisotropic(MaterialDependent, Angle, Time)",
+        "source": "engines/spx/bridge.py:260",
+        "summary": "SPX 原生带侧壁倾角 Angle 的多材料选择性定向刻蚀。"
+      },
+      {
+        "slot": "etch/isotropic",
+        "model_id": "spx.procedural.etch_isotropic",
+        "algorithm_type": "reference_blackbox",
+        "fidelity": "exact",
+        "origin": "Synopsys SPX V-2024.03 sp.etch_isotropic(MaterialDependent, Time)",
+        "source": "engines/spx/bridge.py:255",
+        "summary": "SPX 原生多材料各向同性湿法/腔体刻蚀。"
+      },
+      {
+        "slot": "etch/ellipsoidal",
+        "model_id": "spx.procedural.etch_ellipsoidal",
+        "algorithm_type": "reference_blackbox",
+        "fidelity": "exact",
+        "origin": "Synopsys SPX V-2024.03 sp.etch_ellipsoidal(vertical, lateral, Time)",
+        "source": "engines/spx/bridge.py:307",
+        "summary": "SPX 原生椭球结构元锥角刻蚀。"
+      },
+      {
+        "slot": "mask/litho",
+        "model_id": "spx.procedural.litho_patterning",
+        "algorithm_type": "reference_blackbox",
+        "fidelity": "exact",
+        "origin": "Synopsys SPX V-2024.03 sp.litho_patterning(LayerNames)",
+        "source": "engines/spx/bridge.py:313",
+        "summary": "SPX 原生光刻宏步骤（0.1 um 旋涂胶 + 高斯圆角曝光 + 负向显影开孔）。"
+      },
+      {
+        "slot": "strip/strip",
+        "model_id": "spx.procedural.etch_strip",
+        "algorithm_type": "reference_blackbox",
+        "fidelity": "exact",
+        "origin": "Synopsys SPX V-2024.03 sp.etch_strip(MaterialFilter)",
+        "source": "engines/spx/bridge.py:287",
+        "summary": "SPX 原生指定材料完全剥离。"
+      },
+      {
+        "slot": "planarize/cmp",
+        "model_id": "spx.procedural.etch_cmp",
+        "algorithm_type": "reference_blackbox",
+        "fidelity": "exact",
+        "origin": "Synopsys SPX V-2024.03 sp.etch_cmp(EtchstopMaterialsFilter, Offset)",
+        "source": "engines/spx/bridge.py:321",
+        "summary": "SPX 原生基于停止层顶面 + Offset 的平坦化抛光。"
+      }
+    ]
+  }
+}

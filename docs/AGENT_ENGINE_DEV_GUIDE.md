@@ -5,7 +5,7 @@
 1. **如何构造并输入自定义测试样例（StepIR + 版图），与参考引擎（Synopsys SPX）同台仿真对拍**；
 2. **如何在此多引擎基座上进行下一步工艺模型研发、算子级 GPU/C++ 加速或接入全新求解器引擎**。
 
-相关设计背景参见 [multi-engine-architecture.md](./multi-engine-architecture.md) 与 [engine-abstraction.md](./engine-abstraction.md)。
+相关设计背景参见 [multi-engine-architecture.md](./multi-engine-architecture.md)、[engine-abstraction.md](./engine-abstraction.md)，全引擎具体算法记录与切换注册表参见 **[ENGINE_ALGORITHM_REGISTRY.md](./ENGINE_ALGORITHM_REGISTRY.md)**（对应可执行配置 [`engines/algorithms.json`](../engines/algorithms.json)）。
 
 ---
 

@@ -1,6 +1,5 @@
-/* Comparison surface: white, minimal, icon-only. No labels anywhere in the
-   comparison stage; the two editor pages keep their form labels because a form
-   without labels is not usable. */
+/* Comparison surface: clean light theme, pixel-aligned side-by-side viewports,
+   top 88-step scrubber bar, and bottom timing + consistency dashboard. */
 
 .cmp-app {
   min-height: 100vh;
@@ -23,7 +22,7 @@
   background: #ffffff;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 20;
 }
 
 .cmp-top nav { display: flex; gap: 4px; }
@@ -59,11 +58,12 @@
 .cmp-stage {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 14px 16px 28px;
+  gap: 12px;
+  padding: 12px 18px 28px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .cmp-blank {
@@ -76,32 +76,41 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 32px;
+  min-height: 34px;
+  flex-wrap: wrap;
 }
 
+.cmp-pair-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cmp-swap-icon { color: #9aa5b1; font-size: 13px; user-select: none; }
+
 .cmp-ghost-select {
-  appearance: none;
-  border: 1px solid #e7ebf0;
+  border: 1px solid #e2e8f0;
   background: #ffffff;
-  border-radius: 10px;
-  color: #7b8794;
+  border-radius: 9px;
+  color: #1b2430;
   font-size: 12px;
-  padding: 6px 10px;
+  font-weight: 500;
+  height: 32px;
+  padding: 0 10px;
   cursor: pointer;
 }
-.cmp-ghost-select:hover { border-color: #cfd6df; color: #1b2430; }
+.cmp-ghost-select:hover { border-color: #cbd5e1; background: #f8fafc; }
 
 .cmp-icon-slider {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #9aa5b1;
+  color: #7b8794;
 }
 .cmp-icon-slider input[type="range"] {
-  width: 86px;
+  width: 84px;
   appearance: none;
-  height: 2px;
-  background: #e7ebf0;
+  height: 3px;
+  background: #e2e8f0;
   border-radius: 2px;
   outline: none;
 }
@@ -114,66 +123,439 @@
   cursor: pointer;
 }
 
-.cmp-duo {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  min-width: 0;
+/* ---------- top 88-step navigation bar ---------- */
+
+.cmp-stepbar {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px 14px 12px;
+  background: #f8fafc;
+  border: 1px solid #e7ebf0;
+  border-radius: 14px;
 }
 
-.cmp-pane { margin: 0; display: flex; flex-direction: column; min-width: 0; }
-.cmp-pane figcaption { display: none; }
-.cmp-pane > div { width: 100% !important; }
+.cmp-stepbar-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
 
-.cmp-raster {
+.cmp-stepbar-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cmp-nav-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid #dce3ec;
+  background: #ffffff;
+  color: #1b2430;
+  font-size: 15px;
+  line-height: 1;
   display: grid;
   place-items: center;
-  background: #f7f9fb;
-  border-radius: 16px;
-  min-height: 560px;
-  overflow: hidden;
+  cursor: pointer;
 }
-.cmp-raster img { width: 100%; height: auto; display: block; border-radius: 16px; }
+.cmp-nav-btn:hover:not(:disabled) { background: #eef2f6; border-color: #cbd5e1; }
+.cmp-nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-/* step scrubber: one tick per step, colour = agreement */
-.cmp-scrub {
-  display: flex;
-  gap: 2px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 6px 0;
-  max-width: 100%;
-  min-width: 0;
-  scrollbar-width: thin;
+.cmp-step-counter { color: #475569; font-size: 12px; }
+.cmp-step-counter strong { color: #0f172a; font-weight: 600; }
+
+.cmp-step-name {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
 }
+
+.cmp-step-mech {
+  font-size: 11px;
+  color: #64748b;
+  background: #eef2f6;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+.cmp-step-summary-pill {
+  font-size: 12px;
+  color: #475569;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 3px 10px;
+  border-radius: 99px;
+}
+.cmp-step-summary-pill strong { color: #0f766e; }
+
+.cmp-scrub {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  overflow-x: auto;
+  padding: 2px 0;
+}
+
 .cmp-tick {
-  flex: 0 0 auto;
-  width: 10px;
+  width: 100%;
+  min-width: 6px;
   height: 22px;
+  padding: 0;
   border: none;
   border-radius: 3px;
   cursor: pointer;
-  opacity: .55;
-  transition: transform 120ms ease, opacity 120ms ease;
+  opacity: 0.68;
+  transition: transform 100ms ease, opacity 100ms ease;
 }
-.cmp-tick:hover { opacity: .85; }
-.cmp-tick.active { opacity: 1; transform: scaleY(1.25); outline: 1.5px solid #1b2430; }
+.cmp-tick:hover { opacity: 0.95; transform: scaleY(1.12); }
+.cmp-tick.active {
+  opacity: 1;
+  transform: scaleY(1.22);
+  outline: 2px solid #0f172a;
+  z-index: 2;
+}
 
-/* relative cost: two thin bars, no numbers */
-.cmp-cost { display: flex; flex-direction: column; gap: 4px; max-width: 480px; }
-.cmp-cost-row { height: 6px; background: #f1f4f8; border-radius: 3px; overflow: hidden; }
-.cmp-cost-row span { display: block; height: 100%; border-radius: 3px; background: #6366f1; }
-.cmp-cost-viennaps span { background: #1b2430; }
-.cmp-cost-voxel span { background: #2563eb; }
-.cmp-cost-spx span { background: #18b8a6; }
+.cmp-scrub-ruler {
+  position: relative;
+  height: 14px;
+  width: 100%;
+}
 
-/* section overlay: lines only */
-.cmp-section { width: 100%; max-width: 660px; }
-.cmp-section svg rect { fill: #fbfcfd; stroke: #eef1f5; }
-.cmp-section svg line { stroke: #f1f4f8; }
-.cmp-section svg text { display: none; }
-.cmp-section-legend { display: none; }
-.cmp-section-empty { display: none; }
+.cmp-ruler-mark {
+  position: absolute;
+  transform: translateX(-50%);
+  top: 0;
+  border: none;
+  background: transparent;
+  padding: 0 2px;
+  font-size: 10px;
+  font-family: ui-monospace, monospace;
+  color: #94a3b8;
+  cursor: pointer;
+}
+.cmp-ruler-mark:hover,
+.cmp-ruler-mark.active {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* ---------- pixel-aligned left & right viewports ---------- */
+
+.cmp-duo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.cmp-viewport-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f7f9fb;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.cmp-viewport-head {
+  height: 38px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border-bottom: 1px solid #eef1f5;
+  font-size: 12px;
+  flex: 0 0 38px;
+}
+
+.cmp-engine-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6366f1;
+}
+.cmp-engine-dot-voxel { background: #2563eb; }
+.cmp-engine-dot-spx { background: #18b8a6; }
+.cmp-engine-dot-viennaps { background: #1b2430; }
+
+.cmp-viewport-title { font-size: 13px; color: #0f172a; }
+.cmp-viewport-kind {
+  font-size: 11px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 1px 7px;
+  border-radius: 99px;
+}
+.cmp-viewport-stat {
+  font-size: 11px;
+  font-family: ui-monospace, monospace;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.cmp-viewport-body {
+  position: relative;
+  width: 100%;
+  background: #f7f9fb;
+  overflow: hidden;
+}
+
+.cmp-pane {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cmp-pane figcaption { display: none; }
+.cmp-pane-stage { width: 100%; height: 100%; }
+
+.cmp-missing {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: #94a3b8;
+  font-size: 13px;
+  background: #f7f9fb;
+}
+
+.cmp-raster {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f9fb;
+  overflow: hidden;
+}
+.cmp-raster img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Force embedded WorkflowViewer3D to match exact card body without extra borders */
+.cmp-pane .wb-viewer3d {
+  width: 100%;
+  height: 100% !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: #f7f9fb !important;
+}
+.cmp-pane .wb-viewer3d__bar,
+.cmp-pane .wb-viewer3d__legend,
+.cmp-pane .wb-viewer3d__status,
+.cmp-pane .wb-viewer3d__hint,
+.cmp-pane .wb-viewer3d__scalebar,
+.cmp-pane .wb-viewer3d__overlay,
+.cmp-pane .wb-viewer3d__renderer-warn,
+.cmp-pane .wb-viewer3d__clip { display: none !important; }
+.cmp-pane .wb-viewer3d__stage { border: none !important; background: #f7f9fb !important; }
+.cmp-pane .wb-viewer3d__canvas { border-radius: 0; }
+
+/* ---------- bottom timing & consistency comparison panel ---------- */
+
+.cmp-bottom-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.cmp-metric-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cmp-metric-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cmp-metric-head h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+.cmp-metric-sub { font-size: 11px; color: #64748b; }
+
+.cmp-timing-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.cmp-timing-title { font-size: 11px; color: #64748b; }
+
+.cmp-bar-line {
+  display: grid;
+  grid-template-columns: 74px 1fr 110px;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+.cmp-bar-label {
+  font-weight: 600;
+  color: #334155;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cmp-bar-track {
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.cmp-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: #6366f1;
+}
+.cmp-bar-voxel { background: #2563eb; }
+.cmp-bar-spx { background: #18b8a6; }
+.cmp-bar-viennaps { background: #1b2430; }
+.cmp-bar-val {
+  text-align: right;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  color: #334155;
+}
+
+.cmp-timing-footer {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 11px;
+  color: #475569;
+}
+.cmp-total-chip strong { color: #0f172a; }
+
+.cmp-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.cmp-kpi {
+  background: #f8fafc;
+  border: 1px solid #edf2f7;
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cmp-kpi-label { font-size: 11px; color: #64748b; }
+.cmp-kpi-val {
+  font-size: 15px;
+  font-family: ui-monospace, monospace;
+  color: #0f172a;
+}
+
+.cmp-iou-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cmp-iou-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-family: ui-monospace, monospace;
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #1e293b;
+}
+.cmp-iou-chip i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.cmp-confusions {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 11px;
+  color: #64748b;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.cmp-confusions-ok { color: #0f766e; font-weight: 500; }
+.cmp-confusion-tag {
+  font-family: ui-monospace, monospace;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 1px 7px;
+  border-radius: 6px;
+}
+
+/* ---------- cross-section overlay ---------- */
+
+.cmp-section {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 10px 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.cmp-section svg { width: 100%; height: auto; display: block; }
+.cmp-section svg rect { fill: #f8fafc; stroke: #e2e8f0; }
+.cmp-section svg line { stroke: #edf2f7; }
+.cmp-section-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #475569;
+  align-items: center;
+}
+.cmp-section-row { display: inline-flex; align-items: center; gap: 5px; }
+.cmp-section-row i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+.cmp-section-empty {
+  padding: 10px 14px;
+  border: 1px dashed #e2e8f0;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #94a3b8;
+}
 
 /* ---------- editor pages (forms keep labels) ---------- */
 
@@ -221,7 +603,6 @@
 }
 .cmp-form button:hover { border-color: #cfd6df; background: #f7f9fb; }
 .cmp-form button:disabled { opacity: .5; cursor: not-allowed; }
-.cmp-form button[type="button"]:first-of-type { }
 
 .cmp-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
 .cmp-grid { display: grid; grid-template-columns: repeat(2, minmax(150px, 1fr)); gap: 10px; }
@@ -269,20 +650,6 @@
 }
 .cmp-stack { width: 100%; max-width: 320px; background: #fbfcfd; border: 1px solid #eef1f5; border-radius: 14px; }
 
-/* The reused viewer brings its own chrome (toolbar, legend, status line). The
-   comparison stage is visual only, so everything but the canvas is hidden here;
-   the camera is driven by the shared sliders above. */
-.cmp-pane .wb-viewer3d__bar,
-.cmp-pane .wb-viewer3d__legend,
-.cmp-pane .wb-viewer3d__status,
-.cmp-pane .wb-viewer3d__hint,
-.cmp-pane .wb-viewer3d__scalebar,
-.cmp-pane .wb-viewer3d__overlay,
-.cmp-pane .wb-viewer3d__renderer-warn,
-.cmp-pane .wb-viewer3d__clip { display: none !important; }
-.cmp-pane .wb-viewer3d__stage { border: none !important; background: #f7f9fb !important; }
-.cmp-pane .wb-viewer3d__canvas { border-radius: 16px; }
-
 /* ---------- run history picker ---------- */
 
 .cmp-history { position: relative; }
@@ -292,18 +659,18 @@
   gap: 8px;
   height: 32px;
   padding: 0 10px;
-  border: 1px solid #e7ebf0;
-  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
   background: #fff;
-  color: #55606d;
+  color: #334155;
   cursor: pointer;
 }
-.cmp-history-trigger:hover { border-color: #cfd6df; color: #1b2430; }
-.cmp-history-current { font-size: 12px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmp-history-trigger:hover { border-color: #cbd5e1; color: #0f172a; }
+.cmp-history-current { font-size: 12px; font-weight: 500; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmp-history-count {
   font-size: 10px;
-  color: #9aa5b1;
-  background: #f4f6f9;
+  color: #64748b;
+  background: #f1f5f9;
   border-radius: 99px;
   padding: 1px 6px;
 }

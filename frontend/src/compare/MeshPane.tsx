@@ -1,10 +1,4 @@
-/** Mesh pane: the production vtk.js viewer, fed by an engine comparison frame.
- *
- * The comparison frame is converted to the viewer's `SnapshotDoc` shape instead of
- * duplicating a renderer: the workbench viewer already handles materials, clipping,
- * projection, scale and resource teardown. The shared camera drives it through
- * `Viewer3DHandle.rotate`, which sets absolute azimuth/elevation.
- */
+/** Mesh pane: the production vtk.js viewer, locked to uniform viewport height. */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import WorkflowViewer3D from '../workflow/viewer3d/WorkflowViewer3D';
@@ -15,7 +9,6 @@ export type Camera = { azimuth: number; elevation: number; zoom: number };
 
 export const DEFAULT_CAMERA: Camera = { azimuth: 45, elevation: 30, zoom: 1 };
 
-/** Map SPX's view presets onto the vtk.js standard views. */
 export function cameraForView(view: string | undefined): Camera {
   switch (view) {
     case 'iso90': return { azimuth: 135, elevation: 30, zoom: 1 };
@@ -46,13 +39,14 @@ export function frameToSnapshot(frame: MeshFrame): SnapshotDoc {
 
 type Props = {
   frame: MeshFrame | null;
+  loading?: boolean;
   camera: Camera;
   height: number;
   title: string;
   note?: string;
 };
 
-export function MeshPane({ frame, camera, height, title, note }: Props) {
+export function MeshPane({ frame, loading = false, camera, height, title, note }: Props) {
   const handleRef = useRef<Viewer3DHandle | null>(null);
   const [ready, setReady] = useState(false);
   const snapshot = useMemo(() => (frame ? frameToSnapshot(frame) : null), [frame]);
@@ -62,19 +56,17 @@ export function MeshPane({ frame, camera, height, title, note }: Props) {
     handleRef.current.rotate(camera.azimuth, camera.elevation);
   }, [camera.azimuth, camera.elevation, ready, snapshot]);
 
-  // The viewer keys its cache by runId/stepId; comparison frames are always
-  // supplied inline, so a stable pseudo-run keeps the cache from refetching.
   const stepId = frame?.stepId ?? 'none';
 
   return (
-    <figure className="cmp-pane">
+    <figure className="cmp-pane" style={{ height }}>
       {title || note ? (
         <figcaption>
           <strong>{title}</strong>
           {note ? <span className="cmp-note">{note}</span> : null}
         </figcaption>
       ) : null}
-      <div style={{ width: 520, height }}>
+      <div className="cmp-pane-stage" style={{ height }}>
         {snapshot ? (
           <WorkflowViewer3D
             runId="engine-compare"
@@ -90,7 +82,7 @@ export function MeshPane({ frame, camera, height, title, note }: Props) {
             }}
           />
         ) : (
-          <div className="cmp-missing">无帧</div>
+          <div className="cmp-missing">{loading ? '加载三维网格中…' : '本步无网格帧'}</div>
         )}
       </div>
     </figure>

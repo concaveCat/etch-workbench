@@ -103,10 +103,14 @@ export type ProbeMetrics = {
   leftEngine?: string;
   rightEngine?: string;
   agreement?: number;
+  activePoints?: number;
   activeAgreement?: number;
+  featurePoints?: number;
   featureAgreement?: number;
   mismatchCount?: number;
+  points?: number;
   iou?: Record<string, number>;
+  topConfusions?: { count: number; [key: string]: unknown }[];
   topHeightUm?: Record<string, Record<string, number | null>>;
   mismatchExamples?: { point: number[]; [key: string]: unknown }[];
   reason?: string;
